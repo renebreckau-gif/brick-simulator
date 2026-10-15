@@ -6,6 +6,8 @@ import { loadBundle, type DataBundle } from '../src/core/data/bundle';
 import { validate } from '../src/core/validation/validate';
 import { EDGE_CASES } from '../src/fixtures/edgeCases';
 import { generateSpaceship, PALETTES, VARIANTS, type PaletteId } from '../src/generator/spaceship';
+import { comparisonReferenceId } from '../src/ui/comparison';
+import { labItems } from '../src/ui/items';
 import { fsReader, readData, referenceModel } from '../tests/helpers';
 
 let cached: Promise<DataBundle> | null = null;
@@ -81,6 +83,23 @@ describe('Raumschiff-Generator mit echtem Katalog', () => {
         expect(r.report.findings.filter((f) => f.severity === 'blocker' && f.status === 'failed').map((f) => f.code), label).toEqual([]);
         expect(r.report.findings.map((f) => f.code), label).not.toContain('CAT_SOURCE_UNAVAILABLE');
       }
+  });
+});
+
+describe('Vergleichsgrundlage im Raumschiff-Labor mit echtem Katalog (Korrekturauftrag 03A)', () => {
+  it('Raumschiff nach Referenzauswahl: kein Inventarabgleich; Referenz im Prüflabor: Abgleich vorhanden', async () => {
+    const b = await real();
+    const items = labItems(b);
+    const ship = generateSpaceship(VARIANTS.kompakt.params).model;
+    for (const id of ['ref-40013-1', 'ref-21002-1']) {
+      const item = items.find((i) => i.id === id)!;
+      expect(comparisonReferenceId(ship, item, 'schiff'), id).toBeUndefined();
+      const model = item.make();
+      const refId = comparisonReferenceId(model, item, 'pruef');
+      expect(refId, id).toBe(id);
+      const set = b.references.find((r) => r.referenceId === refId)!.setNumber;
+      expect(compareBom(computeBom(model, b.catalog), set, b.catalog), id).not.toBeNull();
+    }
   });
 });
 
