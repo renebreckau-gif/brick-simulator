@@ -1,0 +1,85 @@
+{
+ "schema": "baustein-sim/rebrickable-extract@1",
+ "source": {
+  "provider": "TEST-FIXTURE (synthetisch, kein Katalogbeleg)",
+  "downloadsPage": "keine – synthetische Testdaten",
+  "fetchedAt": "2000-01-01T00:00:00Z",
+  "usageNote": "SYNTHETISCHE TESTFIXTURE für die Kataloglogik. Keine realen Daten: Namen, Element-IDs, Belege und Inventare sind erfunden und belegen nichts über reale Teile, Farben oder Sets.",
+  "files": {}
+ },
+ "parts": {
+  "2456": { "name": "TESTFIXTURE Teil 2456", "partCatId": 0, "material": "Fixture" },
+  "2458": { "name": "TESTFIXTURE Teil 2458", "partCatId": 0, "material": "Fixture" },
+  "3001": { "name": "TESTFIXTURE Teil 3001", "partCatId": 0, "material": "Fixture" },
+  "3002": { "name": "TESTFIXTURE Teil 3002", "partCatId": 0, "material": "Fixture" },
+  "3003": { "name": "TESTFIXTURE Teil 3003", "partCatId": 0, "material": "Fixture" },
+  "3004": { "name": "TESTFIXTURE Teil 3004", "partCatId": 0, "material": "Fixture" },
+  "3005": { "name": "TESTFIXTURE Teil 3005", "partCatId": 0, "material": "Fixture" },
+  "3008": { "name": "TESTFIXTURE Teil 3008", "partCatId": 0, "material": "Fixture" },
+  "3009": { "name": "TESTFIXTURE Teil 3009", "partCatId": 0, "material": "Fixture" },
+  "3010": { "name": "TESTFIXTURE Teil 3010", "partCatId": 0, "material": "Fixture" },
+  "3023": { "name": "TESTFIXTURE Teil 3023", "partCatId": 0, "material": "Fixture" },
+  "3024": { "name": "TESTFIXTURE Teil 3024", "partCatId": 0, "material": "Fixture" },
+  "3030": { "name": "TESTFIXTURE Teil 3030", "partCatId": 0, "material": "Fixture" },
+  "3032": { "name": "TESTFIXTURE Teil 3032", "partCatId": 0, "material": "Fixture" },
+  "30374": { "name": "TESTFIXTURE Teil 30374", "partCatId": 0, "material": "Fixture" },
+  "3069b": { "name": "TESTFIXTURE Teil 3069b", "partCatId": 0, "material": "Fixture" },
+  "3070b": { "name": "TESTFIXTURE Teil 3070b", "partCatId": 0, "material": "Fixture" },
+  "3794a": { "name": "TESTFIXTURE Teil 3794a", "partCatId": 0, "material": "Fixture" },
+  "3794b": { "name": "TESTFIXTURE Teil 3794b", "partCatId": 0, "material": "Fixture" },
+  "4162": { "name": "TESTFIXTURE Teil 4162", "partCatId": 0, "material": "Fixture" },
+  "4162pr0068": { "name": "TESTFIXTURE Teil 4162pr0068", "partCatId": 0, "material": "Fixture" },
+  "59900": { "name": "TESTFIXTURE Teil 59900", "partCatId": 0, "material": "Fixture" },
+  "6541": { "name": "TESTFIXTURE Teil 6541", "partCatId": 0, "material": "Fixture" },
+  "6636": { "name": "TESTFIXTURE Teil 6636", "partCatId": 0, "material": "Fixture" }
+ },
+ "colors": {
+  "0": { "name": "Black", "rgb": "000000", "isTrans": false },
+  "1": { "name": "Blue", "rgb": "0000FF", "isTrans": false },
+  "2": { "name": "Green", "rgb": "00FF00", "isTrans": false },
+  "4": { "name": "Red", "rgb": "FF0000", "isTrans": false },
+  "14": { "name": "Yellow", "rgb": "FFFF00", "isTrans": false },
+  "15": { "name": "White", "rgb": "FFFFFF", "isTrans": false },
+  "19": { "name": "Tan", "rgb": "EEDDAA", "isTrans": false },
+  "25": { "name": "Fixture-Namensabweichung", "rgb": "FF8800", "isTrans": false },
+  "71": { "name": "Light Bluish Gray", "rgb": "AAAAAA", "isTrans": false }
+ },
+ "partColorEvidence": [
+  { "part": "2456", "color": 4, "elementIds": ["FX-E-0001"], "setCount": 1 },
+  { "part": "3001", "color": 4, "elementIds": ["FX-E-0002"], "setCount": 1 },
+  { "part": "3001", "color": 15, "elementIds": ["FX-E-0003"], "setCount": 1 },
+  { "part": "3002", "color": 15, "elementIds": [], "setCount": 1 },
+  { "part": "3003", "color": 4, "elementIds": ["FX-E-0004"], "setCount": 1 },
+  { "part": "3003", "color": 15, "elementIds": ["FX-E-0005"], "setCount": 1 },
+  { "part": "3004", "color": 0, "elementIds": ["FX-E-0006"], "setCount": 1 },
+  { "part": "3004", "color": 4, "elementIds": ["FX-E-0007"], "setCount": 1 },
+  { "part": "3004", "color": 15, "elementIds": ["FX-E-0008"], "setCount": 1 },
+  { "part": "3005", "color": 4, "elementIds": ["FX-E-0009"], "setCount": 1 },
+  { "part": "3009", "color": 1, "elementIds": ["FX-E-0010"], "setCount": 1 },
+  { "part": "3010", "color": 1, "elementIds": ["FX-E-0011"], "setCount": 1 },
+  { "part": "3010", "color": 4, "elementIds": ["FX-E-0012"], "setCount": 1 },
+  { "part": "3010", "color": 15, "elementIds": ["FX-E-0013"], "setCount": 1 },
+  { "part": "3023", "color": 19, "elementIds": ["FX-E-0014"], "setCount": 1 },
+  { "part": "3032", "color": 71, "elementIds": ["FX-E-0015"], "setCount": 1 },
+  { "part": "59900", "color": 19, "elementIds": ["FX-E-0016"], "setCount": 1 }
+ ],
+ "relationships": [
+  { "type": "M", "child": "3794b", "parent": "3794a" }
+ ],
+ "referenceSets": {
+  "FX-SET-1": { "name": "TESTFIXTURE Inventar zu Grenzfall ec-08a", "year": 2000, "numParts": 5, "themeId": 0 }
+ },
+ "referenceInventories": {
+  "FX-SET-1": {
+   "inventoryId": "FX-INV-1",
+   "version": 1,
+   "lines": [
+    { "part": "3001", "color": 15, "quantity": 1, "isSpare": false, "partName": "TESTFIXTURE Teil 3001" },
+    { "part": "3794b", "color": 15, "quantity": 1, "isSpare": false, "partName": "TESTFIXTURE Teil 3794b" },
+    { "part": "3005", "color": 4, "quantity": 2, "isSpare": false, "partName": "TESTFIXTURE Teil 3005" },
+    { "part": "3003", "color": 1, "quantity": 1, "isSpare": false, "partName": "TESTFIXTURE Teil 3003" },
+    { "part": "3024", "color": 15, "quantity": 1, "isSpare": true, "partName": "TESTFIXTURE Teil 3024" }
+   ]
+  }
+ }
+}

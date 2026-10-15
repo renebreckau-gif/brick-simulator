@@ -168,8 +168,12 @@ export function BomPanel({ bom, bundle, referenceId, procurement, onHighlight }:
               <td className="num">{l.quantity}</td>
               <td><span className="code">{l.ldrawPart}</span> {l.partName}</td>
               <td><span className="swatch" style={{ background: bundle.catalog.displayColor(l.ldrawColor).value }} /> {l.colorName}</td>
-              <td className="code">{l.rebrickablePart} / {l.rebrickableColor}</td>
-              <td>{l.combination === 'evidenced' ? `belegt${l.elementIds.length ? ` (Element ${l.elementIds.slice(0, 2).join(', ')})` : ' (Set-Inventar)'}` : 'nicht belegt'}</td>
+              <td className="code">{l.rebrickablePart === null ? '– (ungeprüft)' : `${l.rebrickablePart} / ${l.rebrickableColor ?? '–'}`}</td>
+              <td className={l.combination === 'unchecked' ? 'open' : ''}>
+                {l.combination === 'evidenced'
+                  ? `belegt${bundle.catalog.source.state === 'loaded' && bundle.catalog.source.kind === 'test-fixture' ? ' (nur Testfixture)' : l.elementIds.length ? ` (Element ${l.elementIds.slice(0, 2).join(', ')})` : ' (Set-Inventar)'}`
+                  : l.combination === 'unchecked' ? 'ungeprüft (kein Katalog)' : 'nicht belegt'}
+              </td>
               <td>{{ supported: 'unterstützt', partial: 'teilweise', unsupported: 'nicht unterstützt', none: 'nicht unterstützt' }[l.simulation]}</td>
             </tr>
           ))}
@@ -183,6 +187,14 @@ export function BomPanel({ bom, bundle, referenceId, procurement, onHighlight }:
           ))}
         </ul>
       ) : <p className="muted">Keine.</p>}
+      {ref && !cmp && (
+        <>
+          <h3>Unabhängiger Abgleich</h3>
+          <p className="open">
+            Ungeprüft: {bundle.catalog.source.state === 'corrupt' ? 'Der Katalogauszug ist beschädigt und wird nicht verwendet.' : 'Kein Katalogauszug geladen.'} Der Abgleich gegen das Rebrickable-Inventar von {ref.setNumber} findet nicht statt; daraus folgt weder Übereinstimmung noch Abweichung.
+          </p>
+        </>
+      )}
       {cmp && (
         <>
           <h3>Unabhängiger Abgleich</h3>

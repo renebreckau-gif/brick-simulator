@@ -31,6 +31,23 @@ Was der Prüfkern in Phase 1 kann, was er vereinfacht und wo er irren kann.
   - Durchgehende Fugen werden erst ab 3 Lagen als Hinweis gewertet.
 - **Katalog**: Ein fehlender Beleg bedeutet nicht, dass die Kombination nicht existiert. Die ID-Zuordnung ist nicht über die Rebrickable-API bestätigt.
 
+## Prüfumfang ohne Katalogauszug (frischer Checkout)
+
+Der Rebrickable-Katalogauszug ist optional und nicht veröffentlicht. Je nach Zustand der Quelle gilt:
+
+| Prüfung | Katalog geladen | Katalog fehlt | Katalog beschädigt |
+|---|---|---|---|
+| Teilgeometrie, Anschlüsse, Graph, Kollision, Montage | geprüft | geprüft | geprüft |
+| Stand, Struktur (heuristisch) | geprüft | geprüft | geprüft |
+| Simulationsunterstützung je Teil (eigene Metadaten) | geprüft | geprüft | geprüft |
+| Stückliste aus Modellinstanzen | mit Rebrickable-Nummern | mit LDraw-Namen, Rebrickable-Spalten ungeprüft | wie „fehlt“ |
+| Teilexistenz im Katalog, Farbzuordnung, Teil-Farb-Belege | geprüft | **ungeprüft** (`CAT_SOURCE_UNAVAILABLE`) | **ungeprüft** mit Grund (`CAT_SOURCE_CORRUPT`) |
+| Inventarabgleich der Referenzen | geprüft | **ungeprüft** | **ungeprüft** |
+
+Ohne Katalog entstehen keine Ersatzdaten. Aus dem Fehlen folgt weder Existenz noch Nichtexistenz einer Teil-Farb-Kombination und keine Aussage über Kaufverfügbarkeit. Farbcodes außerhalb von `LDConfig.ldr` (z. B. LDraw-Direktfarben) bleiben in jedem Fall nicht auflösbare Stücklistenzeilen.
+
+Die Kataloglogik wird in der regulären Suite mit einer synthetischen, ausdrücklich gekennzeichneten Testfixture geprüft (`tests/fixtures/catalog-fixture.json`). Deren Inhalte belegen nichts über reale Teile; das Prüflabor und die Berichte kennzeichnen sie als „TESTFIXTURE“. Die fachlichen Abgleiche gegen echte Rebrickable-Inventare laufen nur in der optionalen Integrationssuite (`npm run test:rebrickable`) und melden fehlende Daten ausdrücklich.
+
 ## Bekannte Fehlermöglichkeiten
 
 - Quader-Noppen können in sehr engen Sonderlagen eine Kollision melden, die mit runden Noppen nicht bestünde.

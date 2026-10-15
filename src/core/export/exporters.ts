@@ -20,10 +20,13 @@ function csvCell(v: unknown): string {
 export function exportBomCsv(bom: Bom): string {
   const head = ['status', 'ldraw_part', 'ldraw_color', 'rebrickable_part', 'rebrickable_color', 'part_name', 'color_name', 'quantity', 'combination_evidence', 'simulation', 'note'];
   const rows: unknown[][] = [
-    ...bom.lines.map((l) => ['aufgeloest', l.ldrawPart, l.ldrawColor, l.rebrickablePart, l.rebrickableColor, l.partName, l.colorName, l.quantity, l.combination === 'evidenced' ? 'belegt' : 'nicht belegt', l.simulation, '']),
+    ...bom.lines.map((l) => [
+      'aufgeloest', l.ldrawPart, l.ldrawColor, l.rebrickablePart ?? '', l.rebrickableColor ?? '', l.partName, l.colorName, l.quantity,
+      { evidenced: 'belegt', 'not-evidenced': 'nicht belegt', unchecked: 'ungeprueft (kein Katalog)' }[l.combination], l.simulation, '',
+    ]),
     ...bom.unresolved.map((u) => ['nicht aufloesbar', u.ldrawPart, u.ldrawColor, '', '', '', '', u.quantity, '', '', u.reasons.join(' / ')]),
   ];
-  const meta = `# modell=${bom.modelRef.modelId};version=${bom.modelRef.version};hash=${bom.modelRef.contentHash};katalog=${bom.catalogVersion};beschaffung=nicht geprueft`;
+  const meta = `# modell=${bom.modelRef.modelId};version=${bom.modelRef.version};hash=${bom.modelRef.contentHash};katalog=${bom.catalogVersion};katalogquelle=${bom.catalogState};beschaffung=nicht geprueft`;
   return [meta, head.join(','), ...rows.map((r) => r.map(csvCell).join(','))].join('\n') + '\n';
 }
 

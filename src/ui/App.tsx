@@ -40,13 +40,16 @@ export function App() {
   const [tab, setTab] = useState<Tab>('report');
 
   useEffect(() => {
-    const read = async (p: string) => {
-      const r = await fetch(`/${p}`);
+    // null = Datei existiert nicht (404 oder SPA-Fallback als HTML); andere Fehler werden gemeldet.
+    const read = async (p: string): Promise<string | null> => {
+      const r = await fetch(`${import.meta.env.BASE_URL}data/${p}`);
+      if (r.status === 404) return null;
       if (!r.ok) throw new Error(`${p}: HTTP ${r.status}`);
+      if ((r.headers.get('content-type') ?? '').includes('text/html')) return null;
       return r.text();
     };
     loadBundle(read).then(setBundle).catch((e) => setError(String(e)));
-    read('expectations/edge-cases.json').then((t) => setExpectations(JSON.parse(t))).catch(() => setExpectations(null));
+    read('expectations/edge-cases.json').then((t) => setExpectations(t ? JSON.parse(t) : null)).catch(() => setExpectations(null));
   }, []);
 
   const items = useMemo(() => (bundle ? labItems(bundle) : []), [bundle]);
@@ -122,7 +125,26 @@ export function App() {
             </section>
           ))}
         </nav>
-        <section className="datastate" aria-label="Daten- und Regelstand">
+        <section className="datastate" aria-label="Datenquellen und Prüfumfang">
+          <h2>Datenquellen</h2>
+          <ul className="sources">
+            {bundle.sources.map((s) => (
+              <li key={s.id} className={`source ${s.state}`}>
+                <span className="srcstate">{{ loaded: 'geladen', missing: 'fehlt', corrupt: 'beschädigt' }[s.state]}</span>
+                <span>
+                  {s.label}
+                  {!s.required && ' (optional)'}
+                  <br />
+                  <span className="muted">{s.detail}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <h2>Prüfumfang</h2>
+          <p className="small">Verfügbar: Teilgeometrie, Anschlüsse, Verbindungsgraph, Kollision, Montagefolge, Stand und Struktur (heuristisch), Stückliste aus den Modellinstanzen.</p>
+          {!bundle.catalog.available && (
+            <p className="small open">Ungeprüft ohne Katalog: Katalogexistenz der Teile, Farbzuordnung zu Rebrickable, Teil-Farb-Belege, Inventarabgleich der Referenzen.</p>
+          )}
           <h2>Daten- und Regelstand</h2>
           <dl>
             <dt>Katalog</dt><dd className="code">{report.dataVersions.catalog}</dd>
@@ -145,6 +167,16 @@ export function App() {
             <span>{blockers} Blocker im Bericht zu Version {report.modelRef.version}</span>
           </div>
         </header>
+        {bundle.catalog.source.state === 'missing' && (
+          <div className="catalogbar" role="note">
+            Kein Katalogauszug geladen: Geometrie, Verbindungen, Montage und Stückliste sind geprüft; Katalogexistenz, Teil-Farb-Belege und Inventarabgleiche bleiben ungeprüft.
+          </div>
+        )}
+        {bundle.catalog.source.state === 'corrupt' && (
+          <div className="catalogbar corrupt" role="alert">
+            {bundle.catalog.source.error}. Der Auszug wird nicht verwendet; Katalog- und Inventarabgleiche bleiben ungeprüft.
+          </div>
+        )}
         {stale && (
           <div className="stalebar" role="alert">
             <span>

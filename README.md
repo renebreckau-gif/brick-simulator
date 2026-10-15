@@ -4,7 +4,7 @@ Lokale Webanwendung, die reale Bausteinmodelle aus **einem kanonischen, versioni
 
 ## Start
 
-Voraussetzung: Node.js ≥ 20 (entwickelt mit 24.20). **Bei einem frischen Checkout zuerst den Katalogauszug erzeugen** (siehe „Fehlende lokale Daten“), sonst lädt das Prüflabor nicht.
+Voraussetzung: Node.js ≥ 20 (entwickelt mit 24.20, CI mit 24). Ein frischer Checkout läuft **ohne** private Daten: Referenzmodelle, 3D-Ansicht, Bauschritte, geometrische Prüfungen und die Stückliste funktionieren sofort. Nur Katalog- und Inventarabgleiche bleiben ungeprüft, bis lokal ein Katalogauszug vorliegt (siehe „Optionale private Daten“).
 
 ### Windows PowerShell
 
@@ -13,6 +13,8 @@ In PowerShell blockiert die Ausführungsrichtlinie häufig `npm.ps1`. `npm.cmd` 
 ```powershell
 npm.cmd install
 ```
+
+(Für eine Installation exakt nach `package-lock.json`, wie in der CI: `npm.cmd ci`.)
 
 ```powershell
 npm.cmd run dev
@@ -35,26 +37,47 @@ npm.cmd run build
 ### Andere Shells (Git Bash, macOS, Linux)
 
 ```bash
-npm install
-npm run dev        # Prüflabor auf http://localhost:5173
-npm test           # Vitest
-npm run typecheck  # TypeScript
-npm run build      # Typprüfung + Produktionsbuild nach dist/
-npm run check      # alles zusammen
+npm ci                    # Installation nach Lockdatei
+npm run dev               # Prüflabor auf http://localhost:5173
+npm test                  # reguläre Tests (ohne private Daten)
+npm run typecheck         # TypeScript
+npm run build             # Typprüfung + Produktionsbuild + Prüfung der öffentlichen Daten in dist/
+npm run check             # alles zusammen
+npm run test:rebrickable  # optional: Integrationstests gegen den privaten Katalogauszug
 ```
 
-Die Anwendung läuft vollständig lokal. Die Daten liegen in `data/` und werden vom Entwicklungsserver ausgeliefert. Internet wird nur für die Schriftart (Google Fonts, mit Systemschrift-Ersatz) und für die externen Anleitungslinks benötigt.
+Die Anwendung läuft vollständig lokal. Internet wird nur für die Schriftart (Google Fonts, mit Systemschrift-Ersatz) und für die externen Anleitungslinks benötigt.
 
-## Fehlende lokale Daten nach einem frischen Checkout
+## Datenquellen: Pflicht und optional
 
-Im Repository enthalten sind die LDraw-Geometrie (`data/ldraw/`, CC BY 4.0, mit `CAreadme.txt` und `manifest.json` mit Herkunft, Lizenzzeile und SHA-256 je Datei), die Referenzmodelle aus dem LDraw-OMR (`data/references/omr/`, CC BY 2.0), die eigene ID-Zuordnung, die Referenzmetadaten und die Erwartungen.
+| Daten | Ort | Status | Im Repository |
+|---|---|---|---|
+| LDraw-Geometrie (79 Teiledateien, `LDConfig.ldr`, `CAreadme.txt`, Manifest mit Herkunft/Lizenz/SHA-256) | `data/ldraw/` | Pflicht | ja (CC BY 4.0) |
+| Referenzmodelle aus dem LDraw-OMR | `data/references/` | Pflicht | ja (CC BY 2.0) |
+| Eigene ID-Zuordnung, Erwartungen | `data/catalog/id-map.json`, `data/expectations/` | Pflicht | ja |
+| Katalogauszug (Rebrickable) | `data/catalog/rebrickable-extract.json` | **optional, privat** | **nein** |
+| Rebrickable-Rohdaten | `data-raw/` | optional, privat | **nein** |
 
-**Nicht enthalten** ist der Katalogauszug `data/catalog/rebrickable-extract.json`. Er wird aus den Rebrickable-CSV-Dumps erzeugt, deren Nutzungs- und Weitergabebedingungen beim Erstellen nicht geklärt werden konnten (siehe [docs/QUELLEN.md](docs/QUELLEN.md)). Deshalb sind weder die Rohdaten noch der Auszug veröffentlicht.
+Das Prüflabor zeigt links unter „Datenquellen“, was geladen ist, und unter „Prüfumfang“, was verfügbar und was ungeprüft ist. Fehlt der Katalogauszug, gilt:
 
-Ohne diese Datei:
+- Teilexistenz im Katalog, Farbzuordnung zu Rebrickable, Teil-Farb-Belege und Inventarabgleiche der Referenzen sind **ungeprüft**. Es werden keine Ersatzdaten erzeugt, und aus dem Fehlen folgt weder Existenz noch Nichtexistenz.
+- Die Stückliste entsteht aus den Modellinstanzen mit LDraw-Teil- und Farbnamen. Die Rebrickable-Spalten bleiben leer und sind als ungeprüft markiert.
+- Ein **beschädigter** Auszug wird nicht verwendet. Das Prüflabor nennt Datei und Grund (z. B. „kein gültiges JSON“, „Feld „parts“ fehlt“); der Rest bleibt nutzbar.
 
-- lädt das Prüflabor nicht; es zeigt die Meldung „Daten konnten nicht geladen werden“.
-- schlagen alle Tests fehl, die Daten laden (Katalog, Referenzen, Grenzfälle).
+## Öffentliche Builds
+
+`data/` wird **nicht** pauschal ausgeliefert. Dev-Server und Build verwenden eine explizite Positivliste (`scripts/data-files.mjs`), die aus festen Einträgen, dem LDraw-Manifest und dem Referenzregister abgeleitet ist. Der private Katalogauszug wird nur vom lokalen Dev-Server ausgeliefert, nie gebaut. Nach jedem `npm run build` prüft `scripts/check-public-build.mjs` den Ordner `dist/` und bricht ab, wenn
+
+- eine nicht freigegebene Datei unter `dist/data/` liegt,
+- ein verbotener Pfad auftaucht (Rohdaten, Katalogauszug, CSV, `.env`),
+- eine JSON-Datei das Schema eines Katalogauszugs trägt oder
+- eine freigegebene Datei fehlt oder vom Original abweicht.
+
+Die CI (`.github/workflows/fresh-checkout.yml`) prüft bei jedem Push und Pull Request einen frischen Checkout ohne private Daten: Installation nach Lockdatei, Typprüfung, reguläre Tests, Build mit Prüfung, die ausdrückliche Meldung der Integrationstests und eine öffentliche Vorschau, die die Pflichtdaten ausliefert, den Katalog aber nicht (HTTP 404).
+
+## Optionale private Daten: Katalogauszug erzeugen
+
+Der Katalogauszug `data/catalog/rebrickable-extract.json` ist nicht veröffentlicht. Er wird aus den Rebrickable-CSV-Dumps erzeugt, deren Nutzungs- und Weitergabebedingungen beim Erstellen nicht geklärt werden konnten (siehe [docs/QUELLEN.md](docs/QUELLEN.md)).
 
 So erzeugen Sie den Auszug selbst:
 
@@ -69,7 +92,15 @@ So erzeugen Sie den Auszug selbst:
 
    Das Skript schreibt `data/catalog/rebrickable-extract.json` (ebenfalls ausgeschlossen).
 
-Hinweis: Rebrickable aktualisiert die Dumps laufend. Mit einem anderen Abrufstand können sich Belegzahlen und einzelne Inventare ändern. Die Tests prüfen den Stand vom 2026-10-14 und können dann abweichen.
+Danach zeigt das Prüflabor Katalogbelege und den Inventarabgleich der Referenzen. Die Integrationstests laufen mit:
+
+```powershell
+npm.cmd run test:rebrickable
+```
+
+Fehlt der Auszug, bricht dieser Befehl mit der Meldung „Rebrickable-Integrationstests NICHT ausgeführt …“ ab. Er wird nicht übersprungen und nicht als bestanden gewertet. Die reguläre Suite (`npm test`) liest den privaten Auszug nie, auch wenn er lokal liegt; ihre Kataloglogik-Tests verwenden die synthetische, ausdrücklich gekennzeichnete Testfixture `tests/fixtures/catalog-fixture.json` (kein Beleg für reale Teile).
+
+Hinweis: Rebrickable aktualisiert die Dumps laufend. Mit einem anderen Abrufstand können sich Belegzahlen und einzelne Inventare ändern; die Integrationstests prüfen den Stand vom 2026-10-14 und können dann abweichen.
 
 Die LDraw-Dateien lassen sich bei Bedarf mit `node scripts/fetch-ldraw.mjs` neu laden (Wurzelliste: `data/ldraw/roots.json`; das Skript drosselt die Anfragen).
 
@@ -78,7 +109,7 @@ Die LDraw-Dateien lassen sich bei Bedarf mit `node scripts/fetch-ldraw.mjs` neu 
 - **Auswahl**: drei Referenzmodelle aus dem LDraw-OMR, 24 Grenzfälle (synthetische Fixtures) und 5 gezielt beschädigte Varianten einer Referenz.
 - **3D-Ansicht** (drehen, zoomen, Teil anklicken), gerendert ausschließlich aus der aktuellen Modellversion. Die Kennung der Modellversion steht im Bild.
 - **Bauschritte** mit Baugruppen, Einschubrichtung (deklariert oder abgeleitet), Status je Teil, Unterstützungs- und Montagehinweisen.
-- **Stückliste** exakt aus dem Modell, nicht auflösbare Einträge getrennt, bei Referenzen mit **unabhängigem Abgleich** gegen das Rebrickable-Inventar.
+- **Stückliste** exakt aus dem Modell, nicht auflösbare Einträge getrennt; mit lokalem Katalogauszug zusätzlich **unabhängiger Abgleich** gegen das Rebrickable-Inventar der Referenzen (sonst ausdrücklich ungeprüft).
 - **Prüfbericht** mit Blockern, Warnungen, ungeprüften und nicht unterstützten Bereichen. Die Evidenzstufe ist als Symbol kodiert: gefüllt = bestätigt, schraffiert = heuristisch, gestrichelt = ungeprüft. Klick auf einen Befund hebt die betroffenen Teile hervor.
 - **Herkunft & Erwartung**: Quellen, Lizenz, Abgleichsweg, gedeckter und offener Prüfumfang; bei Grenzfällen die getrennt deklarierte Erwartung und ob sie erfüllt ist.
 - **Änderungen**: Ein ausgewähltes Teil kann verschoben oder entfernt werden. Danach gelten Bericht, Baufolgenprüfung, Stückliste und Beschaffungsstand als veraltet, bis die neue Version geprüft ist.
@@ -100,7 +131,10 @@ src/core/          UI-unabhängiger Kern
 src/fixtures/      Grenzfälle und Fehlervarianten (synthetisch, gekennzeichnet)
 src/ui/            React-Oberfläche, Three.js-Ansicht
 data/              LDraw-Dateien, Katalogauszug, Referenzen, Erwartungen
-tests/             Vitest-Suite
+tests/             reguläre Vitest-Suite (ohne private Daten; Kataloglogik mit synthetischer Testfixture)
+tests-rebrickable/ optionale Integrationstests gegen den privaten Katalogauszug (npm run test:rebrickable)
+scripts/           Datenabruf, Positivliste öffentlicher Daten, Prüfung von dist/
+.github/workflows/ CI: frischer Checkout ohne private Daten
 docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüfprotokolle
 ```
 

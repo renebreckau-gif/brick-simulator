@@ -164,3 +164,16 @@ button.danger { color: var(--block); }
   .verdict { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; transition: none !important; } }
+
+/* Datenquellen und optionaler Katalog */
+.sources { list-style: none; margin: 0 0 var(--s3); padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.source { display: grid; grid-template-columns: 74px 1fr; gap: var(--s2); align-items: start; }
+.srcstate { font-size: 12px; font-weight: 700; }
+.source.loaded .srcstate { color: var(--ok); }
+.source.missing .srcstate { color: var(--open); }
+.source.corrupt .srcstate { color: var(--block); }
+.open { color: var(--open); }
+.datastate p { margin: 0 0 var(--s2); }
+.datastate h2 + .sources, .datastate h2 + p { margin-top: var(--s1); }
+.catalogbar { margin: 0 var(--s4) var(--s2); padding: var(--s2) var(--s3); border: 1px dashed var(--open); border-radius: 6px; font-size: 14px; color: var(--ink-2); background: var(--surface); }
+.catalogbar.corrupt { border: 1px solid var(--block); color: var(--block); }

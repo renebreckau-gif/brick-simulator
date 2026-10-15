@@ -33,7 +33,7 @@ Der Test `tests/part-meta-crosscheck.test.ts` gleicht sie unabhängig gegen die 
 
 `Catalog` trennt drei Eigenschaften:
 
-- **Existenz**: Rebrickable-Auszug plus ID-Zuordnung.
+- **Existenz**: Rebrickable-Auszug plus ID-Zuordnung. Der Auszug ist optional (A11).
 - **Simulationsunterstützung**: `supported`, `partial`, `unsupported` oder `none`.
 - **Beschaffung**: eigenes Modul, Standardstatus „nicht geprüft“.
 
@@ -75,3 +75,19 @@ Grenzfälle sind Code-Fixtures (`src/fixtures`). Ihre Erwartungen und Begründun
 ## A10 – Spätere Vision im Datenmodell, nicht im Code
 
 Die Datenmodelle enthalten bereits Platz für Späteres: Anschlussarten für Technic, Stangen, Clips, Scharniere, SNOT und flexible Teile, Unterstützungsdeklarationen, Nutzungsprofil und Alterseignung, Provider und Angebote, eigenen Bestand und Konzeptbilder. Implementiert ist nur der Phase-1-Umfang. KI-Vorschläge sollen später als `ModelOrigin.kind = 'user'`-ähnliche Eingaben in denselben Validator laufen; der Validator bleibt die unabhängige Instanz.
+
+## A11 – Pflichtdaten und optionale Kataloganreicherung getrennt (Auftrag 02A)
+
+Der Datenlader (`src/core/data/bundle.ts`) unterscheidet Pflichtdaten (LDraw-Geometrie und -Farben, ID-Zuordnung, Referenzmodelle – alle im Repository) von der optionalen, privaten Katalogquelle. Die Lesefunktion liefert `null` nur für „Datei existiert nicht“; andere Lesefehler werden weitergegeben. Die Katalogquelle hat drei Zustände: `loaded`, `missing`, `corrupt`. Ein vorhandener Auszug wird gegen das Schema geprüft (`parseExtract`); bei Beschädigung nennt die Meldung Datei und Grund, und der Auszug wird nicht verwendet.
+
+Ohne gültigen Katalog meldet die Katalogschicht genau einen Befund „ungeprüft“; Einzelaussagen zu Existenz, Farbe oder Beleg entstehen nicht. Die Stückliste wird dann aus den Modellinstanzen mit LDraw-Namen gebildet, der Inventarabgleich entfällt ausdrücklich.
+
+## A12 – Öffentliche Builds über eine Positivliste
+
+`publicDir` ist abgeschaltet. Das Vite-Plugin in `vite.config.ts` liefert unter `/data/` nur Dateien aus der Positivliste (`scripts/data-files.mjs`) aus; der Dev-Server zusätzlich die privaten lokalen Dateien. Unbekannte `/data/`-Pfade ergeben 404 statt SPA-Fallback. Der Build schreibt nur die Positivliste nach `dist/data/`, danach prüft `scripts/check-public-build.mjs` den Ordner. Die Prüfung ist selbst getestet (`tests/public-build.test.ts`, mit absichtlich verunreinigten Builds).
+
+## A13 – Drei Testebenen
+
+- **Regulär ohne Katalog** (`npm test`): Geometrie, Verbindungen, Montage, Versionen, Exporte, Referenzen und alle nicht-katalogbezogenen Erwartungen. Der private Auszug wird nie gelesen, auch wenn er lokal liegt.
+- **Regulär mit Testfixture**: alle deklarierten Erwartungen inkl. Katalogbefunden sowie die Logik von Farbzuordnung, Belegen und Inventarabgleich – mit synthetischen, gekennzeichneten Daten.
+- **Optional mit echtem Auszug** (`npm run test:rebrickable`): die fachlichen Abgleiche gegen echte Inventare. Fehlende Daten brechen den Lauf mit ausdrücklicher Meldung ab.
