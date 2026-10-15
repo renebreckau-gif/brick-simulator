@@ -18,6 +18,10 @@ Kanonisches Modell, LDraw-Import, Katalog mit getrennten Eigenschaften, versioni
 
 Parametrischer, deterministischer Generator (`spaceship-gen@1.0.0`) mit drei Varianten, Raumschiff-Labor in der Oberfläche, erzeugte und geprüfte Baufolge, Protokoll für einen späteren physischen Probeaufbau (siehe `RAUMSCHIFF.md`). Nächste sinnvolle Schritte: Dachsteine und Keile mit belegten Regeln (Schrägen), physischer Probeaufbau der langgestreckten Variante, danach Einkaufsintegration und freie Text-zu-Modell-Generierung.
 
+## Auftrag 04 – Bauanleitung ✔
+
+Versionierter Anleitungsplan, Bereich „Bauanleitung“ mit Schrittnavigation, Druckansicht und PDF-Export für die drei Standardvarianten; Protokoll P4 für den späteren Probeaufbau nach Anleitung. Nächste sinnvolle Schritte: physischer Probeaufbau der langgestreckten Variante nach P4, danach Verbesserung der Anleitung anhand der Beobachtungen.
+
 ## Spätere Phasen (nicht begonnen)
 
 - **Entwurf**: Konzeptbilder ausdrücklich als „Konzept“ gekennzeichnet. Eine Modellansicht gilt nur, wenn sie aus einer konstruierten Version gerendert ist.

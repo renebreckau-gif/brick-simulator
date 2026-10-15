@@ -193,3 +193,69 @@ button.danger { color: var(--block); }
 .shipfacts { display: grid; grid-template-columns: max-content 1fr; gap: 3px var(--s3); margin: 0; font-size: 13px; }
 .shipfacts dt { color: var(--ink-2); }
 .shipfacts dd { margin: 0; }
+
+/* Bauanleitung (Auftrag 04) */
+.viewswitch { display: flex; gap: var(--s2); padding: 0 var(--s4); border-bottom: 1px solid var(--rule); background: var(--surface); }
+.app > .instrwrap { grid-column: 2 / -1; overflow: auto; }
+.instructions { padding: var(--s4); display: grid; gap: var(--s3); max-width: 1100px; }
+.ihead { display: flex; gap: var(--s3); justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.ihead p { margin: 4px 0 0; }
+.iactions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.instructions .stalebar { margin: 0; }
+.inav { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s2); align-items: center; }
+.inav select { font: inherit; padding: 6px; min-width: 0; width: 100%; }
+.inav button { min-height: 40px; padding: 6px 16px !important; font-size: 15px !important; }
+.iprogress { display: grid; gap: 4px; }
+.iprogress progress { width: 100%; height: 10px; accent-color: var(--select); }
+.ioverview img, .iimgs img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+.ifacts, .ilegend { display: grid; gap: 2px; margin: var(--s3) 0; }
+.ifacts > div, .ilegend > div { display: grid; grid-template-columns: minmax(130px, 28%) 1fr; gap: var(--s3); }
+.ifacts dt, .ilegend dt { font-weight: 700; }
+.ifacts dd, .ilegend dd { margin: 0; }
+.inotice { background: #fff4e0; border: 1px solid #e3b866; border-radius: 6px; padding: var(--s3); margin: var(--s3) 0; }
+.istep { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: var(--s3); display: grid; gap: var(--s2); }
+.istep.module { border-left: 6px double var(--select); }
+.istephead { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: baseline; }
+.inum { font-size: 20px; font-weight: 700; }
+.ititle { font-weight: 700; }
+.ictx { margin-left: auto; color: var(--ink-2); font-size: 14px; }
+.icam { margin: 0; padding: 6px var(--s3); border: 2px dashed var(--ink-2); border-radius: 6px; font-weight: 700; }
+.iaction { margin: 0; font-size: 17px; }
+.iimgs.withdetail { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); gap: var(--s3); align-items: start; }
+.iimgs figure { margin: 0; }
+.iimgs figcaption { font-size: 13px; font-weight: 700; color: var(--ink-2); margin-bottom: 4px; }
+.inotes { margin: 0; padding-left: 1.1em; display: grid; gap: 2px; }
+.inotes .open { color: var(--warn); }
+.inotes .warnnote { font-weight: 700; }
+.istep h4 { font-size: 14px; }
+.imodule { margin: 0; padding: var(--s2); border: 2px solid var(--ink); border-radius: 6px; }
+.iparts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s2); }
+.iparts li { display: grid; grid-template-columns: 64px auto 1fr; gap: var(--s2); align-items: center; font-size: 14px; }
+.iparts img { border: 1px solid var(--rule); border-radius: 4px; background: #fff; }
+.iqty { font-size: 20px; font-weight: 700; }
+.ibom { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: var(--s3); display: grid; gap: var(--s2); }
+.printdoc { display: grid; gap: var(--s4); }
+.printfoot { font-size: 12px; color: var(--ink-2); }
+@media (max-width: 1100px) { .app > .instrwrap { grid-row: 1 / span 2; } }
+@media (max-width: 700px) {
+  .app > .instrwrap { grid-column: 1 / -1; grid-row: auto; }
+  .instructions { padding: var(--s2); }
+  .iimgs.withdetail { grid-template-columns: 1fr; }
+  .ictx { margin-left: 0; }
+  .ifacts > div, .ilegend > div { grid-template-columns: 1fr; gap: 0; }
+  .inav button { padding: 6px 10px !important; }
+}
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff; font-size: 11pt; }
+  .app { display: block; height: auto; }
+  .side, .viewswitch, .iactions, .inav, .iprogress, .instructions > .stalebar, .instructions > p[role='status'] { display: none !important; }
+  .app > .instrwrap { overflow: visible; }
+  .instructions { padding: 0; max-width: none; }
+  .istep, .iparts li, .ioverview img { break-inside: avoid; page-break-inside: avoid; }
+  .printpage { break-after: page; }
+  .istep { border-color: #999; }
+  .iimgs img { max-height: 120mm; width: auto; max-width: 100%; margin: 0 auto; }
+}
+.imodule { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+.imodule img { border: 1px solid var(--rule); border-radius: 4px; background: #fff; }

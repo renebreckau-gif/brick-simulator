@@ -17,6 +17,7 @@ Alle Abrufe am 2026-10-14. Primärdokumentation wurde vor der Integration gelese
 | Rebrickable `elements.csv` (lokal, privat) | Auflösung der LEGO-Element-IDs der 21002-Teileliste auf Teilenummern (u. a. 4155708 → 3794b, 416226 → 4162 schwarz) | Stand 2026-10-14 | Rohdaten privat; nur die Einzelergebnisse sind in der Doku zitiert | nein |
 | [LEGO: Sicher spielen mit DUPLO](https://www.lego.com/de-de/preschool/article/play-safe-with-lego-duplo) | Altersgrenze und Kleinteile-Regel | gelesen | Herstellerinformation: DUPLO ab 18 Monaten, Warnung vor verschluckbaren Kleinteilen | nein |
 | [BrickLink Studio: Collision](https://studiohelp.bricklink.com/hc/en-us/articles/5412820155927-Collision), [Stability check](https://studiohelp.bricklink.com/hc/en-us/articles/6501498505111-Stability-check) | Vergleich der Grenzen bestehender Werkzeuge | gelesen | – | nein |
+| [jsPDF](https://github.com/parallax/jsPDF) 4.2.1 ([API-Doku](https://parallax.github.io/jsPDF/docs/)) | PDF-Export der Bauanleitung im Browser (`addImage`, Standardschrift Helvetica) | npm, 2026-10-15; README und Doku zu `addImage` gelesen | MIT (Abhängigkeiten fflate, fast-png, @babel/runtime: MIT; optionale html2canvas/canvg/dompurify werden nicht verwendet) | als npm-Abhängigkeit, nicht im Repository |
 | [BrickLink Store API](https://www.bricklink.com/v2/api/welcome.page) | als späterer Provider vorgemerkt | nicht integriert | Zugangsdaten nötig | nein |
 
 ## Eigene Daten
