@@ -8,6 +8,7 @@ import type { CanonicalModel } from '../model/types';
 import { analyzeAssembly, type AssemblyAnalysis } from './assembly';
 import { checkCatalog, checkGeometry, checkUnsupportedConnectors } from './checkCatalogGeometry';
 import { checkCollisions, checkGraph, components } from './checkGraphCollision';
+import { checkSpecialConnections } from './checkSpecial';
 import { affected, finding, LAYER_SCOPE, renumber, VALIDATOR_VERSION, type Finding, type Layer, type LayerSummary, type ValidationReport } from './findings';
 import { analyzeStability, marginMm, type StabilityResult } from './stability';
 import { bridges, continuousSeams, stoerWagner, subgraphWeights } from './structure';
@@ -168,6 +169,7 @@ export function validate(model: CanonicalModel, catalog: Catalog, now = new Date
     ...checkCatalog(model, catalog),
     ...checkGeometry(world),
     ...checkUnsupportedConnectors(world),
+    ...checkSpecialConnections(model, world, assembly),
     ...checkGraph(model, world),
     ...checkCollisions(world),
     ...assembly.findings,

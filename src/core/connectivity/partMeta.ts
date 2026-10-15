@@ -8,7 +8,7 @@ import type { Box, Vec3 } from '../math';
 import { BRICK_HEIGHT, LDU_PER_STUD, PLATE_HEIGHT, STUD_DIAMETER, STUD_HEIGHT } from '../units';
 import type { ConnectorKind } from './rules';
 
-export const PART_META_VERSION = 'part-meta@1.0.0';
+export const PART_META_VERSION = 'part-meta@1.1.0';
 
 export type SupportLevel = 'supported' | 'partial' | 'unsupported';
 export type PartFamily = 'brick' | 'plate' | 'tile' | 'jumper' | 'technic_brick' | 'special_brick' | 'cone' | 'bar';
@@ -22,6 +22,26 @@ export interface ConnectorDef {
   axis: Vec3;
   /** Hohlnoppe (LDraw stud2.dat): kann zusätzlich einen Unterseitenstift/eine Stange aufnehmen. */
   hollow?: boolean;
+  /**
+   * Aus LDraw abgeleitete Maße (LDU) für Sonderverbindungen. Nur gesetzt, wo per Test gegen die
+   * LDraw-Primitive abgeglichen (tests/part-meta-crosscheck.test.ts).
+   */
+  geometry?: ConnectorGeometry;
+}
+
+export interface ConnectorGeometry {
+  /** Unterseitenstift: Radius und Länge (vom Teilboden aufwärts). */
+  pinRadius?: number;
+  pinLength?: number;
+  /** Hohlraum um den Stift: halbe lichte Weite quer zur Achse (lokal x, z) und Tiefe ab Teilboden. */
+  cavityHalfWidth?: [number, number];
+  cavityDepth?: number;
+  /** Hohlnoppe: Lochradius, Lochtiefe (ab Noppenoberkante), Außenradius der Noppenwand. */
+  holeRadius?: number;
+  holeDepth?: number;
+  outerRadius?: number;
+  /** Herkunft der Maße. */
+  source: string;
 }
 
 export interface PartMeta {
@@ -104,6 +124,12 @@ function rect(spec: RectSpec): PartMeta {
   };
 }
 
+/** Ergänzt abgeleitete Maße an allen Anschlüssen einer Art. */
+function withGeometry(meta: PartMeta, kind: ConnectorKind, geometry: ConnectorGeometry): PartMeta {
+  for (const c of meta.connectors) if (c.kind === kind) c.geometry = geometry;
+  return meta;
+}
+
 const B = BRICK_HEIGHT;
 const P = PLATE_HEIGHT;
 
@@ -112,7 +138,13 @@ const DEFINED: PartMeta[] = [
   rect({ id: '3001', family: 'brick', sx: 4, sz: 2, height: B, top: 'grid' }),
   rect({ id: '3002', family: 'brick', sx: 3, sz: 2, height: B, top: 'grid' }),
   rect({ id: '3003', family: 'brick', sx: 2, sz: 2, height: B, top: 'grid' }),
-  rect({ id: '3004', family: 'brick', sx: 2, sz: 1, height: B, top: 'grid' }),
+  withGeometry(rect({ id: '3004', family: 'brick', sx: 2, sz: 1, height: B, top: 'grid' }), 'underside_pin', {
+    pinRadius: 4,
+    pinLength: 20,
+    cavityHalfWidth: [16, 6],
+    cavityDepth: 20,
+    source: 'LDraw s/3004s01.dat: stud3.dat (r 4) von y 4 bis 24; Hohlraum box5.dat (INVERTNEXT) x ±16, z ±6, y 4–24',
+  }),
   rect({ id: '3005', family: 'brick', sx: 1, sz: 1, height: B, top: 'grid' }),
   rect({ id: '3010', family: 'brick', sx: 4, sz: 1, height: B, top: 'grid' }),
   rect({ id: '3009', family: 'brick', sx: 6, sz: 1, height: B, top: 'grid' }),
@@ -127,22 +159,26 @@ const DEFINED: PartMeta[] = [
   rect({ id: '4162', family: 'tile', sx: 8, sz: 1, height: P, top: 'none' }),
   rect({ id: '4162p0b', family: 'tile', sx: 8, sz: 1, height: P, top: 'none', note: 'Bedruckte Variante von 4162; gleiche Form.' }),
   rect({ id: '3794a', family: 'jumper', sx: 2, sz: 1, height: P, top: 'center', hollowStuds: true, note: 'Jumper: eine Hohlnoppe mittig (Halbnoppenversatz), Unterseite wie Platte 1×2.' }),
-  rect({
-    id: '6541',
-    family: 'technic_brick',
-    sx: 1,
-    sz: 1,
-    height: B,
-    top: 'grid',
-    hollowStuds: true,
-    support: 'partial',
-    extraConnectors: [
-      { id: 'pinhole+z', kind: 'technic_pin_hole', position: [0, 10, 10], axis: [0, 0, 1] },
-      { id: 'pinhole-z', kind: 'technic_pin_hole', position: [0, 10, -10], axis: [0, 0, -1] },
-    ],
-    unsupportedFeatures: ['Technic-Pinloch (lokale Z-Achse)'],
-    note: 'Noppe/Aufnahme unterstützt; Pinloch nur deklariert (Regel R-PIN-HOLE nicht implementiert).',
-  }),
+  withGeometry(
+    rect({
+      id: '6541',
+      family: 'technic_brick',
+      sx: 1,
+      sz: 1,
+      height: B,
+      top: 'grid',
+      hollowStuds: true,
+      support: 'partial',
+      extraConnectors: [
+        { id: 'pinhole+z', kind: 'technic_pin_hole', position: [0, 10, 10], axis: [0, 0, 1] },
+        { id: 'pinhole-z', kind: 'technic_pin_hole', position: [0, 10, -10], axis: [0, 0, -1] },
+      ],
+      unsupportedFeatures: ['Technic-Pinloch (lokale Z-Achse)'],
+      note: 'Noppe/Aufnahme unterstützt; Pinloch nur deklariert (Regel R-PIN-HOLE nicht implementiert).',
+    }),
+    'bar_holder',
+    { holeRadius: 4, holeDepth: 4, outerRadius: 6, source: 'LDraw p/stud2.dat: Wand r 6, Loch r 4 (INVERTNEXT 4-4cyli), Lochtiefe 4 bis zur Teiloberseite (rect.dat bei y 0 in 6541.dat)' },
+  ),
   rect({
     id: '2458',
     family: 'special_brick',

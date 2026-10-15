@@ -2,7 +2,7 @@
 import { RULES_VERSION } from '../connectivity/rules';
 import { boxesTouch, dot } from '../math';
 import type { CanonicalModel } from '../model/types';
-import { TOLERANCE } from '../units';
+import { STUD_HEIGHT, TOLERANCE } from '../units';
 import { affected, finding, type Finding } from './findings';
 import { allBoxes, pairKey, type World, type WorldInstance } from './world';
 
@@ -153,16 +153,28 @@ export function checkCollisions(world: World): Finding[] {
   const checkedPairs = (n * (n - 1)) / 2;
   for (const o of world.overlaps) {
     const kinds = [...new Set(o.kinds)];
+    if (o.classification === 'partial-insertion') {
+      out.push(finding({
+        code: 'COL_PARTIAL_INSERTION', layer: 'collision', dimension: 'assembly', status: 'failed', severity: 'blocker', evidenceLevel: 'confirmed',
+        title: 'Falsche Einstecktiefe',
+        message: `Eine Noppe steht koaxial unter der passenden Aufnahme, ist aber nur ${o.insertionDepth} statt ${STUD_HEIGHT} LDU eingesteckt. Keine gültige Endposition: Das Teil sitzt nicht auf.`,
+        affected: affected([o.a, o.b]), ruleVersion: RULES_VERSION,
+        evidence: { kinds, insertionDepthLDU: o.insertionDepth, expectedLDU: STUD_HEIGHT, tolerance: TOLERANCE.connectorPosition },
+        limitation: 'Die Volumen sind achsparallel genähert; Hohlräume sind nur als Noppenaufnahmen modelliert.',
+        remedy: 'Teil vollständig aufstecken (Unterseite auf Noppenbasis).',
+      }));
+      continue;
+    }
     out.push(o.classification === 'unchecked'
       ? finding({
           code: 'COL_UNCHECKED', layer: 'collision', dimension: 'assembly', status: 'unchecked', severity: 'warning', evidenceLevel: 'unchecked',
-          title: o.reason?.startsWith('Unterseitenstift') ? 'Unterseitenstift in Hohlnoppe – ungeprüft' : 'Überschneidung mit grob modelliertem Teil',
+          title: o.reason?.startsWith('Unterseitenstift') ? 'Unterseitenstift in Hohlnoppe – Paarung ungeprüft' : 'Überschneidung mit grob modelliertem Teil',
           message: o.reason?.startsWith('Unterseitenstift')
-            ? 'Eine Hohlnoppe greift koaxial unter den Unterseitenstift eines 1×N-Teils. Das ist eine reale Technik, deren Regel nicht implementiert ist – weder bestanden noch Durchdringung.'
+            ? 'Eine Hohlnoppe greift koaxial unter den Unterseitenstift eines 1×N-Teils. Die Regel R-UPIN-HOLLOWSTUD ist nur für 3004 auf 6541 belegt; diese Paarung bleibt ungeprüft – weder bestanden noch Durchdringung.'
             : 'Die Hüllvolumen überschneiden sich. Da mindestens ein Teil nur als grobe Hülle modelliert ist, kann eine reguläre Verbindung (z. B. Stange in Halter) nicht von einer Durchdringung unterschieden werden.',
           affected: affected([o.a, o.b]), ruleVersion: RULES_VERSION,
           evidence: { kinds, depthLDU: Number(o.depth.toFixed(2)), reason: o.reason },
-          limitation: o.reason?.startsWith('Unterseitenstift') ? 'Regel R-UPIN-HOLLOWSTUD ist nur im Datenmodell erfasst.' : 'Hüllvolumen = LDraw-Begrenzungsbox.',
+          limitation: o.reason?.startsWith('Unterseitenstift') ? 'Erweiterung des Geltungsbereichs erst nach eigenem Geometrie- und Quellennachweis.' : 'Hüllvolumen = LDraw-Begrenzungsbox.',
         })
       : finding({
           code: 'COL_PENETRATION', layer: 'collision', dimension: 'assembly', status: 'failed', severity: 'blocker', evidenceLevel: 'confirmed',
@@ -173,7 +185,7 @@ export function checkCollisions(world: World): Finding[] {
           remedy: 'Teil verschieben, bis es regulär auf Noppen sitzt oder nur berührt.',
         }));
   }
-  if (!out.some((f) => f.code === 'COL_PENETRATION'))
+  if (!out.some((f) => f.code === 'COL_PENETRATION' || f.code === 'COL_PARTIAL_INSERTION'))
     out.push(finding({
       code: 'COL_NONE', layer: 'collision', dimension: 'assembly', status: 'passed', severity: 'info', evidenceLevel: 'confirmed',
       title: 'Keine Durchdringung im unterstützten Umfang', message: `${checkedPairs} Teilepaare geprüft; Kontakt und reguläre Noppenverbindungen gelten nicht als Durchdringung.`,

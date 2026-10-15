@@ -3,7 +3,7 @@
 // bzw. „nicht unterstützt“ – niemals „bestanden“ und nie automatisch „nicht baubar“.
 import type { ModelRef } from '../model/types';
 
-export const VALIDATOR_VERSION = 'validator@0.1.0';
+export const VALIDATOR_VERSION = 'validator@0.2.0';
 
 export type Layer =
   | 'catalog'
@@ -94,9 +94,9 @@ export const LAYER_LABEL: Record<Layer, string> = {
 export const LAYER_SCOPE: Record<Layer, string> = {
   catalog: 'Teil im Katalogauszug, Farbzuordnung LDraw↔Rebrickable, Teil-Farb-Beleg (Element-ID/Set-Inventar)',
   geometry: 'Rotation orthonormal, nicht gespiegelt, Vielfache von 90°',
-  connection: 'Noppe↔Aufnahme, Noppe↔Röhre (gerade, achsparallel); andere Anschlussarten nicht unterstützt',
+  connection: 'Noppe↔Aufnahme, Noppe↔Röhre (gerade, achsparallel); Unterseitenstift↔Hohlnoppe nur 3004 auf 6541; andere Anschlussarten nicht unterstützt',
   graph: 'Zusammenhang über reguläre Verbindungen; deklarierte separate Module',
-  collision: 'Achsparallele Körper- und Noppenvolumen; Noppen in verbundenen Aufnahmen erlaubt',
+  collision: 'Achsparallele Körper- und Noppenvolumen; Noppen in verbundenen Aufnahmen erlaubt; falsche Einstecktiefe erkannt',
   assembly: 'Gerade Steckbewegung entlang der Noppenachse, Weg bis zur Endposition, Reihenfolge',
   stability: 'Heuristisch: Schwerpunkt (Volumen als Massenersatz) über Aufstandsfläche, Schwerkraft +Y, ebene Unterlage',
   structure: 'Heuristisch: schwächster Schnitt (Noppenzahl), Ein-Noppen-Anbauten, durchgehende Fugen',

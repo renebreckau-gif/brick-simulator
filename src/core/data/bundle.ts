@@ -7,6 +7,7 @@
 import { Catalog, CatalogDataError, parseExtract, TEST_FIXTURE_PROVIDER, type CatalogSource, type IdMap, type RebrickableExtract } from '../catalog/catalog';
 import { parseLdConfig } from '../ldraw/colors';
 import { PartLibrary } from '../ldraw/library';
+import type { InstructionSequence } from '../model/instructionSequence';
 
 /** Liefert den Dateiinhalt oder null, wenn die Datei nicht existiert. Andere Fehler werden geworfen. */
 export type ReadText = (path: string) => Promise<string | null>;
@@ -28,6 +29,10 @@ export interface ReferenceMeta {
   usageStatus: string;
   instructions: { label: string; url: string }[];
   knownDiscrepancies: string[];
+  /** Optional: Pfad zu einer Abbildung der Herstellerbaufolge (data/references/sequences). */
+  instructionSequence?: string;
+  /** Ergebnis des Abgleichs mit Originalanleitungen. */
+  instructionComparison?: { status: string; summary: string; checkedSections: string[]; confirmed: string[]; contradictory: string[]; unchecked: string[] };
 }
 
 export interface DataSourceInfo {
@@ -43,6 +48,7 @@ export interface DataBundle {
   catalog: Catalog;
   references: ReferenceMeta[];
   referenceFiles: Map<string, string>;
+  sequences: Map<string, InstructionSequence>;
   manifest: { fetchedAt: string; source: string; files: Record<string, { path?: string; sha256?: string; license?: string | null }> };
   sources: DataSourceInfo[];
 }
@@ -87,7 +93,11 @@ export async function loadBundle(read: ReadText): Promise<DataBundle> {
   const catalog = new Catalog(idMap, extract, source, ldconfig, library);
   const references = JSON.parse(await required(read, 'references/references.json')) as ReferenceMeta[];
   const referenceFiles = new Map<string, string>();
-  for (const r of references) referenceFiles.set(r.referenceId, await required(read, r.file));
+  const sequences = new Map<string, InstructionSequence>();
+  for (const r of references) {
+    referenceFiles.set(r.referenceId, await required(read, r.file));
+    if (r.instructionSequence) sequences.set(r.referenceId, JSON.parse(await required(read, r.instructionSequence)) as InstructionSequence);
+  }
 
   const sources: DataSourceInfo[] = [
     { id: 'ldraw', label: 'LDraw-Teilegeometrie', required: true, state: 'loaded', detail: `${paths.length} Teiledateien, abgerufen ${manifest.fetchedAt.slice(0, 10)}, CC BY 4.0` },
@@ -107,6 +117,6 @@ export async function loadBundle(read: ReadText): Promise<DataBundle> {
             : source.error,
     },
   ];
-  return { library, catalog, references, referenceFiles, manifest, sources };
+  return { library, catalog, references, referenceFiles, sequences, manifest, sources };
 }
 

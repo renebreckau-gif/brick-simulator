@@ -1,0 +1,60 @@
+{
+  "schema": "baustein-sim/instruction-sequence@1",
+  "referenceId": "ref-21002-1",
+  "title": "Baufolge nach LEGO-Bauanleitung 21002 (abgebildet auf die OMR-Instanzen)",
+  "source": {
+    "publisher": "LEGO (Herstelleranleitung, LEGO-CDN)",
+    "fetchedAt": "2026-10-15",
+    "documents": [
+      { "id": "4580898", "edition": "BI 3004/20-115G – 21002 (laut Brickset ab 01.01.2010)", "url": "https://www.lego.com/cdn/product-assets/product.bi.core.pdf/4580898.pdf", "bytes": 1491638, "sha256": "e9885d511d8b42c94029963e0763f151e28161fab9d40961601ed009e14cd850", "pages": 20, "role": "Primärer Abgleich (Seiten 4–16 einzeln geprüft)" },
+      { "id": "4644793", "edition": "BI 3004/20-115g – 21002 V29 (international, 2011)", "url": "https://www.lego.com/cdn/product-assets/product.bi.core.pdf/4644793.pdf", "bytes": 2573979, "sha256": "e76dbcc5c1bab76d3b4e1e8ba82af12ca8e02c6d498fee734246ffc889a5c699", "pages": 20, "role": "Vergleich: Teileliste (S. 16) und Schritte 1–2 (S. 4)" },
+      { "id": "4656136", "edition": "BI 3004/20-115g-21002 V.39 (Nordamerika, 2011)", "url": "https://www.lego.com/cdn/product-assets/product.bi.core.pdf/4656136.pdf", "bytes": 2529349, "sha256": "fc336c4dbeb36101710b405e2e697c4362b2ae5c3e34df069492b286bcee9b1a", "pages": 20, "role": "Vergleich: Teileliste (S. 16)" }
+    ],
+    "usage": "Anleitungen werden nur verlinkt und nicht mitgeliefert. Diese Datei enthält ausschließlich die eigene Zuordnung von Schrittnummern zu OMR-Gruppen."
+  },
+  "method": "Visueller Abgleich je Schritt: Teile und Mengen im Teilefenster gegen die OMR-STEP-Gruppe; Lage im Bild auf Plausibilität (nicht vermessen). Einschubbilder der Anleitung (Vormontagen) als separat gebaute Baugruppen abgebildet.",
+  "buildInPlace": true,
+  "buildInPlaceNote": "Die Anleitung baut das Gebäude direkt auf dem Sockel. Die OMR-Datei modelliert Sockel und Gebäude als separat gebaute Untermodelle, die zuletzt zusammengesetzt werden.",
+  "steps": [
+    { "step": 1, "groups": ["main>21002-base#1"] },
+    { "step": 2, "groups": ["main>21002-base#2"] },
+    { "step": 3, "groups": ["main>21002-base#3"] },
+    { "step": 4, "groups": ["main>21002-base#4"] },
+    { "step": 5, "groups": ["main>21002-building#1"] },
+    { "step": 6, "groups": ["main>21002-building#2"] },
+    { "step": 7, "groups": ["main>21002-building#3"] },
+    { "step": 8, "groups": ["main>21002-building#4"] },
+    { "step": 9, "groups": ["main>21002-building#5"] },
+    { "step": 10, "groups": ["main>21002-building#6"] },
+    { "step": 11, "groups": ["main>21002-building#7"] },
+    { "step": 12, "groups": ["main>21002-building#8"] },
+    { "step": 13, "groups": ["main>21002-building#9"] },
+    { "step": 14, "groups": ["main>21002-building#10"] },
+    { "step": 15, "groups": ["main>21002-building#11"] },
+    { "step": 16, "groups": ["main>21002-building#12"] },
+    { "step": 17, "groups": ["main>21002-building#13"] },
+    { "step": 18, "groups": ["main>21002-building#14"] },
+    { "step": 19, "groups": ["main>21002-building#15"] },
+    { "step": 20, "groups": ["main>21002-building#16"] },
+    {
+      "step": 21,
+      "groups": ["main>21002-building#17"],
+      "insets": [{ "name": "Vormontage: 6541 seitlich auf den Pin von 2458", "instances": ["main>21002-building/L77", "main>21002-building/L76"] }]
+    },
+    { "step": 22, "groups": ["main>21002-building#18"] },
+    {
+      "step": 23,
+      "groups": ["main>21002-building#19"],
+      "insets": [
+        { "name": "Vormontage: Stapel links (2× Platte 1×2, Fliese 1×2)", "instances": ["main>21002-building/L82", "main>21002-building/L83", "main>21002-building/L87"] },
+        { "name": "Vormontage: Stapel rechts (2× Platte 1×2, Fliese 1×2)", "instances": ["main>21002-building/L85", "main>21002-building/L84", "main>21002-building/L86"] }
+      ]
+    },
+    { "step": 24, "groups": ["main>21002-building#20"], "note": "Hier entsteht die Verbindung Unterseitenstift (3004, L89) in Hohlnoppe (6541, L79)." },
+    {
+      "step": 25,
+      "groups": ["main>21002-building#21"],
+      "insets": [{ "name": "Vormontage: Stange 30374 in Kegel 59900", "instances": ["main>21002-building/L92", "main>21002-building/L93"] }]
+    }
+  ]
+}

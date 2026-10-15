@@ -43,7 +43,7 @@ describe('Invarianz relativer Befunde', () => {
   const subjects: { name: string; load: () => Promise<CanonicalModel> }[] = [
     { name: 'ref-40013-1', load: () => referenceModel('ref-40013-1') },
     { name: 'ref-21002-1', load: () => referenceModel('ref-21002-1') },
-    ...['ec-03a-penetration', 'ec-08a-jumper-offset', 'ec-08b-stud-in-tube', 'ec-01b-touch-only', 'ec-08c-sideways'].map((id) => ({ name: id, load: async () => EDGE_CASES.find((e) => e.caseId === id)!.model() })),
+    ...['ec-03a-penetration', 'ec-08a-jumper-offset', 'ec-08b-stud-in-tube', 'ec-01b-touch-only', 'ec-08c-sideways', 'ec-11a-upin-micro', 'ec-11d-upin-too-shallow', 'ec-11f-upin-neighbor-penetration', 'ec-11h-upin-similar-male', 'ec-11i-upin-similar-female'].map((id) => ({ name: id, load: async () => EDGE_CASES.find((e) => e.caseId === id)!.model() })),
   ];
   for (const s of subjects)
     for (const mo of MOTIONS)
