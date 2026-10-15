@@ -153,7 +153,7 @@ export function StepsPanel({ model, analysis, stepIndex, onStep, catalog, stale 
   );
 }
 
-export function BomPanel({ bom, bundle, referenceId, procurement, onHighlight }: { bom: Bom; bundle: DataBundle; referenceId?: string; procurement: ProcurementState; onHighlight: (ids: string[]) => void }) {
+export function BomPanel({ bom, bundle, referenceId, comparisonNote, procurement, onHighlight }: { bom: Bom; bundle: DataBundle; referenceId?: string; comparisonNote?: string; procurement: ProcurementState; onHighlight: (ids: string[]) => void }) {
   const ref = bundle.references.find((r) => r.referenceId === referenceId);
   const cmp = ref ? compareBom(bom, ref.setNumber, bundle.catalog) : null;
   const total = bom.lines.reduce((a, l) => a + l.quantity, 0);
@@ -187,6 +187,12 @@ export function BomPanel({ bom, bundle, referenceId, procurement, onHighlight }:
           ))}
         </ul>
       ) : <p className="muted">Keine.</p>}
+      {!ref && comparisonNote && (
+        <>
+          <h3>Unabhängiger Abgleich</h3>
+          <p className="muted">{comparisonNote}</p>
+        </>
+      )}
       {ref && !cmp && (
         <>
           <h3>Unabhängiger Abgleich</h3>

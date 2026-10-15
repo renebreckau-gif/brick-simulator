@@ -13,6 +13,7 @@ import { labItems, type LabItem } from './items';
 import { BomPanel, ReportPanel, SourcePanel, StepsPanel, type Expectations } from './panels';
 import { Viewer } from './Viewer';
 import { ShipLab } from './ShipLab';
+import { comparisonReferenceId, GENERATED_COMPARISON_NOTE } from './comparison';
 
 type Tab = 'report' | 'steps' | 'bom' | 'source';
 
@@ -285,7 +286,7 @@ export function App() {
         <div className={stale || shipStale ? 'tabbody is-stale' : 'tabbody'}>
           {tab === 'report' && <ReportPanel report={report} onHighlight={(ids) => { setHighlight(ids); }} highlighted={highlight} />}
           {tab === 'steps' && <StepsPanel model={model} analysis={validated.result.assembly} stepIndex={stepIndex} onStep={setStepIndex} catalog={bundle.catalog} stale={stale} />}
-          {tab === 'bom' && <BomPanel bom={validated.bom} bundle={bundle} referenceId={item?.referenceId} procurement={initialProcurementState(validated.bom)} onHighlight={setHighlight} />}
+          {tab === 'bom' && <BomPanel bom={validated.bom} bundle={bundle} referenceId={comparisonReferenceId(model, item, mode)} comparisonNote={model.origin.kind === 'generated' ? GENERATED_COMPARISON_NOTE : undefined} procurement={initialProcurementState(validated.bom)} onHighlight={setHighlight} />}
           {tab === 'source' && <SourcePanel model={model} bundle={bundle} item={mode === 'pruef' ? item : undefined} expectations={expectations} report={report} />}
         </div>
       </section>
