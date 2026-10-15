@@ -118,14 +118,23 @@ export function App() {
       setInstrError(e instanceof InstructionPlanError ? e.message : String(e));
     }
   };
-  // Bauanleitung: für frisch erzeugte Raumschiffe automatisch ableiten. Nach einer Modelländerung
-  // (Änderungsprotokoll nicht leer) bleibt der vorhandene Plan bestehen und wird als veraltet angezeigt.
+  // Bauanleitung für jedes dargestellte kanonische Modell (Referenz, Grenzfall, erzeugtes Modell):
+  // beim Öffnen bzw. Modellwechsel ableiten. Nach einer Modelländerung (Änderungsprotokoll nicht leer)
+  // bleibt der vorhandene Plan bestehen und wird als veraltet angezeigt, bis er neu erstellt wird.
   useEffect(() => {
-    if (!bundle || !model || mode !== 'schiff' || model.origin.kind !== 'generated' || model.changeLog.length) return;
-    if (instr && instr.plan.modelRef.contentHash === modelRef(model).contentHash && instr.plan.modelRef.modelId === model.modelId) return;
+    if (!bundle || !model || view !== 'anleitung') return;
+    const sameModel = instr && instr.plan.modelRef.modelId === model.modelId;
+    if (sameModel && (model.changeLog.length || instr.plan.modelRef.contentHash === modelRef(model).contentHash)) return;
+    if (!sameModel && instrError) setInstrError(null);
+    if (model.changeLog.length && !sameModel) {
+      setInstr(null);
+      setInstrError('Das Modell wurde geändert; „Anleitung erstellen“ leitet sie für den aktuellen Stand ab.');
+      return;
+    }
+    setInstr(null);
     buildPlan(model);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle, model, mode]);
+  }, [bundle, model, view]);
   const dims = useMemo(() => (bundle && model && model.origin.kind === 'generated' ? modelDimensions(model, bundle.library) : null), [bundle, model]);
   const reportState = ref ? artifactStatus('report', validated?.result.report.modelRef ?? null, ref) : null;
   const stale = reportState?.state === 'stale';
@@ -219,18 +228,23 @@ export function App() {
         </section>
       </aside>
 
-      {mode === 'schiff' && view === 'anleitung' ? (
+      {view === 'anleitung' ? (
         <main className="center instrwrap">
           <ViewSwitch view={view} onChange={setView} />
           {instr ? (
             <InstructionView plan={instr.plan} planModel={instr.model} currentRef={ref} blockedReason={shipStale ? `Die aktuellen Eingaben sind nicht erfüllbar. Gezeigt wird die Anleitung des letzten gültigen Stands (${ref.modelId}); Druck und PDF-Export sind gesperrt.` : null} library={bundle.library} catalog={bundle.catalog} onRebuild={() => buildPlan(model)} rebuildError={instrError} />
           ) : (
-            <p className="stalebar" role="alert">Keine Anleitung verfügbar{instrError ? `: ${instrError}` : '.'}</p>
+            <div className="instructions">
+              <p className="stalebar" role="alert">
+                <span>Für „{model.name}“ ist keine Anleitung verfügbar{instrError ? `: ${instrError}` : '.'}</span>
+                {model.changeLog.length > 0 && <button className="primary" onClick={() => buildPlan(model)}>Anleitung erstellen</button>}
+              </p>
+            </div>
           )}
         </main>
       ) : (<>
       <main className="center">
-        {mode === 'schiff' && <ViewSwitch view={view} onChange={setView} />}
+        <ViewSwitch view={view} onChange={setView} />
         <header className="modelbar">
           <div className="modeltitle">
             <h2>{model.name}</h2>

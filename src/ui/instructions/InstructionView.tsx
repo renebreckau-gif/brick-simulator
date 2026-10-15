@@ -6,7 +6,7 @@ import type { InstructionPlan, PartLine, PlanStep } from '../../core/instruction
 import type { PartLibrary } from '../../core/ldraw/library';
 import { sameModelVersion } from '../../core/model/hash';
 import type { CanonicalModel, ModelRef } from '../../core/model/types';
-import { docStep, facts, fullDocument, LEGEND, lineKey, NOTICE, OVERVIEW_IMAGE, sections, thumbsFor, type DocStep } from './document';
+import { designNotes, docStep, facts, fullDocument, LEGEND, lineKey, notice, OVERVIEW_IMAGE, sections, thumbsFor, type DocStep } from './document';
 import { instructionPdf } from './pdf';
 import { InstructionRenderer, overviewImage } from './render';
 
@@ -56,7 +56,7 @@ function StepCard({ d, total }: { d: DocStep; total: number }) {
         <img src={d.images.main} alt={`Bauzustand nach Schritt ${s.number}, neue Teile hervorgehoben`} />
         {d.images.detail && (
           <figure>
-            <figcaption>Detail: Draufsicht (Bug oben)</figcaption>
+            <figcaption>Detail: Draufsicht</figcaption>
             <img src={d.images.detail} alt={`Draufsicht Schritt ${s.number}`} />
           </figure>
         )}
@@ -87,11 +87,25 @@ function Overview({ plan, image }: { plan: InstructionPlan; image: string }) {
           <div key={k}><dt>{k}</dt><dd className={/hash|ID/i.test(k) ? 'code' : ''}>{v}</dd></div>
         ))}
       </dl>
-      <p className="inotice" role="note">{NOTICE}</p>
+      <p className="inotice" role="note">{notice(plan)}</p>
       <h3>Markierungen in den Bildern</h3>
       <dl className="ilegend">
         {LEGEND.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
       </dl>
+      {(() => {
+        const dn = designNotes(plan);
+        if (!dn) return null;
+        return (
+          <>
+            <h3>Entwurfsannahmen und Abweichungen</h3>
+            <ul>
+              {dn.assumptions.map((a) => <li key={a}>Annahme: {a}</li>)}
+              {dn.deviations.map((d) => <li key={d}>Abweichung: {d}</li>)}
+              {dn.comparison && <li>Visueller Abgleich: {dn.comparison}</li>}
+            </ul>
+          </>
+        );
+      })()}
       <h3>Aufbau</h3>
       <ul>{sections(plan).map((s) => <li key={s}>{s}</li>)}</ul>
       <p className="muted small">{plan.sequenceCheck.note}</p>

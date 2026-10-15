@@ -3,7 +3,7 @@
 // (document.ts). Schrittkarten werden nie über Seiten geteilt; Bilder werden vollständig eingepasst.
 import { jsPDF } from 'jspdf';
 import type { InstructionPlan, PartLine } from '../../core/instructions/plan';
-import { facts, fullDocument, LEGEND, lineKey, NOTICE, OVERVIEW_IMAGE, sections, STEP_IMAGE, type DocStep } from './document';
+import { designNotes, facts, fullDocument, LEGEND, lineKey, notice, OVERVIEW_IMAGE, sections, STEP_IMAGE, type DocStep } from './document';
 import type { InstructionRenderer } from './render';
 
 const PAGE = { w: 210, h: 297, m: 12 };
@@ -47,20 +47,40 @@ export function instructionPdf(r: InstructionRenderer, plan: InstructionPlan): P
     return (pdf.splitTextToSize(pdfText(s), width) as string[]).length * size * 0.3528 * 1.25;
   };
 
-  // ---- Titelseite
+  // ---- Titelseite (lange Listen laufen auf eine Folgeseite über, nie in die Fußzeile)
   let y = PAGE.m;
+  const ensure = (h: number) => {
+    if (y + h > BOTTOM) {
+      pdf.addPage();
+      y = PAGE.m;
+    }
+  };
   y += text('Bauanleitung', PAGE.m, y, 22, { bold: true }) + 1;
   y += text(plan.modelName, PAGE.m, y, 14, { color: MUTED }) + 3;
-  const ovH = (CONTENT_W * OVERVIEW_IMAGE.height) / OVERVIEW_IMAGE.width;
-  pdf.addImage(docData.overview, 'JPEG', PAGE.m, y, CONTENT_W, ovH);
+  // Textumfang der Titelseite vorab messen; das Titelbild wird bei Bedarf verkleinert (Seitenverhältnis bleibt),
+  // damit die Titelseite ohne fast leere Folgeseite auskommt.
+  const dnPre = designNotes(plan);
+  const designLines = dnPre ? [...dnPre.assumptions, ...dnPre.deviations, ...(dnPre.comparison ? [dnPre.comparison] : [])].map((l) => `- Abweichung: ${l}`) : [];
+  const textH =
+    facts(plan).reduce((a, [, v]) => a + measure(v, 10, CONTENT_W - 44) + 0.8, 0) + 2 +
+    measure(notice(plan), 10, CONTENT_W - 8) + 10 +
+    8 + LEGEND.length * 5 + 2 +
+    (designLines.length ? 9 + designLines.reduce((a, l) => a + measure(l, 9.5, CONTENT_W) + 0.5, 0) : 0) +
+    9 + sections(plan).reduce((a, l) => a + measure(`- ${l}`, 9.5, CONTENT_W) + 0.5, 0) + 4;
+  const ovFull = (CONTENT_W * OVERVIEW_IMAGE.height) / OVERVIEW_IMAGE.width;
+  const ovH = Math.max(60, Math.min(ovFull, BOTTOM - y - 4 - textH));
+  const ovW = (ovH * OVERVIEW_IMAGE.width) / OVERVIEW_IMAGE.height;
+  const ovX = PAGE.m + (CONTENT_W - ovW) / 2;
+  pdf.addImage(docData.overview, 'JPEG', ovX, y, ovW, ovH);
   pdf.setDrawColor(205, 213, 222);
-  pdf.rect(PAGE.m, y, CONTENT_W, ovH);
+  pdf.rect(ovX, y, ovW, ovH);
   y += ovH + 4;
   for (const [k, v] of facts(plan)) {
     text(k, PAGE.m, y, 10, { bold: true });
     y += text(v, PAGE.m + 44, y, 10, { width: CONTENT_W - 44 }) + 0.8;
   }
   y += 2;
+  const NOTICE = notice(plan);
   const noteH = measure(NOTICE, 10, CONTENT_W - 8) + 6;
   pdf.setFillColor(255, 247, 230);
   pdf.setDrawColor(154, 91, 0);
@@ -69,12 +89,26 @@ export function instructionPdf(r: InstructionRenderer, plan: InstructionPlan): P
   y += noteH + 4;
   y += text('Markierungen in den Bildern', PAGE.m, y, 11, { bold: true }) + 1;
   for (const [k, v] of LEGEND) {
+    ensure(6);
     text(k, PAGE.m, y, 9.5, { bold: true });
     y += text(v, PAGE.m + 56, y, 9.5, { width: CONTENT_W - 56 }) + 0.5;
   }
+  const dn = designNotes(plan);
+  if (dn) {
+    y += 2;
+    y += text('Entwurfsannahmen und Abweichungen', PAGE.m, y, 11, { bold: true }) + 1;
+    for (const line of [...dn.assumptions.map((a) => `Annahme: ${a}`), ...dn.deviations.map((d) => `Abweichung: ${d}`), ...(dn.comparison ? [`Visueller Abgleich: ${dn.comparison}`] : [])]) {
+      ensure(measure(`- ${line}`, 9.5, CONTENT_W));
+      y += text(`- ${line}`, PAGE.m, y, 9.5, { width: CONTENT_W }) + 0.5;
+    }
+  }
   y += 2;
+  ensure(12);
   y += text('Aufbau', PAGE.m, y, 11, { bold: true }) + 1;
-  for (const s of sections(plan)) y += text(`- ${s}`, PAGE.m, y, 9.5) + 0.5;
+  for (const s of sections(plan)) {
+    ensure(measure(`- ${s}`, 9.5, CONTENT_W));
+    y += text(`- ${s}`, PAGE.m, y, 9.5, { width: CONTENT_W }) + 0.5;
+  }
 
   // ---- Teilezellen (Schritt und Stückliste)
   const CELL_W = CONTENT_W / 4;
@@ -84,8 +118,20 @@ export function instructionPdf(r: InstructionRenderer, plan: InstructionPlan): P
     pdf.setDrawColor(205, 213, 222);
     pdf.rect(x, cy + 1, 17, 17);
     text(`${l.quantity}×`, x + 19, cy + 1.2, 11, { bold: true });
-    text(l.partName, x + 19, cy + 6.3, 8.5, { width: CELL_W - 20 });
-    text(`${l.part} · ${l.colorName}`, x + 19, cy + 10.4, 8, { color: MUTED, width: CELL_W - 20 });
+    // Name höchstens zwei Zeilen, Teilenummer/Farbe höchstens zwei Zeilen darunter – nichts überlappt
+    const clip = (s: string, size: number, maxLines: number) => {
+      pdf.setFontSize(size);
+      const lines = pdf.splitTextToSize(pdfText(s), CELL_W - 20) as string[];
+      return lines.length > maxLines ? [...lines.slice(0, maxLines - 1), `${lines[maxLines - 1].replace(/.{0,3}$/, '')}...`] : lines;
+    };
+    const nameLines = clip(l.partName, 8.5, 2);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(...INK);
+    pdf.text(nameLines, x + 19, cy + 6.3, { baseline: 'top' });
+    const metaY = cy + 6.3 + nameLines.length * 8.5 * 0.3528 * 1.15;
+    pdf.setFontSize(8);
+    pdf.setTextColor(...MUTED);
+    pdf.text(clip(`${l.part} · ${l.colorName}`, 8, nameLines.length > 1 ? 1 : 2), x + 19, metaY, { baseline: 'top' });
   };
   const gridH = (n: number) => Math.ceil(n / 4) * CELL_H;
 
@@ -124,7 +170,7 @@ export function instructionPdf(r: InstructionRenderer, plan: InstructionPlan): P
     if (d.images.detail) {
       const dx = PAGE.m + L.mainW + 4;
       const dw = CONTENT_W - L.mainW - 4;
-      text('Detail: Draufsicht (Bug oben)', dx, cy, 8.5, { bold: true, color: MUTED });
+      text('Detail: Draufsicht', dx, cy, 8.5, { bold: true, color: MUTED });
       const dh = dw / 1.2;
       pdf.addImage(d.images.detail, 'JPEG', dx, cy + 4.5, dw, dh);
       pdf.rect(dx, cy + 4.5, dw, dh);

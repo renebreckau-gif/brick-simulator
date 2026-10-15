@@ -22,7 +22,7 @@ export const INSTRUCTION_PLAN_SCHEMA = 'baustein-sim/instruction-plan@1';
 export const MAX_NEW_PARTS = 6;
 
 export type CameraId = 'iso-vorn' | 'iso-hinten' | 'oben';
-/** Blickrichtung als Richtung vom Ziel zur Kamera in LDraw-Koordinaten (−Y oben, Bug bei −X). */
+/** Blickrichtung als Richtung vom Ziel zur Kamera in LDraw-Koordinaten (−Y oben). */
 export const CAMERAS: Record<CameraId, { label: string; toCamera: Vec3 }> = {
   'iso-vorn': { label: 'schräg von vorn', toCamera: norm([-1, -0.95, -0.8]) },
   'iso-hinten': { label: 'schräg von hinten', toCamera: norm([1, -0.95, -0.8]) },
@@ -82,7 +82,10 @@ export interface InstructionPlan {
   modelRef: ModelRef;
   modelName: string;
   modelOrigin: string;
+  originKind: CanonicalModel['origin']['kind'];
   generator: CanonicalModel['generator'] | null;
+  /** Entwurfsherkunft des Modells (Bildquelle, Annahmen, Abweichungen), unverändert übernommen. */
+  design: CanonicalModel['design'] | null;
   cameras: typeof CAMERAS;
   /** Bildausschnitte (Weltbox) und die Instanzen, auf die der Ausschnitt eingepasst wird. */
   frames: Record<string, Box>;
@@ -109,8 +112,10 @@ export function germanPartName(title: string | null, part: string, resolveTitle?
   // LDraw-Umleitung („~Moved to 3023b“): Bezeichnung des Zielteils verwenden, Teilenummer bleibt
   const moved = title?.match(/^~Moved to (\S+)/);
   if (moved && resolveTitle) return germanPartName(resolveTitle(moved[1]), part);
-  const m = title?.match(/^(Brick|Plate|Tile)\s+(\d+)\s*x\s*(\d+)/);
-  if (!m) return title ?? part;
+  // Nur exakte Grundteile übersetzen (Fliesen mit Rille sind die Standardausführung); alle Sonderformen
+  // (Jumper, mit Pin, bedruckt …) behalten ihren vollständigen LDraw-Titel, damit nichts verwechselt wird.
+  const m = title?.match(/^(Brick|Plate|Tile)\s+(\d+)\s*x\s*(\d+)(\s+with Groove)?\s*$/);
+  if (!m) return title ? title.replace(/\s+/g, ' ').trim() : part;
   return `${{ Brick: 'Stein', Plate: 'Platte', Tile: 'Fliese' }[m[1]]} ${m[2]}×${m[3]}`;
 }
 
@@ -170,10 +175,15 @@ export function buildInstructionPlan(model: CanonicalModel, catalog: Catalog, li
     while (a && a.parentId && !a.builtSeparately) a = asm.get(a.parentId);
     return a?.assemblyId ?? model.rootAssemblyId;
   };
-  const moduleInstances = (aid: string) => model.instances.filter((i) => i.assemblyId === aid || contextOf(i.assemblyId) === aid).map((i) => i.instanceId);
+  /** Alle Instanzen einer Baugruppe einschließlich verschachtelter Unterbaugruppen. */
+  const within = (assemblyId: string, aid: string): boolean => {
+    for (let a = asm.get(assemblyId); a; a = a.parentId ? asm.get(a.parentId) : undefined) if (a.assemblyId === aid) return true;
+    return assemblyId === aid;
+  };
+  const moduleInstances = (aid: string) => model.instances.filter((i) => within(i.assemblyId, aid)).map((i) => i.instanceId);
 
   // 1) Verfeinerung: große Schritte nach Höhe (unten zuerst), dann entlang der längeren
-  //    waagerechten Achse des Kontexts teilen (Rumpf: von vorn nach hinten, Ausleger: von Ende zu Ende)
+  //    waagerechten Achse des Kontexts teilen (modellunabhängig: Reihenfolge entlang −X → +X bzw. −Z → +Z)
   const axisOf = (ctx: string): 0 | 2 => {
     const ids = ctx === model.rootAssemblyId ? model.instances.filter((i) => contextOf(i.assemblyId) === ctx).map((i) => i.instanceId) : moduleInstances(ctx);
     const b = unionBox(ids.map((id) => boxOf.get(id)).filter((x): x is Box => !!x));
@@ -213,11 +223,11 @@ export function buildInstructionPlan(model: CanonicalModel, catalog: Catalog, li
   const asmFindings = (useRefined ? dv : base).report.findings.filter((f) => f.layer === 'assembly' && f.status !== 'passed');
 
   // 2) Bildausschnitte je Kontext
-  // Hauptmodell: bis zum ersten Ansetzen einer Vormontage nur der eigene Rumpf (größere Darstellung),
+  // Hauptmodell: bis zum ersten Ansetzen einer Vormontage nur die eigenen Teile des Hauptmodells (größere Darstellung),
   // danach das ganze Modell. Der Wechsel wird im Schritt angekündigt.
   const frameIds: Record<string, string[]> = {};
-  for (const a of model.assemblies) if (a.builtSeparately && !a.separateModule) frameIds[`modul:${a.assemblyId}`] = moduleInstances(a.assemblyId);
-  frameIds.rumpf = model.instances.filter((i) => contextOf(i.assemblyId) === model.rootAssemblyId).map((i) => i.instanceId);
+  for (const a of model.assemblies) if (a.builtSeparately) frameIds[`modul:${a.assemblyId}`] = moduleInstances(a.assemblyId);
+  frameIds.kern = model.instances.filter((i) => contextOf(i.assemblyId) === model.rootAssemblyId).map((i) => i.instanceId);
   frameIds.hauptmodell = model.instances.map((i) => i.instanceId);
   const frames: Record<string, Box> = {};
   for (const [k, ids] of Object.entries(frameIds)) frames[k] = unionBox(ids.map((id) => boxOf.get(id)).filter((b): b is Box => !!b));
@@ -277,7 +287,8 @@ export function buildInstructionPlan(model: CanonicalModel, catalog: Catalog, li
     const number = idx + 1;
     (builtIn.get(ctx) ?? builtIn.set(ctx, []).get(ctx)!).push(number);
     const parent = parentOf.get(s.stepId)!;
-    const label = parent.src.notes?.[0] ?? s.stepId;
+    // Titel aus der Quelle des Schritts; ohne Angabe die Baugruppe (keine internen Schritt-IDs als Titel)
+    const label = parent.src.notes?.[0] ?? (s.attach.length ? `${asm.get(s.attach[0])?.name ?? s.attach[0]} ansetzen` : asm.get(s.assemblyId)?.name ?? 'Bauschritt');
 
     // Einsetzrichtung aus der Montageprüfung der verwendeten Schrittfolge
     const units: UnitResult[] = analysis.steps[idx]?.units ?? [];
@@ -318,7 +329,7 @@ export function buildInstructionPlan(model: CanonicalModel, catalog: Catalog, li
     if (contextChanged || (prevContext === null && isModule)) cameraNote = isModule ? `Neue Baugruppe: ${asm.get(ctx)?.name ?? ctx} wird separat gebaut (Ansicht ${CAMERAS[camera].label}).` : `Weiter am Hauptmodell (Ansicht ${CAMERAS[camera].label}).`;
     else if (prevCamera && prevCamera !== camera) cameraNote = `Ansicht gewechselt: jetzt ${CAMERAS[camera].label} (Modell gedreht).`;
     for (const a of s.attach) attachedSoFar.add(a);
-    const frame = isModule ? `modul:${ctx}` : attachedSoFar.size ? 'hauptmodell' : 'rumpf';
+    const frame = isModule ? `modul:${ctx}` : attachedSoFar.size ? 'hauptmodell' : 'kern';
     if (!contextChanged && prevFrame && prevFrame !== frame) cameraNote = `Bildausschnitt erweitert: ab jetzt das ganze Modell (gleiche Blickrichtung, ${CAMERAS[camera].label}).`;
     prevFrame = frame;
     prevCamera = camera;
@@ -333,7 +344,7 @@ export function buildInstructionPlan(model: CanonicalModel, catalog: Catalog, li
       action = attachedModules.map((m) => `Vormontierte Baugruppe „${m.name}“ (aus Schritt ${m.builtInSteps[0]}–${m.builtInSteps.at(-1)}) als Ganzes ${insertion.kind === 'von-oben' ? 'senkrecht von oben aufsetzen' : 'ansetzen'} und gleichmäßig andrücken.`).join(' ');
     else {
       const desc = newParts.map((p) => `${p.quantity} ${plural(p.partName, p.quantity)} ${p.colorName}`).join(', ');
-      const where = parent.of <= 1 ? '' : axisOf(ctx) === 0 ? ` (${parent.index === 1 ? 'vorderer Abschnitt' : parent.index === parent.of ? 'hinterer Abschnitt' : 'mittlerer Abschnitt'})` : ` (Abschnitt ${parent.index} von ${parent.of} entlang des Trägers)`;
+      const where = parent.of <= 1 ? '' : ` (Abschnitt ${parent.index} von ${parent.of})`;
       const verb = insertion.kind === 'ablegen' ? 'Bereitlegen' : insertion.kind === 'von-oben' ? 'Aufsetzen' : 'Einsetzen';
       action = `${verb}: ${desc}${where}. Positionen wie im Bild markiert.`;
       if (count === 0) action = 'Kein neues Teil.';
@@ -352,7 +363,9 @@ export function buildInstructionPlan(model: CanonicalModel, catalog: Catalog, li
     modelRef: modelRef(model),
     modelName: model.name,
     modelOrigin: model.origin.label,
+    originKind: model.origin.kind,
     generator: model.generator ?? null,
+    design: model.design ?? null,
     cameras: CAMERAS,
     frames,
     frameIds,

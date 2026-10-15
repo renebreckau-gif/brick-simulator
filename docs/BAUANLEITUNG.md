@@ -1,11 +1,13 @@
 # Bauanleitung (Auftrag 04)
 
-Aus der geprüften Baufolge eines erzeugten Raumschiffs entsteht eine Anleitung, die einen Menschen durch einen realen Probeaufbau führen soll. Die Anleitung ist ein **abgeleitetes Artefakt**. Sie verändert weder Modell noch kanonische Baufolge und ist kein Nachweis mechanischer Belastbarkeit.
+Aus der geprüften Baufolge eines kanonischen Modells entsteht eine Anleitung, die einen Menschen durch einen realen Aufbau führen soll. Die Anleitung ist ein **abgeleitetes Artefakt**. Sie verändert weder Modell noch kanonische Baufolge und ist kein Nachweis mechanischer Belastbarkeit.
+
+**Geltungsbereich:** Die Anleitung arbeitet mit jedem kanonischen Modell ohne Blocker, das eine Baufolge hat. Sie ist nicht an den Raumschiffgenerator, seine Module oder Varianten gebunden; ein Test stellt sicher, dass der Anleitungscode den Generator nicht importiert. Erprobt ist sie mit den drei Raumschiffvarianten, mit den Referenzen 40013-1 und 21002-1 (auch mit der Baufolge nach LEGO-Anleitung und deren verschachtelten Vormontagen) und mit allen Grenzfällen ohne Blocker. Modelle mit Blockern oder ohne Baufolge (z. B. 1869-1) erhalten eine klare Ablehnung statt einer Anleitung.
 
 ## Verwendung
 
-1. Im Bereich „Raumschiff-Labor“ eine Variante wählen oder Eingaben setzen.
-2. Oben im Hauptbereich auf **Bauanleitung** wechseln. Für frisch erzeugte Modelle wird der Plan automatisch abgeleitet.
+1. Ein Modell anzeigen: im Prüflabor eine Referenz oder einen Grenzfall wählen, im Raumschiff-Labor eine Variante oder Eingaben.
+2. Oben im Hauptbereich auf **Bauanleitung** wechseln. Der Plan wird für das angezeigte Modell abgeleitet.
 3. Der Bereich zeigt eine **Übersicht**: fertiges Modell, tatsächliche Teilezahl und Außenmaße, Modell-ID, Version, Hash, Planversion, Hinweis zum Prüfumfang und Legende der Markierungen.
 4. Mit **Zurück/Weiter** oder der Schrittauswahl durch die Schritte gehen. Fortschritt und aktuelle Baugruppe stehen unter der Navigation; der letzte Eintrag ist die **vollständige Stückliste**.
 5. **Druckansicht** zeigt alle Schritte untereinander (Drucken über den Browser). **PDF exportieren** erzeugt ein A4-PDF lokal im Browser (jsPDF, ohne Serverdienst). Der Dateiname enthält Modell-ID, Version und Hash.
@@ -41,20 +43,28 @@ Der Plan bezieht sich über `modelRef` (Modell-ID, Version, Inhalts-Hash) auf ge
 
 Nach einer Modelländerung (Teil verschoben oder entfernt) bleibt die vorhandene Anleitung sichtbar, ist aber als **veraltet** markiert. Druck und PDF-Export sind dann gesperrt, bis die Anleitung für den neuen Modellstand erstellt ist. Modelle mit Blockern erhalten keine Anleitung. Bildschirm, Druckansicht und PDF verwenden dieselbe Datenbasis (`src/ui/instructions/document.ts`) und tragen Modell-ID, Version und Hash.
 
-## Stand der drei Standardvarianten (Palette Arrakis, 100–180 Teile)
+## Erprobter Stand (Raumschiffe: Palette Arrakis, 100–180 Teile)
 
 Diese Werte werden nicht in die Anleitung geschrieben, sondern dort jeweils aus dem Modell abgeleitet. Sie sind hier nur zur Orientierung festgehalten.
 
-| Variante | Teile | Anleitungsschritte (kanonisch → Anleitung) | PDF-Seiten |
+| Modell | Teile | Anleitungsschritte (kanonisch → Anleitung) | PDF-Seiten |
 | --- | --- | --- | --- |
 | Kompakt | 109 | 19 → 28 | 17 |
 | Langgestreckt | 140 | 17 → 32 | 19 |
 | Breit | 138 | 19 → 31 | 18 |
+| Referenz 40013-1 (OMR-Baufolge) | 18 | 7 → 7 | 6 |
+| Referenz 21002-1 (Baufolge nach LEGO-Anleitung, 4 verschachtelte Vormontagen) | 77 | 29 → 30 | 21 |
+
+## Entwurfsherkunft
+
+Modelle können eine Entwurfsherkunft tragen (`CanonicalModel.design`, Schema `baustein-sim/design-provenance@1`). Dazu gehören die Quellen (z. B. ein Konzeptbild mit Prüfsumme und Rechteangabe, ohne die Bilddaten selbst), das Interpretationsverfahren, konstruktive Annahmen, bewusste Abweichungen vom Konzept und der Stand des visuellen Abgleichs. Die Herkunft geht in den Modellhash ein. Der Plan übernimmt sie unverändert, und Übersicht und PDF zeigen Annahmen und Abweichungen. Heute befüllt noch kein Erzeuger dieses Feld. Es ist der Anschlusspunkt für Bild-zu-Modell (`ARCHITEKTUR.md`, A18).
 
 ## Grenzen
 
 - **Kein physischer Nachweis**: Die Anleitung ist digital abgeleitet und im unterstützten Umfang geprüft (gerade Steckwege, Geometrie, Kollisionen). Fingerzugang, Steckkraft, Toleranzen und Belastbarkeit sind nicht geprüft.
-- **Positionsfindung**: Viele Teile sind 1×1- und 1×2-Platten derselben Farbe. Die Stellen ergeben sich nur aus Bild, Hervorhebung und Pfeil, nicht aus Koordinaten im Text. Bei langen Lagen helfen Abschnittsangaben (vorderer, mittlerer, hinterer Abschnitt bzw. Abschnitt entlang des Trägers).
+- **Positionsfindung**: Viele Teile sind 1×1- und 1×2-Platten derselben Farbe. Die Stellen ergeben sich nur aus Bild, Hervorhebung und Pfeil, nicht aus Koordinaten im Text. Geteilte Schritte nennen nur „Abschnitt k von n“.
+- **Teilenamen**: Nur exakte Grundteile werden übersetzt (Stein, Platte, Fliese mit Maßen). Sonderformen wie Jumper, Steine mit Pin oder bedruckte Teile behalten ihren vollständigen LDraw-Titel, damit nichts verwechselt wird.
+- **Schritttitel**: Schritttitel stammen aus der Quelle der Baufolge. Ohne Angabe nennt der Titel die Baugruppe, etwa „Base“ bei Referenzen.
 - **Bildgröße**: Der Bildausschnitt bleibt je Rahmen fest, damit Lage und Maßstab stabil bleiben. In frühen Schritten eines großen Rahmens erscheinen die Teile daher klein. Am Handy werden die Bilder schmal.
 - **Detailansicht**: Ob eine Draufsicht nötig ist, entscheidet ein Strahltest gegen Begrenzungsboxen. Er erkennt Verdeckung grob, nicht pixelgenau.
 - **Druckansicht**: Die HTML-Druckansicht nutzt Druck-CSS (A4, keine geteilten Schrittkarten). Visuell geprüft wurde das PDF aus dem Export; die Ausgabe über den Druckdialog des Browsers wurde nicht auf Papier oder als Druck-PDF kontrolliert.

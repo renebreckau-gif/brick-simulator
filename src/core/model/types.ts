@@ -88,6 +88,36 @@ export interface CanonicalModel {
   changeLog: ChangeRecord[];
   /** Bei erzeugten Modellen: Generator, Version und Eingaben (Reproduzierbarkeit). */
   generator?: { name: string; version: string; params: Record<string, unknown> };
+  /** Entwurfsherkunft: Bildquelle, konstruktive Annahmen, Abweichungen (vorbereitet für Bild-zu-Modell). */
+  design?: DesignProvenance;
+}
+
+/**
+ * Nachvollziehbare Entwurfsherkunft eines Modells. Vorbereitet für die Kette
+ * Bildanalyse → räumliche Interpretation → Bausteinkonstruktion → Validierung → visueller Abgleich → Bauanleitung.
+ * Die Angaben sind Dokumentation, keine Prüfaussage: Gültigkeit entscheidet weiterhin allein der Validator.
+ */
+export interface DesignProvenance {
+  schema: 'baustein-sim/design-provenance@1';
+  /** Eingaben des Entwurfs (z. B. hochgeladenes Konzeptbild); Bilddaten selbst liegen nicht im Modell. */
+  sources: {
+    sourceId: string;
+    kind: 'concept-image' | 'sketch' | 'text' | 'parameters';
+    label: string;
+    mediaType?: string;
+    /** Prüfsumme der Originaldatei, damit der Bezug ohne Mitliefern des Bildes nachweisbar bleibt. */
+    sha256?: string;
+    /** Nutzungsrechte bzw. Herkunftsangabe der Quelle. */
+    rights: string;
+  }[];
+  /** Verfahren der räumlichen Interpretation (Name, Version), sobald vorhanden. */
+  interpretation?: { method: string; version: string; notes?: string };
+  /** Konstruktive Annahmen, z. B. „Rückseite symmetrisch zur sichtbaren Vorderseite angenommen“. */
+  assumptions: { id: string; statement: string; basis: string; instanceIds?: string[] }[];
+  /** Bewusste Abweichungen vom Konzept, z. B. Rundung durch Stufen angenähert. */
+  deviations: { id: string; description: string; reason: string; instanceIds?: string[]; sourceRegion?: string }[];
+  /** Visueller Abgleich zwischen Konzept und konstruiertem Modell. */
+  visualComparison?: { method: string; version: string; status: 'unchecked' | 'compared'; summary?: string };
 }
 
 /** Bezug eines abgeleiteten Artefakts auf genau eine Modellversion. */

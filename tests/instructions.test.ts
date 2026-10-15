@@ -9,6 +9,11 @@ import type { CanonicalModel } from '../src/core/model/types';
 import { validate } from '../src/core/validation/validate';
 import { generateSpaceship, VARIANTS } from '../src/generator/spaceship';
 import { pdfText } from '../src/ui/instructions/pdf';
+import { notice } from '../src/ui/instructions/document';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { contentHash } from '../src/core/model/hash';
+import { labItems } from '../src/ui/items';
 import { bundle } from './helpers';
 
 const variants = Object.entries(VARIANTS);
@@ -64,6 +69,11 @@ describe('Anleitungsplan: Teilezählung', () => {
     for (const n of names) expect(n).toMatch(/^(Stein|Platte|Fliese) \d+×\d+$/);
     expect(plan.bom.find((l) => l.part === '3023')!.partName).toBe('Platte 1×2');
     expect(germanPartName('~Moved to 3023b', '3023', () => 'Plate  1 x  2')).toBe('Platte 1×2');
+    // Sonderformen nie auf das Grundteil verkürzen
+    expect(germanPartName('Plate  1 x  2 without Groove with 1 Centre Stud', '3794a')).toBe('Plate 1 x 2 without Groove with 1 Centre Stud');
+    expect(germanPartName('Brick  1 x  2 with Pin', '2458')).toBe('Brick 1 x 2 with Pin');
+    expect(germanPartName('Tile  1 x  8 with "Empire State Building" Pattern', '4162p0b')).toBe('Tile 1 x 8 with "Empire State Building" Pattern');
+    expect(germanPartName('Tile  1 x  2 with Groove', '3069b')).toBe('Fliese 1×2');
     expect(JSON.stringify(plan)).not.toMatch(/element|preis|€|EUR/i);
   });
 });
@@ -168,6 +178,74 @@ describe('Anleitungsplan: Katalogzustand', () => {
 describe('PDF-Text', () => {
   it('Zeichen außerhalb Latin-1 werden lesbar ersetzt, Umlaute bleiben', () => {
     expect(pdfText('Außenmaße „ca.“ – 3 × 4 → ≈ 5 • x')).toBe('Außenmaße "ca." - 3 × 4 -> ca. 5 ? x');
+  });
+});
+
+describe('Anleitung für beliebige kanonische Modelle (nicht an den Raumschiffgenerator gekoppelt)', () => {
+  it('jedes Labormodell ohne Blocker mit Baufolge erhält einen konsistenten Plan; sonst eine klare Ablehnung', async () => {
+    const b = await bundle('none');
+    let built = 0;
+    for (const item of labItems(b)) {
+      const m = item.make();
+      const blockers = validate(m, b.catalog).report.findings.some((f) => f.severity === 'blocker' && f.status === 'failed');
+      if (blockers || !m.steps.length) {
+        expect(() => buildInstructionPlan(m, b.catalog, b.library), item.id).toThrow(InstructionPlanError);
+        continue;
+      }
+      const plan = buildInstructionPlan(m, b.catalog, b.library);
+      expect(checkInstructionPlan(plan, m), item.id).toEqual([]);
+      expect(plan.sequenceCheck.status, item.id).toBe('refined-ok');
+      for (const s of plan.steps) expect(plan.frames[s.frame], `${item.id} Schritt ${s.number}`).toBeDefined();
+      built++;
+    }
+    expect(built).toBeGreaterThanOrEqual(20);
+  });
+
+  it('verschachtelte Vormontagen (21002-1 nach LEGO-Anleitung): Unterbaugruppen werden mitgeführt, nicht doppelt gezählt', async () => {
+    const b = await bundle('none');
+    const item = labItems(b).find((i) => i.id === 'ref-21002-1~anleitung')!;
+    const m = item.make();
+    const plan = buildInstructionPlan(m, b.catalog, b.library);
+    expect(plan.steps.filter((s) => s.attach.length).length).toBeGreaterThan(0);
+    for (const s of plan.steps.filter((x) => x.attach.length)) {
+      expect(s.newParts.flatMap((l) => l.instanceIds)).toEqual(s.add);
+      for (const mod of s.attachedModules) expect(mod.instanceCount).toBe(plan.frameIds[`modul:${mod.assemblyId}`].length);
+    }
+    expect(plan.steps.flatMap((s) => s.add).length).toBe(m.instances.length);
+  });
+
+  it('Herkunftshinweis richtet sich nach dem Modell (Referenz ≠ eigener Entwurf)', async () => {
+    const b = await bundle('none');
+    const ghost = buildInstructionPlan(labItems(b).find((i) => i.id === 'ref-40013-1')!.make(), b.catalog, b.library);
+    const ship = (await planFor(VARIANTS.kompakt.params)).plan;
+    expect(notice(ghost)).toMatch(/^Referenzmodell .*keine Herstelleranleitung/);
+    expect(notice(ghost)).not.toMatch(/Eigener Entwurf/);
+    expect(notice(ship)).toMatch(/^Eigener Entwurf/);
+    for (const n of [notice(ghost), notice(ship)]) expect(n).toMatch(/Nicht physisch erprobt/);
+  });
+
+  it('Anleitungscode importiert weder Generator noch generatorspezifische Module', () => {
+    const files = [join('src', 'core', 'instructions', 'plan.ts'), ...readdirSync(join('src', 'ui', 'instructions')).map((f) => join('src', 'ui', 'instructions', f))];
+    for (const f of files) expect(readFileSync(f, 'utf8'), f).not.toMatch(/generator\/|spaceship|ausleger/i);
+  });
+
+  it('Entwurfsherkunft (Bildquelle, Annahmen, Abweichungen) wird am Modell gespeichert, gehasht und in den Plan übernommen', async () => {
+    const b = await bundle('none');
+    const base = labItems(b).find((i) => i.id === 'ref-40013-1')!.make();
+    const withDesign: CanonicalModel = {
+      ...base,
+      design: {
+        schema: 'baustein-sim/design-provenance@1',
+        sources: [{ sourceId: 'img-1', kind: 'concept-image', label: 'Testskizze (synthetisch)', mediaType: 'image/png', sha256: '0'.repeat(64), rights: 'eigene Testdaten' }],
+        assumptions: [{ id: 'A1', statement: 'Rückseite wie Vorderseite', basis: 'nicht sichtbar im Bild' }],
+        deviations: [{ id: 'D1', description: 'Rundung als Stufen', reason: 'nur rechtwinklige Teile unterstützt' }],
+        visualComparison: { method: 'noch nicht implementiert', version: '0', status: 'unchecked' },
+      },
+    };
+    expect(contentHash(withDesign)).not.toBe(contentHash(base));
+    const plan = buildInstructionPlan(withDesign, b.catalog, b.library);
+    expect(plan.design).toEqual(withDesign.design);
+    expect(buildInstructionPlan(base, b.catalog, b.library).design).toBeNull();
   });
 });
 
