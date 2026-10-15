@@ -106,7 +106,7 @@ Die LDraw-Dateien lassen sich bei Bedarf mit `node scripts/fetch-ldraw.mjs` neu 
 
 ## Was das Prüflabor zeigt
 
-- **Auswahl**: drei Referenzmodelle aus dem LDraw-OMR, 24 Grenzfälle (synthetische Fixtures) und 5 gezielt beschädigte Varianten einer Referenz.
+- **Auswahl**: drei Referenzmodelle aus dem LDraw-OMR, dazu 21002-1 mit der Baufolge nach LEGO-Anleitung (abgeleitet, eigene Schrittzuordnung); 34 Grenzfälle (synthetische Fixtures, darunter 10 zur Sonderverbindung „Unterseitenstift in Hohlnoppe“) und 5 gezielt beschädigte Varianten einer Referenz.
 - **3D-Ansicht** (drehen, zoomen, Teil anklicken), gerendert ausschließlich aus der aktuellen Modellversion. Die Kennung der Modellversion steht im Bild.
 - **Bauschritte** mit Baugruppen, Einschubrichtung (deklariert oder abgeleitet), Status je Teil, Unterstützungs- und Montagehinweisen.
 - **Stückliste** exakt aus dem Modell, nicht auflösbare Einträge getrennt; mit lokalem Katalogauszug zusätzlich **unabhängiger Abgleich** gegen das Rebrickable-Inventar der Referenzen (sonst ausdrücklich ungeprüft).

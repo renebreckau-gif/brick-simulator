@@ -1,5 +1,6 @@
 // Auswählbare Modelle im Prüflabor: Referenzen, Grenzfälle, abgeleitete Fehlervarianten.
 import type { DataBundle } from '../core/data/bundle';
+import { instructionSequenceModel } from '../core/model/instructionSequence';
 import { importLdraw } from '../core/model/ldrawImport';
 import type { CanonicalModel } from '../core/model/types';
 import { EDGE_CASES } from '../fixtures/edgeCases';
@@ -33,6 +34,16 @@ export function labItems(bundle: DataBundle): LabItem[] {
     make: () => refModel(r.referenceId),
     referenceId: r.referenceId,
   }));
+  for (const [refId, seq] of bundle.sequences) {
+    const meta = bundle.references.find((r) => r.referenceId === refId)!;
+    refs.push({
+      id: `${refId}~anleitung`,
+      group: 'Referenzen',
+      label: `${meta.setNumber} ${meta.name} – Baufolge nach LEGO-Anleitung`,
+      make: () => instructionSequenceModel(refModel(refId), seq),
+      referenceId: refId,
+    });
+  }
   const cases: LabItem[] = EDGE_CASES.map((c) => {
     const m = c.model();
     return { id: c.caseId, group: 'Grenzfälle', subgroup: c.group, label: m.name, make: c.model, staleEdit: c.staleEdit, caseId: c.caseId };

@@ -9,9 +9,9 @@ Kanonisches Modell, LDraw-Import, Katalog mit getrennten Eigenschaften, versioni
 ## Vorschlag für Auftrag 02 – Teileumfang und Daten absichern
 
 1. Rebrickable-Nutzungsbedingungen klären. Mit eigenem API-Schlüssel die ID-Zuordnung über `external_ids` (LDraw/BrickLink) bestätigen.
-2. Die OMR-Schrittgruppen der drei Referenzen mit den gedruckten Anleitungen abgleichen und die Quellenabweichungen auflösen.
+2. Die OMR-Schrittgruppen der drei Referenzen mit den gedruckten Anleitungen abgleichen und die Quellenabweichungen auflösen – 21002-1 abgeglichen (02B); 40013-1 und 1869-1 offen (keine Herstellerquelle); Jumper-Variante teilweise, Druckteil offen.
 3. Teileumfang erweitern: weitere Platten (2×N, 1×N), Fliesen, Dachsteine. Je Teil Metadaten anlegen und gegen LDraw abgleichen.
-4. Erste Sonderregeln implementieren und mit Grenzfällen absichern: Unterseitenstift in Hohlnoppe, Stange in Halter.
+4. Erste Sonderregeln implementieren und mit Grenzfällen absichern: Unterseitenstift in Hohlnoppe ✔ (02B, nur 3004 auf 6541); Stange in Halter offen.
 5. Zylindrische Noppen statt Quader, um Fehlalarme in engen Lagen zu vermeiden.
 
 ## Spätere Phasen (nicht begonnen)

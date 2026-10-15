@@ -25,11 +25,41 @@
       "Teil-Farb-Kombinationen über Rebrickable elements.csv / inventory_parts.csv belegt.",
       "Anschluss-Metadaten der Teile gegen LDraw-Primitive (stud*.dat) abgeglichen."
     ],
-    "coveredBySource": ["Teile, Farben und Positionen des Endmodells (OMR)", "Gruppierung in Bauschritte (OMR-STEP)", "Teileliste (Rebrickable, unabhängig)"],
-    "notCovered": ["Einschubrichtungen (nicht in der Quelle; vom Validator abgeleitet)", "Reihenfolge innerhalb eines Schritts", "Haltbarkeit, Handhabung, Kindersicherheit", "Übereinstimmung der OMR-Schritte mit der gedruckten Anleitung (nicht abgeglichen)"],
+    "coveredBySource": [
+      "Teile, Farben und Positionen des Endmodells (OMR)",
+      "Gruppierung in Bauschritte (OMR-STEP)",
+      "Teileliste (Rebrickable, unabhängig)"
+    ],
+    "notCovered": [
+      "Einschubrichtungen (nicht in der Quelle; vom Validator abgeleitet)",
+      "Reihenfolge innerhalb eines Schritts",
+      "Haltbarkeit, Handhabung, Kindersicherheit",
+      "Übereinstimmung der OMR-Schritte mit der gedruckten Anleitung (nicht abgeglichen)"
+    ],
     "usageStatus": "OMR-Datei unter CC BY 2.0 mit Namensnennung weitergebbar; Rebrickable-Auszug nur lokal (Nutzungsbedingungen ungeklärt).",
-    "instructions": [{ "label": "Brickset – Set 40013-1 (Verweis auf Anleitungen)", "url": "https://brickset.com/sets/40013-1" }],
-    "knownDiscrepancies": []
+    "instructions": [
+      {
+        "label": "Brickset – Set 40013-1 (nur Drittanbieter-Verweise)",
+        "url": "https://brickset.com/sets/40013-1"
+      }
+    ],
+    "knownDiscrepancies": [],
+    "instructionComparison": {
+      "status": "offen – keine Herstellerquelle zugänglich",
+      "summary": "Die LEGO-Anleitungsseite (service/building-instructions/40013) liefert keinen Eintrag. Brickset verweist für 40013-1 nur auf Drittanbieter-Scanseiten; diese wurden nicht verwendet (Authentizität und Rechte ungeklärt, Herstellerquelle bevorzugt).",
+      "checkedSections": [
+        "LEGO-Anleitungsseite 40013 (abgerufen 2026-10-15): kein Eintrag",
+        "Brickset-Anleitungsliste 40013-1: nur Drittanbieter-Verweise"
+      ],
+      "confirmed": [
+        "Teile und Mengen über das unabhängige Rebrickable-Inventar (unverändert, siehe Stücklistenabgleich)"
+      ],
+      "contradictory": [],
+      "unchecked": [
+        "STEP-Gruppen der OMR-Datei gegen eine Originalanleitung",
+        "Physischer Probebau"
+      ]
+    }
   },
   {
     "referenceId": "ref-21002-1",
@@ -56,15 +86,68 @@
       "Stückliste gegen Rebrickable-Inventar abgeglichen.",
       "Gesamtteilezahl: OMR 77 Teile, Rebrickable 77 (ohne Ersatzteile), LEGO-Anleitungsseite 77."
     ],
-    "coveredBySource": ["Teile, Farben, Positionen (OMR)", "Bauschritte und Untermodelle (OMR)", "Teileliste (Rebrickable, unabhängig)"],
-    "notCovered": ["Technic-Pin 2458 ↔ Loch 6541 und Kegel 59900 / Stange 30374: Verbindungsregeln nicht implementiert → ungeprüft", "Einschubrichtungen (abgeleitet)", "Haltbarkeit, Handhabung, Kindersicherheit"],
+    "coveredBySource": [
+      "Teile, Farben, Positionen (OMR)",
+      "Bauschritte und Untermodelle (OMR)",
+      "Teileliste (Rebrickable, unabhängig)"
+    ],
+    "notCovered": [
+      "Technic-Pin 2458 ↔ Loch 6541 und Kegel 59900 / Stange 30374: Verbindungsregeln nicht implementiert → ungeprüft",
+      "Einschubrichtungen (abgeleitet)",
+      "Haltbarkeit, Handhabung, Kindersicherheit"
+    ],
     "usageStatus": "OMR-Datei unter CC BY 2.0 mit Namensnennung weitergebbar; offizielle Anleitung wird nur verlinkt, nicht mitgeliefert.",
-    "instructions": [{ "label": "LEGO Bauanleitungen 21002 (offiziell)", "url": "https://www.lego.com/de-de/service/building-instructions/21002" }],
+    "instructions": [
+      {
+        "label": "LEGO Bauanleitungen 21002 (offiziell)",
+        "url": "https://www.lego.com/de-de/service/building-instructions/21002"
+      },
+      {
+        "label": "LEGO-PDF 4580898 (2010)",
+        "url": "https://www.lego.com/cdn/product-assets/product.bi.core.pdf/4580898.pdf"
+      },
+      {
+        "label": "LEGO-PDF 4644793 (2011, V29)",
+        "url": "https://www.lego.com/cdn/product-assets/product.bi.core.pdf/4644793.pdf"
+      },
+      {
+        "label": "LEGO-PDF 4656136 (2011, V39)",
+        "url": "https://www.lego.com/cdn/product-assets/product.bi.core.pdf/4656136.pdf"
+      }
+    ],
     "knownDiscrepancies": [
-      "Jumper-Variante: OMR verwendet 3794a (ohne Nut), Rebrickable-Inventar nennt 3794b (mit Nut); laut Rebrickable Formvariante (Relation M). Nicht aufgelöst.",
-      "Druckteil: LDraw 4162p0b ↔ Rebrickable 4162pr0068 manuell zugeordnet (siehe data/catalog/id-map.json).",
-      "Erscheinungsjahr: Rebrickable 2009, LEGO-Anleitungsseite 2008."
-    ]
+      "Jumper-Variante: OMR verwendet 3794a (ohne Nut). Die LEGO-Teileliste (PDF 4580898/4644793/4656136, S. 16) nennt Element 4155708; laut Rebrickable elements.csv ist das 3794b. Evidenz spricht für 3794b, beruht für die Zuordnung Element→Formvariante aber auf Rebrickable. Modell unverändert (keine künstliche Angleichung).",
+      "Druckteil: LDraw 4162p0b ↔ Rebrickable 4162pr0068 manuell zugeordnet. Die LEGO-Teileliste führt nur 4× Element 416226 (laut Rebrickable unbedruckt), Schritt 2 der Anleitung zeigt aber den Aufdruck. Nicht aufgelöst.",
+      "Erscheinungsjahr: Rebrickable 2009, LEGO-Anleitungsseite 2008; früheste Anleitung bei Brickset ab 01.01.2010 gelistet. Nicht aufgelöst (für die Baufolge ohne Belang)."
+    ],
+    "instructionSequence": "references/sequences/21002-1.instructions.json",
+    "instructionComparison": {
+      "status": "abgeglichen (Quellenabgleich, kein physischer Probebau)",
+      "summary": "Alle 25 Anleitungsschritte (PDF 4580898, S. 4–16) entsprechen in Teilen und Mengen 1:1 den 25 OMR-STEP-Gruppen (Sockel #1–#4 = Schritte 1–4, Gebäude #1–#21 = Schritte 5–25). Die Teileliste (S. 16) ergibt 77 Teile; alle Mengen stimmen mit dem Modell überein. Die Ausgaben 4644793 und 4656136 zeigen dieselbe Teileliste.",
+      "checkedSections": [
+        "PDF 4580898 Seiten 4–16: Schritte 1–25 (Teilefenster, Mengen, Einschubbilder)",
+        "PDF 4580898 Seite 16: Teileliste mit LEGO-Element-IDs",
+        "PDF 4644793 Seiten 4 und 16; PDF 4656136 Seite 16: Vergleich der Ausgaben"
+      ],
+      "confirmed": [
+        "Teile und Mengen je Schritt (25 von 25)",
+        "Gesamtteilezahl 77 und Mengen je Element laut Teileliste",
+        "Zugehörigkeit zu Sockel (Schritte 1–4) und Gebäude (Schritte 5–25)",
+        "Schritt 24: 1×2-Stein mittig auf Technic-Stein 6541 (Grundlage der Sonderverbindung)",
+        "Montagefolge nach Anleitung im Bewegungsmodell ohne Blocker ausführbar (abgeleitete Baufolge, Test)"
+      ],
+      "contradictory": [
+        "Gruppierung: Die Anleitung baut das Gebäude direkt auf dem Sockel; die OMR-Datei modelliert Sockel und Gebäude als separat vorgebaute Untermodelle. Beide Abfolgen sind im Bewegungsmodell ausführbar – Darstellungsunterschied ohne Montagekonflikt.",
+        "Vormontagen: Die Anleitung zeigt drei Einschubbilder (Schritt 21: 6541 seitlich auf den Pin von 2458; Schritt 23: zwei Stapel Platte/Platte/Fliese; Schritt 25: Stange in Kegel). Die OMR-Datei fasst diese Teile ohne Vormontage in einer Gruppe zusammen. Für Schritt 21 ist die Vormontage montagerelevant (seitliche Pinbewegung), wird aber nicht geprüft (Technic nicht unterstützt).",
+        "Jumper-Variante: Teileliste nennt Element 4155708 (Design 3794); Rebrickable ordnet dieses Element 3794b (mit Nut) zu. Die OMR-Datei verwendet 3794a (ohne Nut).",
+        "Bedruckte Fliese: Schritt 2 zeigt den Aufdruck „Empire State Building“; die Teileliste nennt dagegen 4× Element 416226, das Rebrickable der unbedruckten 4162 in Schwarz zuordnet. OMR und Rebrickable-Inventar führen eine bedruckte Fliese."
+      ],
+      "unchecked": [
+        "Lage und Orientierung einzelner Teile nur visuell plausibilisiert, nicht vermessen",
+        "Ob die Nut (3794a/b) in den Anleitungsbildern erkennbar ist – Auflösung reicht nicht",
+        "Physischer Probebau nicht durchgeführt"
+      ]
+    }
   },
   {
     "referenceId": "ref-1869-1",
@@ -85,14 +168,45 @@
     "dataAcquisition": [
       "Zusatzreferenz für Endzustand, Verband und Stücklistenabgleich: 100 % einfache Steine, aber KEINE Baufolge in der Quelle (keine STEP-Angaben)."
     ],
-    "crossCheck": ["Stückliste gegen Rebrickable-Inventar abgeglichen."],
-    "coveredBySource": ["Teile, Farben, Positionen (OMR)", "Teileliste (Rebrickable)"],
-    "notCovered": ["Baufolge – nicht belegt, daher Montageprüfung ungeprüft", "Standfähigkeit (aufrechte Flaggenwand ohne Fuß)"],
+    "crossCheck": [
+      "Stückliste gegen Rebrickable-Inventar abgeglichen."
+    ],
+    "coveredBySource": [
+      "Teile, Farben, Positionen (OMR)",
+      "Teileliste (Rebrickable)"
+    ],
+    "notCovered": [
+      "Baufolge – nicht belegt, daher Montageprüfung ungeprüft",
+      "Standfähigkeit (aufrechte Flaggenwand ohne Fuß)"
+    ],
     "usageStatus": "OMR-Datei unter CC BY 2.0 mit Namensnennung weitergebbar.",
-    "instructions": [{ "label": "Brickset – Set 1869-1", "url": "https://brickset.com/sets/1869-1" }],
+    "instructions": [
+      {
+        "label": "Brickset – Set 1869-1",
+        "url": "https://brickset.com/sets/1869-1"
+      }
+    ],
     "knownDiscrepancies": [
-      "Teilezahl: OMR 82, Rebrickable 81, Brickset 80.",
-      "OMR: 7 × 3004 gelb + 2 × 3005 gelb; Rebrickable: 8 × 3004 gelb, kein 3005 gelb. Nicht aufgelöst."
-    ]
+      "Teilezahl: OMR 82, Rebrickable 81, Brickset 80. Keine Herstellerteileliste zugänglich – nicht aufgelöst.",
+      "OMR: 7 × 3004 gelb + 2 × 3005 gelb; Rebrickable: 8 × 3004 gelb, kein 3005 gelb. Nicht aufgelöst; Modell und Inventar unverändert."
+    ],
+    "instructionComparison": {
+      "status": "offen – keine Herstellerquelle zugänglich",
+      "summary": "Die LEGO-Anleitungsseite (service/building-instructions/1869) liefert keinen Eintrag; Brickset verweist nur auf Drittanbieter-Scanseiten (nicht verwendet). Die OMR-Datei enthält ohnehin keine STEP-Angaben.",
+      "checkedSections": [
+        "LEGO-Anleitungsseite 1869 (abgerufen 2026-10-15): kein Eintrag",
+        "Brickset-Anleitungsliste 1869-1: nur Drittanbieter-Verweise"
+      ],
+      "confirmed": [],
+      "contradictory": [
+        "Teilezahl: OMR 82, Rebrickable 81, Brickset 80",
+        "OMR: 7× 3004 gelb + 2× 3005 gelb; Rebrickable: 8× 3004 gelb, kein 3005 gelb"
+      ],
+      "unchecked": [
+        "Baufolge",
+        "Welche der Teilezahlen dem Originalset entspricht – ohne Herstellerteileliste nicht entscheidbar",
+        "Physischer Probebau"
+      ]
+    }
   }
 ]

@@ -24,6 +24,10 @@ interface Expectation {
   unresolvedBomLines?: number;
   staleAfterEdit?: boolean;
   bom?: { totalInstances: number };
+  /** Dieser Befundcode darf für genau diese Instanzen nicht vorkommen. */
+  excludeFor?: { code: string; instances: string[] }[];
+  /** Anzahl erkannter Verbindungen nach R-UPIN-HOLLOWSTUD. */
+  upinConnections?: number;
 }
 
 const expectations = JSON.parse(await readData('expectations/edge-cases.json')) as { cases: Expectation[]; references: Expectation[] };
@@ -45,6 +49,10 @@ function checkExpectation(report: ValidationReport, e: Expectation, label: strin
     }
   }
   for (const ex of e.exclude) expect(codes, `${label}: ${ex} darf nicht vorkommen`).not.toContain(ex);
+  for (const ef of e.excludeFor ?? []) {
+    const hit = report.findings.filter((f) => f.code === ef.code && ef.instances.every((id) => f.affected.instanceIds.some((a) => a === id || a.endsWith(`/${id}`))));
+    expect(hit.map((f) => f.title), `${label}: ${ef.code} darf ${ef.instances.join(' & ')} nicht betreffen`).toEqual([]);
+  }
   if (e.noBlockers) {
     const blockers = report.findings.filter((f) => f.severity === 'blocker' && f.status === 'failed').map((f) => f.code);
     expect(blockers, `${label}: keine Blocker erwartet`).toEqual([]);
@@ -76,6 +84,7 @@ describe('Grenzfall-Korpus', () => {
           const r = validate(model, b.catalog);
           checkExpectation(r.report, e, `${ec.caseId} [${mode}]`, mode);
           if (e.connections !== undefined) expect(r.world.connections.length).toBe(e.connections);
+          if (e.upinConnections !== undefined) expect(r.world.connections.filter((c) => c.ruleId === 'R-UPIN-HOLLOWSTUD').length).toBe(e.upinConnections);
           if (e.tubeConnections !== undefined) expect(r.world.connections.filter((c) => c.ruleId === 'R-STUD-TUBE').length).toBe(e.tubeConnections);
           if (e.unresolvedBomLines !== undefined) expect(computeBom(model, b.catalog).unresolved.length).toBe(e.unresolvedBomLines);
           if (e.staleAfterEdit) {
@@ -101,6 +110,7 @@ describe('Referenzen: deklarierte Erwartungen (ohne Katalog)', () => {
       const model = await referenceModel(e.referenceId!);
       const r = validate(model, b.catalog);
       checkExpectation(r.report, e, e.referenceId!, 'none');
+      if (e.upinConnections !== undefined) expect(r.world.connections.filter((c) => c.ruleId === 'R-UPIN-HOLLOWSTUD').length).toBe(e.upinConnections);
       if (e.bom) expect(computeBom(model, b.catalog).totalInstances).toBe(e.bom.totalInstances);
     });
   }

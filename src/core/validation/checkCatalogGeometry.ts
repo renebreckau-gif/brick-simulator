@@ -1,12 +1,12 @@
 // Schichten „Katalog & Farbe“, „Teilgeometrie“ und Anschlussmerkmale außerhalb des Regelumfangs.
 import type { Catalog } from '../catalog/catalog';
 import { PART_META_VERSION } from '../connectivity/partMeta';
-import { counterpartKinds, isImplementedKind, RULES_VERSION, type ConnectorKind } from '../connectivity/rules';
+import { CONNECTION_RULES, counterpartKinds, isImplementedKind, ruleFor, RULES_VERSION, type ConnectorKind } from '../connectivity/rules';
 import { boxesTouch, det, dist, orthonormalityError } from '../math';
 import type { CanonicalModel } from '../model/types';
 import { TOLERANCE } from '../units';
 import { affected, finding, type Finding } from './findings';
-import { allBoxes, type World } from './world';
+import { allBoxes, pairKey, type World } from './world';
 
 export function checkCatalog(model: CanonicalModel, catalog: Catalog): Finding[] {
   if (!catalog.available) return [catalogSourceFinding(model, catalog), ...checkSimulationSupport(model, catalog)];
@@ -179,13 +179,23 @@ const KIND_LABEL: Partial<Record<ConnectorKind, string>> = {
 export function checkUnsupportedConnectors(world: World): Finding[] {
   const out: Finding[] = [];
   const list = [...world.instances.values()];
+  const connected = new Set(world.connections.map((c) => `${pairKey(c.male.instanceId, c.female.instanceId)}|${c.ruleId}`));
+  const scoped = CONNECTION_RULES.filter((r) => r.status === 'implemented' && r.scope);
   for (const w of list) {
     const isUnsupportedPart = w.part.simulation === 'unsupported' || w.part.simulation === 'none';
-    // Nicht implementierte Anschlüsse, für die ein Nachbar ein passendes Gegenstück in Reichweite hat
+    // Sonderanschlüsse, für die ein Nachbar ein passendes Gegenstück in Reichweite hat, ohne dass eine
+    // implementierte Regel (im belegten Geltungsbereich) die Verbindung tatsächlich erkannt hat.
     const used = w.connectors.filter((c) => !isImplementedKind(c.def.kind)).flatMap((c) => {
       const kinds = counterpartKinds(c.def.kind);
       const reach = c.def.kind.startsWith('technic') ? TECHNIC_REACH : TOLERANCE.connectorPosition;
-      const hits = list.filter((o) => o !== w && o.connectors.some((oc) => kinds.includes(oc.def.kind) && dist(oc.position, c.position) <= reach));
+      const hits = list.filter((o) =>
+        o !== w &&
+        o.connectors.some((oc) => {
+          if (!kinds.includes(oc.def.kind) || dist(oc.position, c.position) > reach) return false;
+          const rule = ruleFor(c.def.kind, oc.def.kind) ?? ruleFor(oc.def.kind, c.def.kind);
+          return !(rule && rule.status === 'implemented' && connected.has(`${pairKey(w.inst.instanceId, o.inst.instanceId)}|${rule.id}`));
+        }),
+      );
       return hits.length ? [{ c, hits }] : [];
     });
     if (!used.length && !isUnsupportedPart) continue;
@@ -196,9 +206,13 @@ export function checkUnsupportedConnectors(world: World): Finding[] {
     out.push(finding({
       code: 'CON_UNSUPPORTED_FEATURE', layer: 'connection', dimension: 'assembly', status: 'unsupported', severity: 'warning', evidenceLevel: 'unchecked',
       title: isUnsupportedPart ? `${w.inst.part}: Anschlüsse nicht modelliert` : `${w.inst.part}: ${[...new Set(unsupportedConnectors.map((c) => KIND_LABEL[c.def.kind] ?? c.def.kind))].join(', ')} – nicht unterstützt`,
-      message: neighbors.length
+      message: (neighbors.length
         ? `Mögliche Verbindung zu ${neighbors.length} Nachbarteil(en) über eine nicht implementierte Technik – ungeprüft.`
-        : 'Nicht unterstütztes Merkmal ohne erkennbaren Nachbarkontakt.',
+        : 'Nicht unterstütztes Merkmal ohne erkennbaren Nachbarkontakt.') +
+        scoped
+          .filter((r) => unsupportedConnectors.some((c) => c.def.kind === r.male || c.def.kind === r.female))
+          .map((r) => ` Regel ${r.id} ist nur für ${r.scope!.male.join('/')} auf ${r.scope!.female.join('/')} belegt; diese Paarung bleibt ungeprüft.`)
+          .join(''),
       affected: affected([w.inst.instanceId, ...neighbors]), ruleVersion: RULES_VERSION,
       evidence: { features: w.meta?.unsupportedFeatures ?? [], neighbors },
       limitation: 'Technic-, Stangen-, Clip-, Scharnier- und SNOT-Verbindungen sind in Phase 1 nur im Datenmodell erfasst.',
@@ -208,7 +222,7 @@ export function checkUnsupportedConnectors(world: World): Finding[] {
   out.push(finding({
     code: 'CON_REGULAR', layer: 'connection', dimension: 'assembly', status: 'passed', severity: 'info', evidenceLevel: 'confirmed',
     title: `${n} reguläre Steckverbindungen erkannt`,
-    message: `Noppe↔Aufnahme: ${world.connections.filter((c) => c.ruleId === 'R-STUD-ANTISTUD').length}, Noppe↔Röhre (Halbnoppenversatz): ${world.connections.filter((c) => c.ruleId === 'R-STUD-TUBE').length}.`,
+    message: `Noppe↔Aufnahme: ${world.connections.filter((c) => c.ruleId === 'R-STUD-ANTISTUD').length}, Noppe↔Röhre (Halbnoppenversatz): ${world.connections.filter((c) => c.ruleId === 'R-STUD-TUBE').length}, Unterseitenstift↔Hohlnoppe: ${world.connections.filter((c) => c.ruleId === 'R-UPIN-HOLLOWSTUD').length}.`,
     ruleVersion: RULES_VERSION, evidence: { tolerance: TOLERANCE.connectorPosition },
   }));
   return out;

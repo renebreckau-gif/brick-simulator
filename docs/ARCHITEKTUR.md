@@ -91,3 +91,13 @@ Ohne gültigen Katalog meldet die Katalogschicht genau einen Befund „ungeprüf
 - **Regulär ohne Katalog** (`npm test`): Geometrie, Verbindungen, Montage, Versionen, Exporte, Referenzen und alle nicht-katalogbezogenen Erwartungen. Der private Auszug wird nie gelesen, auch wenn er lokal liegt.
 - **Regulär mit Testfixture**: alle deklarierten Erwartungen inkl. Katalogbefunden sowie die Logik von Farbzuordnung, Belegen und Inventarabgleich – mit synthetischen, gekennzeichneten Daten.
 - **Optional mit echtem Auszug** (`npm run test:rebrickable`): die fachlichen Abgleiche gegen echte Inventare. Fehlende Daten brechen den Lauf mit ausdrücklicher Meldung ab.
+
+## A14 – Sonderregeln mit belegtem Geltungsbereich (Auftrag 02B)
+
+Regeln können einen teilespezifischen Geltungsbereich (`scope`) tragen. Ein Anschluss gilt nur dann als implementiert, wenn die Paarung aus Regel und Teil im Geltungsbereich liegt (`isImplementedConnector`). Sonst bleibt er „ungeprüft“, auch wenn ein anderes Teil dieselbe Anschlussart hat. Geometrische Voraussetzungen werden aus versionierten, gegen LDraw nachgerechneten Maßen geprüft (`connectivity/upin.ts`); fehlende Maße verhindern die Verbindung.
+
+Die Kollisionsfreistellung einer Sonderverbindung erfolgt pro Noppe (`studTarget`), nie pro Teilepaar. Die Montageprüfung behandelt die neue Verbindung wie eine Steckverbindung entlang der Achse des männlichen Anschlusses.
+
+## A15 – Herstellerbaufolgen als abgeleitete Sequenz
+
+Eine Herstelleranleitung wird nicht als Modell nachgebaut. Gespeichert wird nur die eigene Zuordnung ihrer Schritte auf die OMR-Gruppen (`data/references/sequences/*.json`, veröffentlichbar, ohne Anleitungsinhalte). `instructionSequenceModel` erzeugt daraus eine abgeleitete Baufolge mit unveränderter Geometrie: Untermodelle werden an Ort und Stelle gebaut, Einschubbilder werden zu separat gebauten Vormontagen. Eine unvollständige oder doppelte Zuordnung wird abgelehnt. So lässt sich die Herstellerfolge mit demselben Montageprüfer prüfen wie die OMR-Folge.

@@ -2,10 +2,11 @@
 // sowie die erkannten regulären Verbindungen (nur implementierte Regeln).
 import type { Catalog, CatalogPart } from '../catalog/catalog';
 import { studBox, type ConnectorDef, type PartMeta } from '../connectivity/partMeta';
-import { isImplementedKind, ruleFor } from '../connectivity/rules';
+import { isImplementedConnector, ruleFor, type ConnectionRule } from '../connectivity/rules';
+import { checkUpinGeometry } from '../connectivity/upin';
 import { apply, applyTransform, boxesPenetrate, det, dist, dot, isAxisAligned, orthonormalityError, transformBox, type Box, type Transform, type Vec3 } from '../math';
 import type { CanonicalModel, PartInstance } from '../model/types';
-import { TOLERANCE } from '../units';
+import { STUD_HEIGHT, TOLERANCE } from '../units';
 
 export interface WorldConnector {
   instanceId: string;
@@ -38,10 +39,10 @@ export interface WorldInstance {
 export interface Connection {
   id: string;
   male: { instanceId: string; connectorId: string };
-  female: { instanceId: string; connectorId: string; kind: 'antistud' | 'tube' };
+  female: { instanceId: string; connectorId: string; kind: 'antistud' | 'tube' | 'bar_holder' };
   ruleId: string;
   position: Vec3;
-  /** Weltrichtung der Noppe (zeigt aus dem männlichen Teil heraus). */
+  /** Weltrichtung des männlichen Anschlusses (Noppe bzw. Unterseitenstift; zeigt aus dem männlichen Teil heraus). */
   studAxis: Vec3;
 }
 
@@ -94,15 +95,26 @@ export function buildWorldInstance(inst: PartInstance, catalog: Catalog): WorldI
   };
 }
 
-/** Erkennt reguläre Verbindungen: Noppe ↔ Aufnahme/Röhre, deckungsgleich, Achsen entgegengesetzt. */
+const MALE_KINDS = new Set(['stud', 'underside_pin']);
+
+/** Liegt die Paarung im belegten Geltungsbereich der Regel (falls die Regel einen hat)? */
+function inScope(rule: ConnectionRule, maleId: string, femaleId: string): boolean {
+  return !rule.scope || (rule.scope.male.includes(maleId) && rule.scope.female.includes(femaleId));
+}
+
+/**
+ * Erkennt Verbindungen nach implementierten Regeln: Anschlusspunkte deckungsgleich, Achsen entgegengesetzt,
+ * Paarung im Geltungsbereich und – bei Sonderregeln – geometrische Nennmaß-Voraussetzungen erfüllt.
+ */
 export function detectConnections(instances: WorldInstance[]): Connection[] {
   const males: WorldConnector[] = [];
   const females: WorldConnector[] = [];
+  const partOf = new Map(instances.map((w) => [w.inst.instanceId, w.part.ldrawId]));
   for (const w of instances) {
     if (!w.rigid) continue; // verformte Teile: keine Verbindung werten (eigener Befund)
     for (const c of w.connectors) {
-      if (!isImplementedKind(c.def.kind)) continue;
-      if (c.def.kind === 'stud') males.push(c);
+      if (!isImplementedConnector(c.def.kind, w.part.ldrawId)) continue;
+      if (MALE_KINDS.has(c.def.kind)) males.push(c);
       else females.push(c);
     }
   }
@@ -124,12 +136,14 @@ export function detectConnections(instances: WorldInstance[]): Connection[] {
       if (f.instanceId === m.instanceId) continue;
       if (dist(f.position, m.position) > TOLERANCE.connectorPosition) continue;
       if (dot(f.axis, m.axis) > -0.999) continue;
-      const rule = ruleFor('stud', f.def.kind);
+      const rule = ruleFor(m.def.kind, f.def.kind);
       if (!rule || rule.status !== 'implemented') continue;
+      if (!inScope(rule, partOf.get(m.instanceId)!, partOf.get(f.instanceId)!)) continue;
+      if (rule.id === 'R-UPIN-HOLLOWSTUD' && !checkUpinGeometry(m.def.geometry, f.def.geometry).ok) continue;
       out.push({
         id: `${m.instanceId}::${m.def.id}->${f.instanceId}::${f.def.id}`,
         male: { instanceId: m.instanceId, connectorId: m.def.id },
-        female: { instanceId: f.instanceId, connectorId: f.def.id, kind: f.def.kind as 'antistud' | 'tube' },
+        female: { instanceId: f.instanceId, connectorId: f.def.id, kind: f.def.kind as 'antistud' | 'tube' | 'bar_holder' },
         ruleId: rule.id,
         position: m.position,
         studAxis: m.axis,
@@ -148,7 +162,12 @@ export function buildWorld(model: CanonicalModel, catalog: Catalog): World {
   for (const c of connections) {
     const k = pairKey(c.male.instanceId, c.female.instanceId);
     pairWeights.set(k, (pairWeights.get(k) ?? 0) + 1);
-    studTarget.set(studKey(c.male.instanceId, c.male.connectorId), c.female.instanceId);
+    if (c.ruleId === 'R-UPIN-HOLLOWSTUD') {
+      // Die Hohlnoppe des aufnehmenden Teils ragt in den Hohlraum des Stiftteils – nur diese eine Noppe ist freigestellt.
+      const holder = instances.get(c.female.instanceId)!;
+      const stud = holder.studs.find((s) => s.connector.def.hollow && dist(s.connector.position, c.position) <= TOLERANCE.connectorPosition);
+      if (stud) studTarget.set(studKey(c.female.instanceId, stud.connector.def.id), c.male.instanceId);
+    } else studTarget.set(studKey(c.male.instanceId, c.male.connectorId), c.female.instanceId);
   }
   const world: World = { instances, connections, pairWeights, studTarget, overlaps: [] };
   world.overlaps = computeOverlaps(world);
@@ -160,12 +179,38 @@ export interface Overlap {
   b: string;
   kinds: string[];
   depth: number;
-  /** penetration = echte Durchdringung im Regelumfang; unchecked = mögliche nicht unterstützte Verbindung/grobe Hülle. */
-  classification: 'penetration' | 'unchecked';
+  /**
+   * penetration = echte Durchdringung im Regelumfang; partial-insertion = Noppe koaxial zu einer Aufnahme,
+   * aber nicht vollständig eingesteckt (falsche Einstecktiefe); unchecked = mögliche nicht unterstützte Verbindung/grobe Hülle.
+   */
+  classification: 'penetration' | 'partial-insertion' | 'unchecked';
+  /** Bei partial-insertion: tatsächliche Einstecktiefe (LDU) statt der Noppenhöhe. */
+  insertionDepth?: number;
   reason: string | null;
 }
 
-/** Hohlnoppe von x trifft koaxial einen Unterseitenstift von y (Regel R-UPIN-HOLLOWSTUD, nicht implementiert). */
+/**
+ * Noppe s von x steht koaxial unter einer Aufnahme von y (entgegengesetzte Achse) und ist teilweise eingesteckt:
+ * liefert die Einstecktiefe 0 < t < Noppenhöhe, sonst null. Aufnahmen: Noppenaufnahme, Röhre, oder – bei Hohlnoppen
+ * im Geltungsbereich von R-UPIN-HOLLOWSTUD – der Unterseitenstift.
+ */
+function partialInsertionDepth(x: WorldInstance, s: WorldStud, y: WorldInstance): number | null {
+  const a = s.connector.axis;
+  for (const c of y.connectors) {
+    const kindOk =
+      c.def.kind === 'antistud' || c.def.kind === 'tube' ||
+      (c.def.kind === 'underside_pin' && !!s.connector.def.hollow && isImplementedConnector('underside_pin', y.part.ldrawId) && isImplementedConnector('bar_holder', x.part.ldrawId));
+    if (!kindOk || dot(c.axis, a) > -0.999) continue;
+    const d: Vec3 = [c.position[0] - s.connector.position[0], c.position[1] - s.connector.position[1], c.position[2] - s.connector.position[2]];
+    const along = dot(d, a);
+    const lateral = Math.sqrt(Math.max(0, dot(d, d) - along * along));
+    if (lateral > TOLERANCE.connectorPosition) continue;
+    if (along > TOLERANCE.connectorPosition && along < STUD_HEIGHT - TOLERANCE.connectorPosition) return STUD_HEIGHT - along;
+  }
+  return null;
+}
+
+/** Hohlnoppe von x trifft koaxial einen Unterseitenstift von y, Paarung aber außerhalb einer implementierten Regel. */
 function hollowStudMeetsPin(x: WorldInstance, studConnectorId: string, y: WorldInstance): boolean {
   const s = x.connectors.find((c) => c.def.id === studConnectorId);
   if (!s?.def.hollow) return false;
@@ -183,31 +228,44 @@ export function computeOverlaps(world: World): Overlap[] {
       const kinds: string[] = [];
       let depth = 0;
       let viaHollow = false;
+      let partialAll = true;
+      let partialDepth: number | null = null;
       const rec = (k: string, x: Box, y: Box) => {
         kinds.push(k);
         const d = [Math.min(x.max[0], y.max[0]) - Math.max(x.min[0], y.min[0]), Math.min(x.max[1], y.max[1]) - Math.max(x.min[1], y.min[1]), Math.min(x.max[2], y.max[2]) - Math.max(x.min[2], y.min[2])];
         depth = Math.max(depth, Math.min(...d));
       };
-      for (const ab of a.bodyBoxes) for (const bb of b.bodyBoxes) if (boxesPenetrate(ab, bb, TOLERANCE.penetration)) rec('Körper↔Körper', ab, bb);
+      for (const ab of a.bodyBoxes) for (const bb of b.bodyBoxes) if (boxesPenetrate(ab, bb, TOLERANCE.penetration)) { rec('Körper↔Körper', ab, bb); partialAll = false; }
       for (const [x, y] of [[a, b], [b, a]] as const)
         for (const s of x.studs)
           for (const yb of y.bodyBoxes) {
             if (!boxesPenetrate(s.box, yb, TOLERANCE.penetration)) continue;
             if (world.studTarget.get(studKey(x.inst.instanceId, s.connector.def.id)) === y.inst.instanceId) continue;
-            if (hollowStudMeetsPin(x, s.connector.def.id, y)) viaHollow = true;
+            const pd = partialInsertionDepth(x, s, y);
+            if (pd === null) partialAll = false;
+            else partialDepth = pd;
+            if (pd === null && hollowStudMeetsPin(x, s.connector.def.id, y)) viaHollow = true;
             rec(`Noppe ${x.inst.instanceId}:${s.connector.def.id}↔Körper`, s.box, yb);
           }
-      for (const sa of a.studs) for (const sb of b.studs) if (boxesPenetrate(sa.box, sb.box, TOLERANCE.penetration)) rec('Noppe↔Noppe', sa.box, sb.box);
+      for (const sa of a.studs) for (const sb of b.studs) if (boxesPenetrate(sa.box, sb.box, TOLERANCE.penetration)) { rec('Noppe↔Noppe', sa.box, sb.box); partialAll = false; }
       if (!kinds.length) continue;
       const approximate = a.approximateVolume || b.approximateVolume || !a.axisAligned || !b.axisAligned;
       const onlyHollow = viaHollow && kinds.every((k) => k.startsWith('Noppe ') && !k.startsWith('Noppe↔'));
+      const partial = !approximate && partialAll && partialDepth !== null;
       out.push({
         a: a.inst.instanceId,
         b: b.inst.instanceId,
         kinds,
         depth,
-        classification: approximate || onlyHollow ? 'unchecked' : 'penetration',
-        reason: approximate ? 'grob modellierte Hülle' : onlyHollow ? 'Unterseitenstift in Hohlnoppe (Regel R-UPIN-HOLLOWSTUD nicht implementiert)' : null,
+        classification: approximate || onlyHollow ? 'unchecked' : partial ? 'partial-insertion' : 'penetration',
+        insertionDepth: partial ? Number(partialDepth!.toFixed(2)) : undefined,
+        reason: approximate
+          ? 'grob modellierte Hülle'
+          : onlyHollow
+            ? 'Unterseitenstift in Hohlnoppe außerhalb des belegten Geltungsbereichs von R-UPIN-HOLLOWSTUD (nur 3004 auf 6541)'
+            : partial
+              ? 'Noppe koaxial zur Aufnahme, aber nicht vollständig eingesteckt'
+              : null,
       });
     }
   return out;

@@ -1,6 +1,6 @@
 // Grenzfall-Korpus (synthetische Entwickler-Fixtures). Die zugehörigen Erwartungen
 // und Begründungen stehen getrennt in data/expectations/edge-cases.json.
-import { rotX90 } from '../core/math';
+import { rotX90, type Mat3 } from '../core/math';
 import type { CanonicalModel } from '../core/model/types';
 import { fixture, FROM_BELOW } from './build';
 
@@ -19,6 +19,114 @@ const bridgeParts = (moduleId?: string) => [
   { id: 'pfeiler-r', part: '3003', color: 15, at: [40, -24, 0] as [number, number, number] },
   { id: 'mitte', part: '3003', color: 4, at: [0, -24, 0] as [number, number, number], assembly: moduleId },
   { id: 'bruecke', part: '2456', color: 4, at: [0, -48, 0] as [number, number, number], assembly: moduleId },
+];
+
+
+// --- Sonderverbindung R-UPIN-HOLLOWSTUD (Unterseitenstift von 3004 in Hohlnoppe von 6541)
+const G11 = 'Sonderverbindung: Unterseitenstift in Hohlnoppe';
+type P = [number, number, number];
+/** Basis 2×4, darauf Technic-Stein 1×1 (6541, Hohlnoppe) auf der Noppe (−30, −10). */
+const upinBase = () => [
+  { id: 'basis', part: '3001', color: 15, at: [0, 0, 0] as P },
+  { id: 'technic', part: '6541', color: 19, at: [-30, -24, -10] as P },
+];
+const upinCase = (caseId: string, name: string, description: string, top: { part: string; at: P; rot?: Mat3; color?: number }, extra: Parameters<typeof fixture>[0]['parts'] = []) =>
+  fixture({
+    id: caseId, name, description,
+    parts: [...upinBase(), { id: 'stein', part: top.part, color: top.color ?? 15, at: top.at, rot: top.rot }, ...extra],
+    steps: [{ add: ['basis'] }, { add: ['technic'] }, { add: ['stein'] }, ...(extra.length ? [{ add: extra.map((e) => e.id) }] : [])],
+  });
+
+export const UPIN_CASES: EdgeCase[] = [
+  {
+    caseId: 'ec-11a-upin-micro',
+    group: G11,
+    model: () => upinCase('ec-11a-upin-micro', 'Unterseitenstift in Hohlnoppe (Mikro-Baugruppe)', '1×2-Stein 3004 mittig auf der Hohlnoppe von 6541', { part: '3004', at: [-30, -48, -10] }),
+  },
+  {
+    caseId: 'ec-11b-upin-lateral-offset',
+    group: G11,
+    model: () => upinCase('ec-11b-upin-lateral-offset', 'Seitlich versetzt (4 LDU)', '3004 um 4 LDU aus der Achse der Hohlnoppe verschoben', { part: '3004', at: [-26, -48, -10] }),
+  },
+  {
+    caseId: 'ec-11c-upin-wrong-orientation',
+    group: G11,
+    model: () => upinCase('ec-11c-upin-wrong-orientation', 'Falsche Orientierung (kopfüber)', '3004 um 180° um X gedreht: Noppen statt Stift zeigen zur Hohlnoppe', { part: '3004', at: [-30, -24, -10], rot: rotX90(2) }),
+  },
+  {
+    caseId: 'ec-11d-upin-too-shallow',
+    group: G11,
+    model: () => upinCase('ec-11d-upin-too-shallow', 'Zu geringe Einstecktiefe (2 LDU)', '3004 um 2 LDU angehoben: Hohlnoppe nur halb eingesteckt', { part: '3004', at: [-30, -50, -10] }),
+  },
+  {
+    caseId: 'ec-11e-upin-too-deep',
+    group: G11,
+    model: () => upinCase('ec-11e-upin-too-deep', 'Zu große Einstecktiefe (2 LDU)', '3004 um 2 LDU zu tief: Körper durchdringen sich', { part: '3004', at: [-30, -46, -10] }),
+  },
+  {
+    caseId: 'ec-11f-upin-neighbor-penetration',
+    group: G11,
+    model: () =>
+      upinCase('ec-11f-upin-neighbor-penetration', 'Gültige Verbindung plus echte Durchdringung', 'Verbindung wie 11a; zusätzlich ragt ein 1×1-Stein in den 3004', { part: '3004', at: [-30, -48, -10] }, [
+        { id: 'stoerer', part: '3005', color: 4, at: [-15, -48, -10] },
+      ]),
+  },
+  {
+    caseId: 'ec-11g-upin-blocked-path',
+    group: G11,
+    model: () =>
+      fixture({
+        id: 'ec-11g-upin-blocked-path', name: 'Passende Endposition, Weg blockiert', description: '3004 soll nach der Brücke auf die Hohlnoppe – der einzige Steckweg führt durch die Brücke',
+        parts: [
+          { id: 'platte', part: '3032', color: 71, at: [0, 0, 0] },
+          { id: 'technic', part: '6541', color: 19, at: [10, -24, 10] },
+          ...[-24, -48, -72].flatMap((y, k) => [
+            { id: `pfeiler-l${k + 1}`, part: '3003', color: 15, at: [-40, y, 0] as P },
+            { id: `pfeiler-r${k + 1}`, part: '3003', color: 15, at: [40, y, 0] as P },
+          ]),
+          { id: 'bruecke', part: '2456', color: 4, at: [0, -96, 0] },
+          { id: 'stein', part: '3004', color: 15, at: [10, -48, 10], rotY: 1 },
+        ],
+        steps: [
+          { add: ['platte'] }, { add: ['technic'] },
+          { add: ['pfeiler-l1', 'pfeiler-r1'] }, { add: ['pfeiler-l2', 'pfeiler-r2'] }, { add: ['pfeiler-l3', 'pfeiler-r3'] },
+          { add: ['bruecke'] }, { add: ['stein'] },
+        ],
+      }),
+  },
+  {
+    caseId: 'ec-11h-upin-similar-male',
+    group: G11,
+    model: () => upinCase('ec-11h-upin-similar-male', 'Ähnliches Teil: 1×4-Stein auf Hohlnoppe', '3010 hat ebenfalls Unterseitenstifte, ist aber nicht im belegten Geltungsbereich', { part: '3010', at: [-30, -48, -10], color: 4 }),
+  },
+  {
+    caseId: 'ec-11i-upin-similar-female',
+    group: G11,
+    model: () =>
+      fixture({
+        id: 'ec-11i-upin-similar-female', name: 'Ähnliche Hohlnoppe: 3004 auf Jumper', description: 'Jumper 3794a hat dieselbe Hohlnoppen-Primitive, ist aber nicht im belegten Geltungsbereich',
+        parts: [
+          { id: 'basis', part: '3001', color: 15, at: [0, 0, 0] },
+          { id: 'jumper', part: '3794a', color: 15, at: [-20, -8, -10] },
+          { id: 'stein', part: '3004', color: 15, at: [-20, -32, -10] },
+        ],
+        steps: [{ add: ['basis'] }, { add: ['jumper'] }, { add: ['stein'] }],
+      }),
+  },
+  {
+    caseId: 'ec-11j-upin-solid-stud',
+    group: G11,
+    model: () =>
+      fixture({
+        id: 'ec-11j-upin-solid-stud', name: 'Vollnoppe statt Hohlnoppe', description: '3004 mittig auf der massiven Noppe eines 1×1-Steins: der Stift trifft auf die Noppe',
+        parts: [
+          { id: 'basis', part: '3001', color: 15, at: [0, 0, 0] },
+          { id: 'voll', part: '3005', color: 4, at: [-30, -24, -10] },
+          { id: 'stein', part: '3004', color: 15, at: [-30, -48, -10] },
+        ],
+        steps: [{ add: ['basis'] }, { add: ['voll'] }, { add: ['stein'] }],
+      }),
+  },
 ];
 
 export const EDGE_CASES: EdgeCase[] = [
@@ -282,4 +390,5 @@ export const EDGE_CASES: EdgeCase[] = [
       usage: { intendedUse: 'play-goal', intendedUsers: { minAgeYears: 2, source: 'Fixture-Deklaration (Nutzerangabe)' } },
     }),
   },
+  ...UPIN_CASES,
 ];

@@ -34,7 +34,10 @@ export function listPublicDataFiles(dataDir) {
   const manifest = JSON.parse(readFileSync(join(dataDir, 'ldraw/manifest.json'), 'utf8'));
   for (const f of Object.values(manifest.files)) if (f.path && f.path.endsWith('.dat')) out.add(`ldraw/${f.path}`);
   const refs = JSON.parse(readFileSync(join(dataDir, 'references/references.json'), 'utf8'));
-  for (const r of refs) out.add(r.file);
+  for (const r of refs) {
+    out.add(r.file);
+    if (r.instructionSequence) out.add(r.instructionSequence);
+  }
   const list = [...out].sort();
   for (const rel of list) {
     if (FORBIDDEN_PATTERNS.some((p) => p.test(rel))) throw new Error(`Positivliste enthält verbotenen Pfad: ${rel}`);

@@ -115,7 +115,7 @@ export function StepsPanel({ model, analysis, stepIndex, onStep, catalog, stale 
   if (!model.steps.length) return <p className="empty">Für dieses Modell ist keine Baufolge belegt. Die Montageprüfung bleibt ungeprüft; ein automatischer Baufolgenplaner ist nicht Teil dieser Phase.</p>;
   return (
     <div className="steps">
-      <p className="muted small">Quelle der Baufolge: {model.stepsSource === 'source-file' ? 'Quelldatei (0 STEP / Untermodelle)' : 'Fixture-Deklaration'}. Einschubrichtungen sind, wo nicht deklariert, aus den Steckverbindungen abgeleitet.{stale ? ' Achtung: Die Prüfergebnisse unten gehören zur vorherigen Modellversion.' : ''}</p>
+      <p className="muted small">Quelle der Baufolge: {{ 'source-file': 'Quelldatei (0 STEP / Untermodelle)', 'fixture-declared': 'Fixture-Deklaration', 'instructions-mapped': 'LEGO-Anleitung, eigene Zuordnung der Schritte auf die OMR-Instanzen', none: '–' }[model.stepsSource]}. Einschubrichtungen sind, wo nicht deklariert, aus den Steckverbindungen abgeleitet.{stale ? ' Achtung: Die Prüfergebnisse unten gehören zur vorherigen Modellversion.' : ''}</p>
       <ol>
         {model.steps.map((s, i) => {
           const r = analysis.steps.find((x) => x.stepId === s.stepId);
@@ -238,6 +238,17 @@ export function SourcePanel({ model, bundle, item, expectations, report }: { mod
           <h4>Durch die Quelle gedeckt</h4><ul>{ref.coveredBySource.map((x) => <li key={x}>{x}</li>)}</ul>
           <h4>Nicht gedeckt / ungeprüft</h4><ul>{ref.notCovered.map((x) => <li key={x}>{x}</li>)}</ul>
           {ref.knownDiscrepancies.length > 0 && (<><h4>Bekannte Abweichungen zwischen Quellen</h4><ul>{ref.knownDiscrepancies.map((x) => <li key={x}>{x}</li>)}</ul></>)}
+          {ref.instructionComparison && (
+            <>
+              <h4>Abgleich mit Originalanleitung: {ref.instructionComparison.status}</h4>
+              <p>{ref.instructionComparison.summary}</p>
+              <p className="muted small">Quellenabgleich am Dokument – kein physischer Probebau.</p>
+              <h4>Geprüfte Abschnitte</h4><ul>{ref.instructionComparison.checkedSections.map((x) => <li key={x}>{x}</li>)}</ul>
+              {ref.instructionComparison.confirmed.length > 0 && (<><h4>Bestätigt</h4><ul>{ref.instructionComparison.confirmed.map((x) => <li key={x}>{x}</li>)}</ul></>)}
+              {ref.instructionComparison.contradictory.length > 0 && (<><h4>Abweichend oder widersprüchlich</h4><ul>{ref.instructionComparison.contradictory.map((x) => <li key={x}>{x}</li>)}</ul></>)}
+              <h4>Weiterhin ungeprüft</h4><ul className="open">{ref.instructionComparison.unchecked.map((x) => <li key={x}>{x}</li>)}</ul>
+            </>
+          )}
           <h4>Nutzung und Weitergabe</h4><p>{ref.usageStatus}</p>
           <h4>Anleitung (nur verlinkt)</h4><ul>{ref.instructions.map((x) => <li key={x.url}><a href={x.url} target="_blank" rel="noreferrer">{x.label}</a></li>)}</ul>
           <p className="muted small">Eine veröffentlichte Baufolge ist eine positive Referenz für den Ablauf, kein Nachweis für Haltbarkeit oder Kindersicherheit.</p>

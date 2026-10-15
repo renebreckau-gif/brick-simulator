@@ -1,186 +1,718 @@
 {
   "schema": "baustein-sim/expectations@1",
-  "note": "Erwartungen und Begründungen sind unabhängig von der Validatorimplementierung formuliert (aus Baustein-Geometrie und Produktregeln). 'include' = Befundcode muss vorkommen (optional mit betroffenen Instanzen); 'exclude' = darf nicht vorkommen.",
+  "note": "Erwartungen und Begründungen sind unabhängig von der Validatorimplementierung formuliert (aus Baustein-Geometrie und Produktregeln). 'include' = Befundcode muss vorkommen (optional mit betroffenen Instanzen); 'exclude' = darf nicht vorkommen. 'excludeFor' = dieser Befundcode darf für genau diese Instanzen nicht vorkommen.",
   "cases": [
     {
       "caseId": "ec-01a-stud-connection",
       "reason": "Zwei 2×4-Steine deckungsgleich gestapelt: alle 8 Noppen greifen in die Aufnahmen. Das ist die Grundverbindung und darf weder als lose noch als Durchdringung gelten.",
-      "include": [{ "code": "GRAPH_CONNECTED" }, { "code": "COL_NONE" }, { "code": "ASM_SEQUENCE_OK" }],
-      "exclude": ["COL_PENETRATION", "GRAPH_LOOSE"],
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "COL_NONE"
+        },
+        {
+          "code": "ASM_SEQUENCE_OK"
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION",
+        "GRAPH_LOOSE"
+      ],
       "connections": 8
     },
     {
       "caseId": "ec-01b-touch-only",
       "reason": "Seitlich aneinanderliegende Steine berühren sich nur an einer Fläche. Berührung ist keine Verbindung, aber auch keine Durchdringung.",
-      "include": [{ "code": "GRAPH_LOOSE", "instances": ["rechts"] }],
-      "exclude": ["COL_PENETRATION"],
+      "include": [
+        {
+          "code": "GRAPH_LOOSE",
+          "instances": [
+            "rechts"
+          ]
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION"
+      ],
       "connections": 0
     },
     {
       "caseId": "ec-02-floating",
       "reason": "Ein Stein mit Luftspalt über dem anderen hat keinen Kontakt und keine Verbindung – schwebendes Teil.",
-      "include": [{ "code": "GRAPH_LOOSE", "instances": ["schwebend"] }],
-      "exclude": ["COL_PENETRATION"]
+      "include": [
+        {
+          "code": "GRAPH_LOOSE",
+          "instances": [
+            "schwebend"
+          ]
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION"
+      ]
     },
     {
       "caseId": "ec-03a-penetration",
       "reason": "Ein Stein, der 12 LDU (halbe Steinhöhe) in einen anderen ragt, ist physisch unmöglich.",
-      "include": [{ "code": "COL_PENETRATION", "instances": ["unten", "versenkt"] }],
-      "exclude": ["COL_NONE"]
+      "include": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "unten",
+            "versenkt"
+          ]
+        }
+      ],
+      "exclude": [
+        "COL_NONE"
+      ]
     },
     {
       "caseId": "ec-03b-half-offset-no-jumper",
       "reason": "Ein 1×2-Stein um eine halbe Noppe versetzt auf einem 1×4: die Noppen treffen auf den Unterseitenstift bzw. die Wand – keine Aufnahme, Durchdringung.",
-      "include": [{ "code": "COL_PENETRATION", "instances": ["basis", "versetzt"] }],
-      "exclude": ["GRAPH_CONNECTED"]
+      "include": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "basis",
+            "versetzt"
+          ]
+        }
+      ],
+      "exclude": [
+        "GRAPH_CONNECTED"
+      ]
     },
     {
       "caseId": "ec-04a-running-bond",
       "reason": "Versetzter Verband: jede Stoßfuge wird in der nächsten Lage überdeckt. Verbunden; keine über mehrere Lagen durchgehende Fuge.",
-      "include": [{ "code": "GRAPH_CONNECTED" }, { "code": "STR_NO_CONTINUOUS_SEAM" }],
-      "exclude": ["STR_CONTINUOUS_SEAM", "GRAPH_LOOSE"]
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "STR_NO_CONTINUOUS_SEAM"
+        }
+      ],
+      "exclude": [
+        "STR_CONTINUOUS_SEAM",
+        "GRAPH_LOOSE"
+      ]
     },
     {
       "caseId": "ec-04b-stacked-bond",
       "reason": "Gleiche Steine ohne Versatz: die Fuge bei x = 0 läuft über drei Lagen; nur der Deckel verbindet. Struktureller Vergleichshinweis ohne behauptete Festigkeit.",
-      "include": [{ "code": "GRAPH_CONNECTED" }, { "code": "STR_CONTINUOUS_SEAM" }],
-      "exclude": ["GRAPH_LOOSE"]
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "STR_CONTINUOUS_SEAM"
+        }
+      ],
+      "exclude": [
+        "GRAPH_LOOSE"
+      ]
     },
     {
       "caseId": "ec-04c-stacked-no-cap",
       "reason": "Ohne Deckel sind die beiden Säulen nur durch Berührung nebeneinander – zwei getrennte Komponenten.",
-      "include": [{ "code": "GRAPH_LOOSE" }],
-      "exclude": ["GRAPH_CONNECTED", "COL_PENETRATION"]
+      "include": [
+        {
+          "code": "GRAPH_LOOSE"
+        }
+      ],
+      "exclude": [
+        "GRAPH_CONNECTED",
+        "COL_PENETRATION"
+      ]
     },
     {
       "caseId": "ec-05a-correct-order",
       "reason": "Der Mittelstein wird gesetzt, solange von oben noch frei ist; danach die Brücke. Ausführbar.",
-      "include": [{ "code": "ASM_SEQUENCE_OK" }, { "code": "GRAPH_CONNECTED" }],
-      "exclude": ["ASM_CONFLICTING_DIRECTIONS", "ASM_PATH_BLOCKED"]
+      "include": [
+        {
+          "code": "ASM_SEQUENCE_OK"
+        },
+        {
+          "code": "GRAPH_CONNECTED"
+        }
+      ],
+      "exclude": [
+        "ASM_CONFLICTING_DIRECTIONS",
+        "ASM_PATH_BLOCKED"
+      ]
     },
     {
       "caseId": "ec-05b-wrong-order",
       "reason": "Endgeometrie identisch zu 05a, aber der Mittelstein kommt nach der Brücke: er müsste gleichzeitig auf die Platte (nach unten) und in die Brücke (nach oben) gesteckt werden.",
-      "include": [{ "code": "ASM_CONFLICTING_DIRECTIONS", "instances": ["mitte"] }, { "code": "COL_NONE" }],
-      "exclude": ["ASM_SEQUENCE_OK"]
+      "include": [
+        {
+          "code": "ASM_CONFLICTING_DIRECTIONS",
+          "instances": [
+            "mitte"
+          ]
+        },
+        {
+          "code": "COL_NONE"
+        }
+      ],
+      "exclude": [
+        "ASM_SEQUENCE_OK"
+      ]
     },
     {
       "caseId": "ec-05c-blocked-path",
       "reason": "Die 1×2-Platte passt in der Endposition (Abstand zur Brücke), ihr einziger gerader Weg von oben führt aber durch die Brücke.",
-      "include": [{ "code": "ASM_PATH_BLOCKED", "instances": ["unter-bruecke", "bruecke"] }, { "code": "COL_NONE" }],
-      "exclude": ["ASM_SEQUENCE_OK"]
+      "include": [
+        {
+          "code": "ASM_PATH_BLOCKED",
+          "instances": [
+            "unter-bruecke",
+            "bruecke"
+          ]
+        },
+        {
+          "code": "COL_NONE"
+        }
+      ],
+      "exclude": [
+        "ASM_SEQUENCE_OK"
+      ]
     },
     {
       "caseId": "ec-05d-declared-direction-mismatch",
       "reason": "Ein Stein, der auf Noppen gesetzt wird, kann nicht von unten eingeschoben werden; die explizite Deklaration ist falsch.",
-      "include": [{ "code": "ASM_DIRECTION_MISMATCH", "instances": ["oben"] }],
-      "exclude": ["ASM_SEQUENCE_OK"]
+      "include": [
+        {
+          "code": "ASM_DIRECTION_MISMATCH",
+          "instances": [
+            "oben"
+          ]
+        }
+      ],
+      "exclude": [
+        "ASM_SEQUENCE_OK"
+      ]
     },
     {
       "caseId": "ec-06a-premodule",
       "reason": "Brücke und Mittelstein werden separat vormontiert und gemeinsam von oben aufgesetzt – alle Verbindungen verlangen dieselbe Richtung.",
-      "include": [{ "code": "ASM_SEQUENCE_OK" }, { "code": "GRAPH_CONNECTED" }],
-      "exclude": ["ASM_CONFLICTING_DIRECTIONS", "ASM_PATH_BLOCKED", "ASM_MODULE_INCOMPLETE"]
+      "include": [
+        {
+          "code": "ASM_SEQUENCE_OK"
+        },
+        {
+          "code": "GRAPH_CONNECTED"
+        }
+      ],
+      "exclude": [
+        "ASM_CONFLICTING_DIRECTIONS",
+        "ASM_PATH_BLOCKED",
+        "ASM_MODULE_INCOMPLETE"
+      ]
     },
     {
       "caseId": "ec-06b-inaccessible",
       "reason": "Ohne Vormontage ist dieselbe Verbindung im Hauptmodell nicht zugänglich (Klemmposition).",
-      "include": [{ "code": "ASM_CONFLICTING_DIRECTIONS", "instances": ["mitte"] }],
-      "exclude": ["ASM_SEQUENCE_OK"]
+      "include": [
+        {
+          "code": "ASM_CONFLICTING_DIRECTIONS",
+          "instances": [
+            "mitte"
+          ]
+        }
+      ],
+      "exclude": [
+        "ASM_SEQUENCE_OK"
+      ]
     },
     {
       "caseId": "ec-07a-hand-support",
       "reason": "Der Zwischenzustand nach Schritt 2 kippt (Schwerpunkt über dem Überhang), die Handunterstützung ist dokumentiert. Kein Montageblocker; Endzustand steht.",
-      "include": [{ "code": "ASM_SUPPORT_DECLARED" }, { "code": "STAB_STANDS" }, { "code": "ASM_SEQUENCE_OK" }],
-      "exclude": ["ASM_INTERMEDIATE_UNSTABLE"]
+      "include": [
+        {
+          "code": "ASM_SUPPORT_DECLARED"
+        },
+        {
+          "code": "STAB_STANDS"
+        },
+        {
+          "code": "ASM_SEQUENCE_OK"
+        }
+      ],
+      "exclude": [
+        "ASM_INTERMEDIATE_UNSTABLE"
+      ]
     },
     {
       "caseId": "ec-07b-no-support-declared",
       "reason": "Gleicher Ablauf ohne Dokumentation: Hinweis auf nicht selbststehenden Zwischenzustand, aber kein Blocker.",
-      "include": [{ "code": "ASM_INTERMEDIATE_UNSTABLE" }, { "code": "ASM_SEQUENCE_OK" }],
-      "exclude": ["ASM_SUPPORT_DECLARED"],
+      "include": [
+        {
+          "code": "ASM_INTERMEDIATE_UNSTABLE"
+        },
+        {
+          "code": "ASM_SEQUENCE_OK"
+        }
+      ],
+      "exclude": [
+        "ASM_SUPPORT_DECLARED"
+      ],
       "noBlockers": true
     },
     {
       "caseId": "ec-08a-jumper-offset",
       "reason": "Der Jumper 3794a (reales Teil) versetzt um eine halbe Noppe; Stein sitzt auf dessen Mittelnoppe. Unterstützt und verbunden.",
-      "include": [{ "code": "GRAPH_CONNECTED" }, { "code": "COL_NONE" }],
-      "exclude": ["COL_PENETRATION", "GRAPH_LOOSE"],
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "COL_NONE"
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION",
+        "GRAPH_LOOSE"
+      ],
       "connections": 3
     },
     {
       "caseId": "ec-08b-stud-in-tube",
       "reason": "Eine 1×2-Platte mittig unter einem 2×3-Stein: ihre Noppen greifen in die Röhren – realer Halbnoppenversatz.",
-      "include": [{ "code": "GRAPH_CONNECTED" }, { "code": "COL_NONE" }],
-      "exclude": ["COL_PENETRATION"],
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "COL_NONE"
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION"
+      ],
       "connections": 2,
       "tubeConnections": 2
     },
     {
       "caseId": "ec-08c-sideways",
       "reason": "Ein seitlich gedrehter Stein an einer Seitenfläche ohne Noppen: seitliches Bauen benötigt SNOT-Teile – ausdrücklich als nicht unterstützt erkennen, nicht als 'lose' verurteilen und nicht als bestanden werten.",
-      "include": [{ "code": "GRAPH_SNOT_UNSUPPORTED", "instances": ["seitlich"] }],
-      "exclude": ["GRAPH_LOOSE", "GRAPH_CONNECTED", "COL_PENETRATION"]
+      "include": [
+        {
+          "code": "GRAPH_SNOT_UNSUPPORTED",
+          "instances": [
+            "seitlich"
+          ]
+        }
+      ],
+      "exclude": [
+        "GRAPH_LOOSE",
+        "GRAPH_CONNECTED",
+        "COL_PENETRATION"
+      ]
     },
     {
       "caseId": "ec-09a-unknown-connection",
       "reason": "Für den Kegel 59900 sind keine Anschlussregeln implementiert: Verbindung und Überschneidung bleiben ungeprüft – weder bestanden noch Blocker.",
-      "include": [{ "code": "CAT_SIM_UNSUPPORTED" }, { "code": "GRAPH_UNKNOWN_LINK" }, { "code": "COL_UNCHECKED" }],
-      "exclude": ["GRAPH_LOOSE", "COL_PENETRATION", "GRAPH_CONNECTED"],
+      "include": [
+        {
+          "code": "CAT_SIM_UNSUPPORTED"
+        },
+        {
+          "code": "GRAPH_UNKNOWN_LINK"
+        },
+        {
+          "code": "COL_UNCHECKED"
+        }
+      ],
+      "exclude": [
+        "GRAPH_LOOSE",
+        "COL_PENETRATION",
+        "GRAPH_CONNECTED"
+      ],
       "noBlockers": true
     },
     {
       "caseId": "ec-09b-missing-color",
       "reason": "Direkte RGB-Farben haben keine Katalogfarbe; Teil-Farb-Kombination und Stücklistenzeile sind nicht auflösbar.",
-      "include": [{ "code": "CAT_COLOR_UNMAPPED", "instances": ["oben"] }],
+      "include": [
+        {
+          "code": "CAT_COLOR_UNMAPPED",
+          "instances": [
+            "oben"
+          ]
+        }
+      ],
       "exclude": [],
       "unresolvedBomLines": 1
     },
     {
       "caseId": "ec-09c-out-of-scope-part",
       "reason": "3008 existiert im Katalogauszug (belegt), ist aber nicht simuliert: Katalogexistenz und Simulationsunterstützung sind getrennt; Verbindung ungeprüft statt 'lose'.",
-      "include": [{ "code": "CAT_SIM_UNSUPPORTED", "instances": ["lang"] }, { "code": "GRAPH_UNKNOWN_LINK" }],
-      "exclude": ["CAT_PART_UNKNOWN", "GRAPH_LOOSE"],
+      "include": [
+        {
+          "code": "CAT_SIM_UNSUPPORTED",
+          "instances": [
+            "lang"
+          ]
+        },
+        {
+          "code": "GRAPH_UNKNOWN_LINK"
+        }
+      ],
+      "exclude": [
+        "CAT_PART_UNKNOWN",
+        "GRAPH_LOOSE"
+      ],
       "noBlockers": true
     },
     {
       "caseId": "ec-09d-stale-report",
       "reason": "Nach einer konstruktiven Änderung gehört der alte Bericht (und Stückliste, Baufolge, Beschaffungsstand) zu einer veralteten Modellversion.",
-      "include": [{ "code": "GRAPH_CONNECTED" }],
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        }
+      ],
       "exclude": [],
       "staleAfterEdit": true
     },
     {
       "caseId": "ec-10-under-three",
       "reason": "Standard-LEGO-Teile enthalten Kleinteile; für Nutzer unter 3 Jahren darf es keine positive Freigabe geben – unabhängig von Stabilität.",
-      "include": [{ "code": "USE_UNDER3_BLOCKED" }, { "code": "USE_PLAY_GOAL" }, { "code": "STAB_STANDS" }],
+      "include": [
+        {
+          "code": "USE_UNDER3_BLOCKED"
+        },
+        {
+          "code": "USE_PLAY_GOAL"
+        },
+        {
+          "code": "STAB_STANDS"
+        }
+      ],
       "exclude": []
+    },
+    {
+      "caseId": "ec-11a-upin-micro",
+      "reason": "LDraw-Nennmaße: Stift r 4 von 3004 greift 4 LDU tief in das Loch (r 4, Tiefe 4) der Hohlnoppe von 6541; die Noppenwand (r 6) passt in den Hohlraum (halbe Weite 6). Paarung im Set 21002-1 belegt. Erwartet: erkannte Verbindung, keine Kollision, Montage von oben frei, Haltekraft ausdrücklich ungeprüft.",
+      "include": [
+        {
+          "code": "CON_UPIN_HOLLOWSTUD",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        },
+        {
+          "code": "CON_UPIN_MECHANICS_UNCHECKED",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        },
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "COL_NONE"
+        },
+        {
+          "code": "ASM_SEQUENCE_OK"
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION",
+        "COL_UNCHECKED",
+        "COL_PARTIAL_INSERTION",
+        "GRAPH_LOOSE",
+        "ASM_UNIT_UNCHECKED"
+      ],
+      "noBlockers": true,
+      "upinConnections": 1
+    },
+    {
+      "caseId": "ec-11b-upin-lateral-offset",
+      "reason": "4 LDU neben der Achse trifft die Noppenwand den massiven Stift bzw. die Hohlraumwand – keine Aufnahme, echte Durchdringung.",
+      "include": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD"
+      ],
+      "upinConnections": 0
+    },
+    {
+      "caseId": "ec-11c-upin-wrong-orientation",
+      "reason": "Kopfüber zeigen die Noppen des 3004 zur Hohlnoppe; Stift und Noppe stehen nicht gegenüber. Keine Verbindung, Noppen durchdringen Körper.",
+      "include": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD"
+      ],
+      "upinConnections": 0
+    },
+    {
+      "caseId": "ec-11d-upin-too-shallow",
+      "reason": "2 LDU angehoben: Hohlnoppe steht koaxial, ist aber nur 2 statt 4 LDU eingesteckt – keine gültige Endposition, ausgewiesen als falsche Einstecktiefe, nicht als Verbindung.",
+      "include": [
+        {
+          "code": "COL_PARTIAL_INSERTION",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD",
+        "COL_UNCHECKED"
+      ],
+      "upinConnections": 0
+    },
+    {
+      "caseId": "ec-11e-upin-too-deep",
+      "reason": "2 LDU zu tief: die Körper von 3004 und 6541 überlappen – echte Durchdringung.",
+      "include": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD",
+        "COL_PARTIAL_INSERTION"
+      ],
+      "upinConnections": 0
+    },
+    {
+      "caseId": "ec-11f-upin-neighbor-penetration",
+      "reason": "Die Sonderverbindung stellt nur die eine Hohlnoppe im Hohlraum frei. Ein zusätzlich in den 3004 ragender 1×1-Stein bleibt eine echte Durchdringung; zwischen 3004 und 6541 darf keine Kollision gemeldet werden.",
+      "include": [
+        {
+          "code": "CON_UPIN_HOLLOWSTUD",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        },
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "stein",
+            "stoerer"
+          ]
+        }
+      ],
+      "exclude": [],
+      "excludeFor": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        }
+      ],
+      "upinConnections": 1
+    },
+    {
+      "caseId": "ec-11g-upin-blocked-path",
+      "reason": "Endposition auf der Hohlnoppe ist gültig, aber der einzige gerade Steckweg (von oben, entlang der Achse) führt durch die bereits verbaute Brücke.",
+      "include": [
+        {
+          "code": "CON_UPIN_HOLLOWSTUD",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        },
+        {
+          "code": "ASM_PATH_BLOCKED",
+          "instances": [
+            "stein",
+            "bruecke"
+          ]
+        },
+        {
+          "code": "COL_NONE"
+        }
+      ],
+      "exclude": [
+        "ASM_SEQUENCE_OK"
+      ],
+      "upinConnections": 1
+    },
+    {
+      "caseId": "ec-11h-upin-similar-male",
+      "reason": "3010 hat ebenfalls Unterseitenstifte, liegt aber außerhalb des belegten Geltungsbereichs (nur 3004). Die Regel wird nicht übertragen: ungeprüft, weder Verbindung noch Durchdringung.",
+      "include": [
+        {
+          "code": "COL_UNCHECKED",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        },
+        {
+          "code": "CON_UNSUPPORTED_FEATURE",
+          "instances": [
+            "technic",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD",
+        "COL_PENETRATION"
+      ],
+      "upinConnections": 0
+    },
+    {
+      "caseId": "ec-11i-upin-similar-female",
+      "reason": "Der Jumper 3794a nutzt dieselbe Hohlnoppen-Primitive wie 6541, ist aber nicht im belegten Geltungsbereich. Die Regel wird nicht übertragen: ungeprüft.",
+      "include": [
+        {
+          "code": "COL_UNCHECKED",
+          "instances": [
+            "jumper",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD",
+        "COL_PENETRATION"
+      ],
+      "upinConnections": 0
+    },
+    {
+      "caseId": "ec-11j-upin-solid-stud",
+      "reason": "Auf einer massiven Noppe (stud.dat ohne Loch) trifft der Stift auf Material – echte Durchdringung, keine Sonderverbindung.",
+      "include": [
+        {
+          "code": "COL_PENETRATION",
+          "instances": [
+            "voll",
+            "stein"
+          ]
+        }
+      ],
+      "exclude": [
+        "CON_UPIN_HOLLOWSTUD",
+        "COL_UNCHECKED"
+      ],
+      "upinConnections": 0
     }
   ],
   "references": [
     {
       "referenceId": "ref-40013-1",
       "reason": "Veröffentlichtes Set mit belegter Baufolge, nur einfache Steine. Positive Referenz: keine Blocker im unterstützten Umfang.",
-      "include": [{ "code": "GRAPH_CONNECTED" }, { "code": "COL_NONE" }, { "code": "ASM_SEQUENCE_OK" }],
-      "exclude": ["COL_PENETRATION", "GRAPH_LOOSE", "ASM_CONFLICTING_DIRECTIONS", "ASM_PATH_BLOCKED"],
+      "include": [
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "COL_NONE"
+        },
+        {
+          "code": "ASM_SEQUENCE_OK"
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION",
+        "GRAPH_LOOSE",
+        "ASM_CONFLICTING_DIRECTIONS",
+        "ASM_PATH_BLOCKED"
+      ],
       "noBlockers": true,
-      "bom": { "totalInstances": 18 }
+      "bom": {
+        "totalInstances": 18
+      }
     },
     {
       "referenceId": "ref-21002-1",
       "reason": "Veröffentlichtes Set mit Baufolge; enthält Technic-Pin/Loch, Hohlnoppe mit Unterseitenstift sowie Kegel/Stange. Diese Bereiche müssen als ungeprüft/nicht unterstützt erscheinen, der Rest ohne Blocker.",
-      "include": [{ "code": "CAT_SIM_PARTIAL" }, { "code": "CAT_SIM_UNSUPPORTED" }, { "code": "CON_UNSUPPORTED_FEATURE" }, { "code": "COL_UNCHECKED" }, { "code": "ASM_UNIT_UNCHECKED" }],
-      "exclude": ["COL_PENETRATION", "GRAPH_LOOSE", "ASM_CONFLICTING_DIRECTIONS", "ASM_PATH_BLOCKED"],
+      "include": [
+        {
+          "code": "CAT_SIM_PARTIAL"
+        },
+        {
+          "code": "CAT_SIM_UNSUPPORTED"
+        },
+        {
+          "code": "CON_UNSUPPORTED_FEATURE"
+        },
+        {
+          "code": "COL_UNCHECKED"
+        },
+        {
+          "code": "ASM_UNIT_UNCHECKED"
+        },
+        {
+          "code": "CON_UPIN_HOLLOWSTUD",
+          "instances": [
+            "L89",
+            "L79"
+          ]
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION",
+        "GRAPH_LOOSE",
+        "ASM_CONFLICTING_DIRECTIONS",
+        "ASM_PATH_BLOCKED"
+      ],
       "noBlockers": true,
-      "bom": { "totalInstances": 77 }
+      "bom": {
+        "totalInstances": 77
+      },
+      "changeNote": "Auftrag 02B: Unterseitenstift in Hohlnoppe (3004 L89 auf 6541 L79) ist jetzt als Regel R-UPIN-HOLLOWSTUD implementiert und wird als Verbindung erwartet. COL_UNCHECKED und ASM_UNIT_UNCHECKED bleiben erwartet – sie betreffen weiterhin Kegel 59900 und Stange 30374.",
+      "upinConnections": 1
     },
     {
       "referenceId": "ref-1869-1",
       "reason": "Endmodell ohne belegte Baufolge: Montage bleibt ungeprüft; Endzustand ohne Blocker.",
-      "include": [{ "code": "ASM_NO_STEPS" }, { "code": "GRAPH_CONNECTED" }, { "code": "COL_NONE" }],
-      "exclude": ["COL_PENETRATION", "GRAPH_LOOSE", "ASM_SEQUENCE_OK"],
+      "include": [
+        {
+          "code": "ASM_NO_STEPS"
+        },
+        {
+          "code": "GRAPH_CONNECTED"
+        },
+        {
+          "code": "COL_NONE"
+        }
+      ],
+      "exclude": [
+        "COL_PENETRATION",
+        "GRAPH_LOOSE",
+        "ASM_SEQUENCE_OK"
+      ],
       "noBlockers": true,
-      "bom": { "totalInstances": 82 }
+      "bom": {
+        "totalInstances": 82
+      }
     }
   ]
 }

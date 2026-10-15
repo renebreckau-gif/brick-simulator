@@ -81,7 +81,8 @@ export interface CanonicalModel {
   assemblies: Assembly[];
   /** Geordnete Baufolge; leer = keine belegte Baufolge. */
   steps: StepDef[];
-  stepsSource: 'source-file' | 'fixture-declared' | 'none';
+  /** instructions-mapped = Baufolge einer Herstelleranleitung, eigene Zuordnung auf die Modellinstanzen. */
+  stepsSource: 'source-file' | 'fixture-declared' | 'instructions-mapped' | 'none';
   usage: UsageProfile;
   changeLog: ChangeRecord[];
 }
