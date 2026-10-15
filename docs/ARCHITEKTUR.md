@@ -1,0 +1,77 @@
+# Architekturentscheidungen
+
+Stand: 2026-10-14, Phase 1.
+
+## A1 – Technik: TypeScript, React, Three.js, Vite, Vitest
+
+Entspricht dem Default des Auftrags. Vite 8 als schlanker Build, Vitest 5 als Testlauf im selben Werkzeug. Kein Backend, keine Accounts, keine Datenbank: Alle Daten sind Dateien unter `data/`. Three.js wird direkt genutzt (ohne react-three-fiber), um eine Abhängigkeit weniger zu haben; die Ansicht ist eine einzelne Komponente.
+
+## A2 – Ein kanonisches Modell als einzige Quelle
+
+`CanonicalModel` (`src/core/model/types.ts`) enthält Instanzen (stabile `instanceId`, LDraw-Teil, LDraw-Farbe, Position, Rotation, Baugruppe), Baugruppen, Bauschritte, Nutzungsprofil und Änderungsprotokoll. 3D-Ansicht, Prüfung, Stückliste, Bauschritte und Exporte lesen ausschließlich dieses Objekt.
+
+Jedes abgeleitete Artefakt (Bericht, Stückliste, Beschaffungsstand) trägt einen `ModelRef` aus Modell-ID, Version und Inhalts-Hash. `applyEdit` erzeugt bei jeder konstruktiven Änderung eine neue Version. `artifactStatus` meldet ältere Artefakte als `stale`. Die Oberfläche prüft eine geänderte Version nicht automatisch neu, damit der veraltete Zustand sichtbar bleibt.
+
+## A3 – Koordinaten und Einheiten
+
+LDraw-System: rechtshändig, −Y oben, Einheit LDU. Ein Noppenraster ist 20 LDU, ein Stein 24, eine Platte 8, eine Noppe 4 hoch. Die Schwerkraft wirkt in Welt-+Y. In der Ansicht wird das LDraw-System um 180° um X gedreht; das ist eine echte Drehung, keine Spiegelung. Toleranzen stehen in `src/core/units.ts`:
+
+| Toleranz | Wert | Bedeutung |
+|---|---|---|
+| connectorPosition | 0,25 LDU | Anschlusspunkte gelten als deckungsgleich |
+| penetration | 0,5 LDU | ab dieser Überlappung in allen Achsen gilt eine Durchdringung |
+| contact | 0,25 LDU | Abstand für „berührt“ |
+| matrix | 1·10⁻³ | Abweichung von Orthonormalität, ab der ein Teil als verformt gilt |
+
+## A4 – Geometrie aus LDraw, Anschlüsse aus eigenen Metadaten
+
+LDraw liefert Geometrie, aber keine Anschluss- oder Belastungsdaten. Deshalb gibt es eigene, versionierte Teil-Metadaten (`partMeta.ts`, `part-meta@1.0.0`): Körpervolumen, Noppen, Hohlnoppen, Aufnahmen, Röhren, Unterseitenstifte sowie nicht unterstützte Anschlüsse (Technic-Pin und -Loch). Sie werden parametrisch aus dem Teiltyp erzeugt.
+
+Der Test `tests/part-meta-crosscheck.test.ts` gleicht sie unabhängig gegen die LDraw-Geometrie ab: Begrenzungsbox ↔ Körper, `stud.dat`/`stud2.dat` ↔ Noppen, `stud4.dat` ↔ Röhren, `stud3.dat` ↔ Unterseitenstifte. Eine dabei gefundene Abweichung (3069b ohne `stud3.dat`) ist im Datensatz begründet.
+
+## A5 – Katalog: drei getrennte Eigenschaften
+
+`Catalog` trennt drei Eigenschaften:
+
+- **Existenz**: Rebrickable-Auszug plus ID-Zuordnung.
+- **Simulationsunterstützung**: `supported`, `partial`, `unsupported` oder `none`.
+- **Beschaffung**: eigenes Modul, Standardstatus „nicht geprüft“.
+
+Teil-Farb-Kombinationen gelten als belegt, wenn es eine LEGO-Element-ID (`elements.csv`) oder einen Eintrag in einem Set-Inventar gibt. Farben werden nur zugeordnet, wenn LDraw-Code und Rebrickable-ID gleich sind *und* die normalisierten Namen übereinstimmen.
+
+## A6 – Prüfschichten und Evidenzstufen
+
+Die Schichten heißen catalog, geometry, connection, graph, collision, assembly, stability, structure, usage und procurement. Jeder Befund hat Kategorie, Dimension (Datenbasis, Montage, Robustheit, Nutzungseignung), Status, Schweregrad, Evidenzstufe (`confirmed`, `heuristic`, `unchecked`), betroffene Teile, Schritte und Baugruppen, Regelversion, Evidenz, Einschränkung und Abhilfe.
+
+Grundregel: Was nicht implementiert ist oder wofür Daten fehlen, wird `unchecked` oder `unsupported` und niemals `passed` oder Blocker. Beispiele:
+
+- Technic-Pin
+- Hohlnoppe mit Unterseitenstift
+- Kegel und Stange
+- Teil ohne Geometrie
+
+Der Gesamtstatus kennt nur drei Werte: „Blocker gefunden (im geprüften Umfang)“, „keine Blocker – offene Bereiche“ und „keine Blocker – alles geprüft“.
+
+## A7 – Überschneidungen werden einmal klassifiziert
+
+`computeOverlaps` (`world.ts`) klassifiziert jede Überschneidung genau einmal: entweder als Durchdringung oder als ungeprüft (grobe Hülle oder nicht implementierte Technik). Kollisionsprüfung und Montageprüfung verwenden dieselbe Klassifikation. So kann eine ungeprüfte Technik nicht an anderer Stelle als „Weg blockiert“ wieder auftauchen.
+
+## A8 – Montageprüfung
+
+Je Schritt werden Einzelteile und separat gebaute Baugruppen als Einheiten platziert. Die Richtung ergibt sich aus den Steckverbindungen. Widersprechen sich zwei Richtungen, liegt eine Klemmposition vor. Eine deklarierte Richtung wird gegen die Verbindungen geprüft. Der Weg wird entlang der Achse von „unendlich“ bis zur Endposition gefegt.
+
+Die Reihenfolge innerhalb eines Schritts ist nicht belegt. Deshalb werden zuerst Einheiten mit Verbindung zum Bestand und freiem Weg platziert. Baugruppen haben einen eigenen Baukontext. Zwischenzustände werden heuristisch auf Zerfall in Teilgruppen und Standfähigkeit bewertet; eine deklarierte Unterstützung verwandelt die Warnung in einen dokumentierten Hinweis.
+
+## A9 – Erwartungen getrennt vom Validator
+
+Grenzfälle sind Code-Fixtures (`src/fixtures`). Ihre Erwartungen und Begründungen stehen in `data/expectations/edge-cases.json`. Die Tests vergleichen nur Befundcodes und betroffene Instanzen mit diesen Erwartungen und rechnen die Prüfalgorithmen nicht nach. Zusätzliche unabhängige Kontrollen:
+
+- Invarianz unter Verschiebung und Drehung
+- Bezug des Standbefunds auf die Schwerkraft
+- Unabhängigkeit der Stückliste von der Dateireihenfolge
+- LDraw-Export und -Re-Import ergeben dieselbe Stückliste
+- Stückliste gegen das unabhängige Rebrickable-Inventar
+
+## A10 – Spätere Vision im Datenmodell, nicht im Code
+
+Die Datenmodelle enthalten bereits Platz für Späteres: Anschlussarten für Technic, Stangen, Clips, Scharniere, SNOT und flexible Teile, Unterstützungsdeklarationen, Nutzungsprofil und Alterseignung, Provider und Angebote, eigenen Bestand und Konzeptbilder. Implementiert ist nur der Phase-1-Umfang. KI-Vorschläge sollen später als `ModelOrigin.kind = 'user'`-ähnliche Eingaben in denselben Validator laufen; der Validator bleibt die unabhängige Instanz.

@@ -1,0 +1,98 @@
+[
+  {
+    "referenceId": "ref-40013-1",
+    "name": "Halloween Ghost",
+    "setNumber": "40013-1",
+    "variant": "Hauptmodell (einziges Modell des Sets)",
+    "year": 2010,
+    "file": "references/omr/40013-1.mpd",
+    "source": {
+      "geometryAndSteps": "LDraw Official Model Repository, https://library.ldraw.org/omr/sets/1441",
+      "fileUrl": "https://library.ldraw.org/library/omr/40013-1.mpd",
+      "author": "Takeshi Takahashi [RainbowDolphin]",
+      "license": "Dateikopf: Redistributable under CCAL version 2.0 (CC BY 2.0) – Namensnennung des Autors erforderlich",
+      "fetchedAt": "2026-10-14",
+      "sha256": "5eb3628446875c8654d0636c110353a5982a58889683be2c3a828a1951d5cf17",
+      "independentInventory": "Rebrickable inventory_parts.csv, inventory_id 10590 (Version 1), Abruf 2026-10-14",
+      "manufacturerAge": "6+ laut Brickset (https://brickset.com/sets/40013-1, Sekundärquelle) – gilt nur für das Originalset und wird nicht auf Modelle übertragen"
+    },
+    "dataAcquisition": [
+      "Kandidatenwahl: alle 1470 OMR-Sets gegen Rebrickable-Inventare gefiltert (15–120 Teile, Anteil einfacher Steine/Platten/Fliesen); 40013-1 = 100 % Steine.",
+      "Geometrie, Farben und Baufolge (5 × 0 STEP, 1 Untermodell) unverändert aus der OMR-Datei importiert."
+    ],
+    "crossCheck": [
+      "Stückliste aus dem kanonischen Modell gegen das unabhängige Rebrickable-Inventar abgeglichen (automatisch, siehe Stücklisten-Abgleich).",
+      "Teil-Farb-Kombinationen über Rebrickable elements.csv / inventory_parts.csv belegt.",
+      "Anschluss-Metadaten der Teile gegen LDraw-Primitive (stud*.dat) abgeglichen."
+    ],
+    "coveredBySource": ["Teile, Farben und Positionen des Endmodells (OMR)", "Gruppierung in Bauschritte (OMR-STEP)", "Teileliste (Rebrickable, unabhängig)"],
+    "notCovered": ["Einschubrichtungen (nicht in der Quelle; vom Validator abgeleitet)", "Reihenfolge innerhalb eines Schritts", "Haltbarkeit, Handhabung, Kindersicherheit", "Übereinstimmung der OMR-Schritte mit der gedruckten Anleitung (nicht abgeglichen)"],
+    "usageStatus": "OMR-Datei unter CC BY 2.0 mit Namensnennung weitergebbar; Rebrickable-Auszug nur lokal (Nutzungsbedingungen ungeklärt).",
+    "instructions": [{ "label": "Brickset – Set 40013-1 (Verweis auf Anleitungen)", "url": "https://brickset.com/sets/40013-1" }],
+    "knownDiscrepancies": []
+  },
+  {
+    "referenceId": "ref-21002-1",
+    "name": "Empire State Building",
+    "setNumber": "21002-1",
+    "variant": "Hauptmodell (LEGO Architecture), OMR-Datei mit Untermodellen Base und Building",
+    "year": 2009,
+    "file": "references/omr/21002-1.mpd",
+    "source": {
+      "geometryAndSteps": "LDraw Official Model Repository (Set-Seite über OMR-Suche 21002-1)",
+      "fileUrl": "https://library.ldraw.org/library/omr/21002-1.mpd",
+      "author": "Orion Pobursky [OrionP]; OMR-Konformität: Holly-Wood (2012-08-14)",
+      "license": "Dateikopf: Redistributable under CCAL version 2.0 (CC BY 2.0) – Namensnennung des Autors erforderlich",
+      "fetchedAt": "2026-10-14",
+      "sha256": "4a97bf6ff9d524dcc2b392b7c5cf9998c5f041a5c5ee55cb26687f3646c6f0c9",
+      "independentInventory": "Rebrickable inventory_parts.csv, inventory_id 15294 (Version 1), Abruf 2026-10-14",
+      "manufacturerAge": "10+ laut LEGO-Anleitungsseite (abgerufen 2026-10-14) – gilt nur für das Originalset"
+    },
+    "dataAcquisition": [
+      "Auswahl wegen Baufolge (25 × 0 STEP), zwei Untermodellen und realen Grenzfällen: Jumper-Platten (Halbnoppenversatz), Noppe-in-Röhre, Technic-Pin/Loch, Kegel mit Stange.",
+      "Geometrie, Farben und Baufolge unverändert aus der OMR-Datei importiert."
+    ],
+    "crossCheck": [
+      "Stückliste gegen Rebrickable-Inventar abgeglichen.",
+      "Gesamtteilezahl: OMR 77 Teile, Rebrickable 77 (ohne Ersatzteile), LEGO-Anleitungsseite 77."
+    ],
+    "coveredBySource": ["Teile, Farben, Positionen (OMR)", "Bauschritte und Untermodelle (OMR)", "Teileliste (Rebrickable, unabhängig)"],
+    "notCovered": ["Technic-Pin 2458 ↔ Loch 6541 und Kegel 59900 / Stange 30374: Verbindungsregeln nicht implementiert → ungeprüft", "Einschubrichtungen (abgeleitet)", "Haltbarkeit, Handhabung, Kindersicherheit"],
+    "usageStatus": "OMR-Datei unter CC BY 2.0 mit Namensnennung weitergebbar; offizielle Anleitung wird nur verlinkt, nicht mitgeliefert.",
+    "instructions": [{ "label": "LEGO Bauanleitungen 21002 (offiziell)", "url": "https://www.lego.com/de-de/service/building-instructions/21002" }],
+    "knownDiscrepancies": [
+      "Jumper-Variante: OMR verwendet 3794a (ohne Nut), Rebrickable-Inventar nennt 3794b (mit Nut); laut Rebrickable Formvariante (Relation M). Nicht aufgelöst.",
+      "Druckteil: LDraw 4162p0b ↔ Rebrickable 4162pr0068 manuell zugeordnet (siehe data/catalog/id-map.json).",
+      "Erscheinungsjahr: Rebrickable 2009, LEGO-Anleitungsseite 2008."
+    ]
+  },
+  {
+    "referenceId": "ref-1869-1",
+    "name": "South African Flag",
+    "setNumber": "1869-1",
+    "variant": "Hauptmodell (Basic, 1996, begrenzte Auflage Südafrika laut Brickset)",
+    "year": 1996,
+    "file": "references/omr/1869-1.mpd",
+    "source": {
+      "geometryAndSteps": "LDraw Official Model Repository, https://library.ldraw.org/omr/sets/37",
+      "fileUrl": "https://library.ldraw.org/library/omr/1869-1.mpd",
+      "author": "Merlijn Wissink [Legolijntje]",
+      "license": "Dateikopf: Redistributable under CCAL version 2.0 (CC BY 2.0) – Namensnennung des Autors erforderlich",
+      "fetchedAt": "2026-10-14",
+      "sha256": "abf519aa03a1db2de24cc37c6aecb907de811682c962b4de5a8b91eb30981b2b",
+      "independentInventory": "Rebrickable inventory_parts.csv, inventory_id 839 (Version 1), Abruf 2026-10-14"
+    },
+    "dataAcquisition": [
+      "Zusatzreferenz für Endzustand, Verband und Stücklistenabgleich: 100 % einfache Steine, aber KEINE Baufolge in der Quelle (keine STEP-Angaben)."
+    ],
+    "crossCheck": ["Stückliste gegen Rebrickable-Inventar abgeglichen."],
+    "coveredBySource": ["Teile, Farben, Positionen (OMR)", "Teileliste (Rebrickable)"],
+    "notCovered": ["Baufolge – nicht belegt, daher Montageprüfung ungeprüft", "Standfähigkeit (aufrechte Flaggenwand ohne Fuß)"],
+    "usageStatus": "OMR-Datei unter CC BY 2.0 mit Namensnennung weitergebbar.",
+    "instructions": [{ "label": "Brickset – Set 1869-1", "url": "https://brickset.com/sets/1869-1" }],
+    "knownDiscrepancies": [
+      "Teilezahl: OMR 82, Rebrickable 81, Brickset 80.",
+      "OMR: 7 × 3004 gelb + 2 × 3005 gelb; Rebrickable: 8 × 3004 gelb, kein 3005 gelb. Nicht aufgelöst."
+    ]
+  }
+]

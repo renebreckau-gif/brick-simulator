@@ -1,0 +1,26 @@
+# Abhängigkeiten und Build-Ausgaben
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Zugangsdaten und lokale Umgebung
+.env
+.env.*
+*.pem
+*.key
+
+# Rebrickable-Daten: Nutzungs-/Weitergabestatus ungeklärt (siehe docs/QUELLEN.md).
+# Weder Rohdaten noch der daraus erzeugte Auszug werden veröffentlicht.
+data-raw/
+data/catalog/rebrickable-extract.json
+
+# Lokale Werkzeug-, Editor- und Systemdateien
+.claude/
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

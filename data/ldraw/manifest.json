@@ -1,0 +1,648 @@
+{
+  "source": "https://library.ldraw.org/library/official/",
+  "fetchedAt": "2026-10-14T16:00:50.065Z",
+  "files": {
+    "3001.dat": {
+      "path": "parts/3001.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3001.dat",
+      "sha256": "70968cb5e4baa92dc6a1939aca7526b8566a17dbea49da9b91182aa864e412c4",
+      "title": "Brick  2 x  4",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3002.dat": {
+      "path": "parts/3002.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3002.dat",
+      "sha256": "02065cff45c9f5cbc52259757813d3ac66e013777b759bf35a6bb94c9cbf1681",
+      "title": "Brick  2 x  3",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3003.dat": {
+      "path": "parts/3003.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3003.dat",
+      "sha256": "aed0ccd750126a58d38b012a4e8b16c172896339547c120ef67b69e1386f490d",
+      "title": "Brick  2 x  2",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3004.dat": {
+      "path": "parts/3004.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3004.dat",
+      "sha256": "e1caee3b32175393c9d6ea176a47f8869173a01d03a451e1cfe10d09167c0203",
+      "title": "Brick  1 x  2",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3005.dat": {
+      "path": "parts/3005.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3005.dat",
+      "sha256": "f86e5f3aed432cab8f5dffcf2e41a9f2ee8c3bd4dcad1732da9630837849a4f8",
+      "title": "Brick  1 x  1",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3009.dat": {
+      "path": "parts/3009.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3009.dat",
+      "sha256": "950a186800b17a778e6c4b91420b1846df98c2bdbac8a551cfe7f74ddc831a3e",
+      "title": "Brick  1 x  6",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3010.dat": {
+      "path": "parts/3010.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3010.dat",
+      "sha256": "7d1cb3082199042666045d92388b3b3ab697f969268e87a6c001f80f92a2e0b2",
+      "title": "Brick  1 x  4",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "2456.dat": {
+      "path": "parts/2456.dat",
+      "url": "https://library.ldraw.org/library/official/parts/2456.dat",
+      "sha256": "59137cf0481aef7fffd3635459813bae50f67869612f64c88e7fcf6f3fd8d384",
+      "title": "Brick  2 x  6",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3023.dat": {
+      "path": "parts/3023.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3023.dat",
+      "sha256": "fa3eeab92b077488bae3dbc0fe974ef3327a77f130776d2965f13d3ebc22ab57",
+      "title": "~Moved to 3023b",
+      "author": "Orion Pobursky [OrionP]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3024.dat": {
+      "path": "parts/3024.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3024.dat",
+      "sha256": "e053af4f232374b0c8da2dc0f9620bedf0576ca43d7c3ceebc6676050ae61da8",
+      "title": "Plate  1 x  1",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3032.dat": {
+      "path": "parts/3032.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3032.dat",
+      "sha256": "35e8b828a5bf21de83ca898a49b9725e6d08d5752ad6eb57910f27086108ca1f",
+      "title": "Plate  4 x  6",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3030.dat": {
+      "path": "parts/3030.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3030.dat",
+      "sha256": "9bb7ea91f82cc37dca948eb1624b5f0c877756a1afdec89692289adef5b7efef",
+      "title": "Plate  4 x 10",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3069b.dat": {
+      "path": "parts/3069b.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3069b.dat",
+      "sha256": "31203056de061c115b007f68a564bb2383761844b9373098df0c94cc4b18046a",
+      "title": "Tile  1 x  2 with Groove",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3070b.dat": {
+      "path": "parts/3070b.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3070b.dat",
+      "sha256": "c7608c7e9f40c61747fb46c7107ef141b0a441e381768d2cdac0129f8ad03752",
+      "title": "Tile  1 x  1 with Groove",
+      "author": "Chris Dee [cwdee]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "6636.dat": {
+      "path": "parts/6636.dat",
+      "url": "https://library.ldraw.org/library/official/parts/6636.dat",
+      "sha256": "e4bd77135a542e0953fd9d6e08e050911ce920582f0e1020f02bedcd9cbee84d",
+      "title": "Tile  1 x  6",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4162.dat": {
+      "path": "parts/4162.dat",
+      "url": "https://library.ldraw.org/library/official/parts/4162.dat",
+      "sha256": "558dae4d9439dfcf4290601873fb2e3ca7387dbe6c29a9478a12003ea604f8e9",
+      "title": "Tile  1 x  8",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4162p0b.dat": {
+      "path": "parts/4162p0b.dat",
+      "url": "https://library.ldraw.org/library/official/parts/4162p0b.dat",
+      "sha256": "84d9ae6b1d3c3e6d0ef9de6a66ca3d051f76323b10d8c1f572c29f226ce18024",
+      "title": "Tile  1 x  8 with \"Empire State Building\" Pattern",
+      "author": "J.C. Tchang [tchang]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3794a.dat": {
+      "path": "parts/3794a.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3794a.dat",
+      "sha256": "7acf130b3578a36f1277ed5d00757aef0a1263e3f5b58dcf9346457d180f4355",
+      "title": "Plate  1 x  2 without Groove with 1 Centre Stud",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "6541.dat": {
+      "path": "parts/6541.dat",
+      "url": "https://library.ldraw.org/library/official/parts/6541.dat",
+      "sha256": "4e8fd6dea6a8dd300119ad80ca42a9e55b8fb904db98238d93667ebfdd004826",
+      "title": "Technic Brick  1 x  1 with Hole",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "2458.dat": {
+      "path": "parts/2458.dat",
+      "url": "https://library.ldraw.org/library/official/parts/2458.dat",
+      "sha256": "7c8e68deb0f2c31f2cb06e17fc469a6d2c67358cc530fe01c1feea1e50bb0ba1",
+      "title": "Brick  1 x  2 with Pin",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "59900.dat": {
+      "path": "parts/59900.dat",
+      "url": "https://library.ldraw.org/library/official/parts/59900.dat",
+      "sha256": "8416701912ed13937743df8dd877a2a1254925efd4adebb77950f48c3d9d5156",
+      "title": "Cone  1 x  1 with Stop",
+      "author": "Michael Heidemann [mikeheide]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "30374.dat": {
+      "path": "parts/30374.dat",
+      "url": "https://library.ldraw.org/library/official/parts/30374.dat",
+      "sha256": "db69ea3eecc2a6f2731aaad6ac8fb072c5ecbe136d1ea8a03de593014fe2e9c0",
+      "title": "Bar  4L Lightsaber Blade",
+      "author": "Steve Bliss [sbliss]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3001s01.dat": {
+      "path": "parts/s/3001s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3001s01.dat",
+      "sha256": "bee662925490666aa5956d301b7abc46df88b3cc35737326765441585c720047",
+      "title": "~Brick  2 x  4 without Front and Back Faces",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3002s01.dat": {
+      "path": "parts/s/3002s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3002s01.dat",
+      "sha256": "b97861207148255ab4423744b0507bd5e46bae843d52e6904df0700260f198fa",
+      "title": "~Brick  2 x  3 without Front Face",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3003s01.dat": {
+      "path": "parts/s/3003s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3003s01.dat",
+      "sha256": "58f0af5b23ccd2bf3b7569a1b6de0b62cb1ae95520994ba7aa0b37c35b2a8744",
+      "title": "~Brick  2 x  2 without Front Face",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3004s01.dat": {
+      "path": "parts/s/3004s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3004s01.dat",
+      "sha256": "e05db7f7baead09713c4296b4e4e215b3fa5ccbf526e3431cb66a3ce19e321b5",
+      "title": "~Brick  1 x  2 without Front Face",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3005s01.dat": {
+      "path": "parts/s/3005s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3005s01.dat",
+      "sha256": "ed6218c566690622fed39b8fb3dac9ae9a36df66cac106e2e1d4b5862567841a",
+      "title": "~Brick  1 x  1 without Front Face",
+      "author": "Willy Tschager [Holly-Wood]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3009s01.dat": {
+      "path": "parts/s/3009s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3009s01.dat",
+      "sha256": "889704b3896146872fdfd6b0f759ec00c90495d94cdd4bb1bed07875024efc47",
+      "title": "~Brick  1 x  6 without Front Face",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3010s01.dat": {
+      "path": "parts/s/3010s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3010s01.dat",
+      "sha256": "f4616eee36d2474da47fae07a5e1ca59888e580854be17a1a9220d0f88c75333",
+      "title": "~Brick  1 x  4 without Front Face",
+      "author": "Willy Tschager [Holly-Wood]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stud4.dat": {
+      "path": "p/stud4.dat",
+      "url": "https://library.ldraw.org/library/official/p/stud4.dat",
+      "sha256": "871cdcab26e7f5113488a24c453d6fabda75b275b06de592e0bfaad4292c12a3",
+      "title": "Stud Tube Open",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "box5.dat": {
+      "path": "p/box5.dat",
+      "url": "https://library.ldraw.org/library/official/p/box5.dat",
+      "sha256": "ccb7b8a1d36692335b10ea6aa196849afcad4b15331683ed8112a10b50977318",
+      "title": "Box with 5 Faces and All Edges",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stud.dat": {
+      "path": "p/stud.dat",
+      "url": "https://library.ldraw.org/library/official/p/stud.dat",
+      "sha256": "db037d518d7c08bcdc1f0e7497f4f98e97d99850531dd62d602965520f3bf8f4",
+      "title": "Stud",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3023b.dat": {
+      "path": "parts/3023b.dat",
+      "url": "https://library.ldraw.org/library/official/parts/3023b.dat",
+      "sha256": "42f96ca69f8a0b83a877f4e128e4143ce753d038b1074835edc5aca9a9954fc9",
+      "title": "Plate  1 x  2",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3024s01.dat": {
+      "path": "parts/s/3024s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3024s01.dat",
+      "sha256": "a706692e2c838f20f3b3e4bd5ff03c4ab6c5c0d5816b0944ac39d6100fd85275",
+      "title": "~Plate  1 x  1 without Front Face",
+      "author": "Tore Eriksson [Tore_Eriksson]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3069bs01.dat": {
+      "path": "parts/s/3069bs01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3069bs01.dat",
+      "sha256": "e910d77b65118a7fc941e846f05b46d8c5a7aa3cf5706d5479533a35423c9498",
+      "title": "~Tile  1 x  2 with Groove without Top Face",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3070bs01.dat": {
+      "path": "parts/s/3070bs01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3070bs01.dat",
+      "sha256": "34d2f42bf42b1c22a184fbbfea6f51412a0f49def10157b2d472f3f6faf1a304",
+      "title": "~Tile  1 x  1 with Groove without Top Face",
+      "author": "Chris Dee [cwdee]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/6636s01.dat": {
+      "path": "parts/s/6636s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/6636s01.dat",
+      "sha256": "ab03bda811375ed2edb0c165d7c0bb0936c7febdbd10428a707f9cc413cbb1c2",
+      "title": "~Tile  1 x  6 without Top Face",
+      "author": "Takeshi Takahashi [RainbowDolphin]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/4162s01.dat": {
+      "path": "parts/s/4162s01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/4162s01.dat",
+      "sha256": "77bdbb1641274befff6beb95ff94f32b1625ccdc0c9f0556c7e4a79aaeee2b3b",
+      "title": "~Tile  1 x  8 without Top Face",
+      "author": "Philippe Hurbain [Philo]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stud3.dat": {
+      "path": "p/stud3.dat",
+      "url": "https://library.ldraw.org/library/official/p/stud3.dat",
+      "sha256": "d29e9160faeaf85b2b72a098e89a81f41e0082517a82065d7b1f149b5fd2addd",
+      "title": "Stud Tube Solid",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stud2.dat": {
+      "path": "p/stud2.dat",
+      "url": "https://library.ldraw.org/library/official/p/stud2.dat",
+      "sha256": "5ed3702c7d7000bfac2906f12b74ae312c59194a8e3b504952820c826b51c810",
+      "title": "Stud Open",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "peghole.dat": {
+      "path": "p/peghole.dat",
+      "url": "https://library.ldraw.org/library/official/p/peghole.dat",
+      "sha256": "90c6dba9e5bcdd63955b9a5208f377761850863be9ed26cac7cd2be61ab85c92",
+      "title": "Peg Hole End",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4cyli.dat": {
+      "path": "p/4-4cyli.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4cyli.dat",
+      "sha256": "4a742c2765b6ebf98245baaf8a160a4ff587fc93d36c8ee2b9074712a2f968c4",
+      "title": "Cylinder 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4ndis.dat": {
+      "path": "p/4-4ndis.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4ndis.dat",
+      "sha256": "21202dc15823f4336bc2544244d0b539b76745c89f7a59ad18cdd03ad45cc543",
+      "title": "Disc Negative 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "rect.dat": {
+      "path": "p/rect.dat",
+      "url": "https://library.ldraw.org/library/official/p/rect.dat",
+      "sha256": "ffeb2dd3d9b83c38841f18f1f74800fbba9e90c5fb6badfff2a795f08a96cb71",
+      "title": "Rectangle",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4edge.dat": {
+      "path": "p/4-4edge.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4edge.dat",
+      "sha256": "54a52196e421fd1717d291ff52ea57553b1fb238907c1678cc1f1a84c698b1da",
+      "title": "Circle 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "connect.dat": {
+      "path": "p/connect.dat",
+      "url": "https://library.ldraw.org/library/official/p/connect.dat",
+      "sha256": "fa572d5b7bcdb19ea2ba74cd1a98aca913e1e556001232e484611915adf83305",
+      "title": "Technic Pin 1.0 with Base Collar",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4ring3.dat": {
+      "path": "p/4-4ring3.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4ring3.dat",
+      "sha256": "1f2835ac308154edc2d6f479d8e742a55be981f6167b20bfa100c195bc0731dd",
+      "title": "Ring  3 x 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4cylo.dat": {
+      "path": "p/4-4cylo.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4cylo.dat",
+      "sha256": "d6ca97ee2e75918b3309a5c88aafcd2455b3a316f7cef8963517c19f1d86b38f",
+      "title": "Cylinder Open 1.0",
+      "author": "Mark Kennedy [mkennedy]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "axl3hol3.dat": {
+      "path": "p/axl3hol3.dat",
+      "url": "https://library.ldraw.org/library/official/p/axl3hol3.dat",
+      "sha256": "05fd46a65cb2342d3e88e3789a610b4f17f9fc8fd614f90bf8c2b3f44e13a171",
+      "title": "Technic Axle Hole Semi-Reduced Tooth Outer Edges",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "axl3ho10.dat": {
+      "path": "p/axl3ho10.dat",
+      "url": "https://library.ldraw.org/library/official/p/axl3ho10.dat",
+      "sha256": "7799ee39b85781d7283d952136cba415605b819a87b9ec92cbfe3f348c8c1f5e",
+      "title": "Technic Axle Hole Semi-Reduced Tooth Surface",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "axl3hol9.dat": {
+      "path": "p/axl3hol9.dat",
+      "url": "https://library.ldraw.org/library/official/p/axl3hol9.dat",
+      "sha256": "a99c7a963b46b735e36743f216efdd4916f982b4b984469de5b7e6bddb18e8c7",
+      "title": "Technic Axle Hole Semi-Reduced Tooth Inner Edges",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "axl3hol8.dat": {
+      "path": "p/axl3hol8.dat",
+      "url": "https://library.ldraw.org/library/official/p/axl3hol8.dat",
+      "sha256": "2349b82c7dd4559a45913986e07e185035fdb48928ac13e5fd774f4c30a65e96",
+      "title": "Technic Axle Hole Semi-Reduced Perimeter",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "axl3hol2.dat": {
+      "path": "p/axl3hol2.dat",
+      "url": "https://library.ldraw.org/library/official/p/axl3hol2.dat",
+      "sha256": "5d35ee8c2a5ecf50222d9e7a5a489730f4296b47e781157a7f01263b162c6901",
+      "title": "Technic Axle Hole Semi-Reduced Side Edges",
+      "author": "Santeri Piippo [arezey]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4ring2.dat": {
+      "path": "p/4-4ring2.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4ring2.dat",
+      "sha256": "6fb38804b1f5e9bee8c0b80caf1397b09454fc58b048dc19045b6f37c8762ab0",
+      "title": "Ring  2 x 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stud2a.dat": {
+      "path": "p/stud2a.dat",
+      "url": "https://library.ldraw.org/library/official/p/stud2a.dat",
+      "sha256": "61fbed54b085a30490045309778d1e2a6d95485e6558996b12674f848028d557",
+      "title": "Stud Open without Base Edges",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4ring12.dat": {
+      "path": "p/4-4ring12.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4ring12.dat",
+      "sha256": "3308fbae0dbb0ac056ed5322a416e37ef39ae9200201cc71cbe6e81ec504a1b4",
+      "title": "Ring 12 x 1.0",
+      "author": "Willy Tschager [Holly-Wood]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4ring4.dat": {
+      "path": "p/4-4ring4.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4ring4.dat",
+      "sha256": "e046737f05ca843c7fc32bbfe9f5b26f3409c5b42b786d8809aa789faf761154",
+      "title": "Ring  4 x 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4con4.dat": {
+      "path": "p/4-4con4.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4con4.dat",
+      "sha256": "7c49737dec9819a49e43d7af5926c05d8a1a1226bc0f2cb15cbe7cddb035f00b",
+      "title": "Cone  4 x 1.0",
+      "author": "Willy Tschager [Holly-Wood]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4con7.dat": {
+      "path": "p/4-4con7.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4con7.dat",
+      "sha256": "a1041c95280f6b9551e6171d8090cb4e0f0dbec7a9a85fa5bb71d0a613827696",
+      "title": "Cone  7 x 1.0",
+      "author": "Niels Karsdorp [nielsk]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4con13.dat": {
+      "path": "p/4-4con13.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4con13.dat",
+      "sha256": "340b30ba8205ef76e4457aaba4620b9a1a2ad13e14bbcacac63dae1dd224812d",
+      "title": "Cone 13 x 1.0",
+      "author": "Michael Heidemann [mikeheide]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "4-4disc.dat": {
+      "path": "p/4-4disc.dat",
+      "url": "https://library.ldraw.org/library/official/p/4-4disc.dat",
+      "sha256": "a00b5547776f61a7389d303616987c76b3c4de86ad8ec32f22857e1bd5e5e40f",
+      "title": "Disc 1.0",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "box3u2p.dat": {
+      "path": "p/box3u2p.dat",
+      "url": "https://library.ldraw.org/library/official/p/box3u2p.dat",
+      "sha256": "df73118b95f23d693c3b7d25c57c483db3bf61ae017d757848119955d28d59e0",
+      "title": "Box with 3 Faces without 2 Parallel Edges",
+      "author": "Niels Karsdorp [nielsk]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3003s02.dat": {
+      "path": "parts/s/3003s02.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3003s02.dat",
+      "sha256": "ceb77e4263964fc1658630d9533118d8feeddf2aeb7d0a1116c6e5bc2318a92f",
+      "title": "~Brick  2 x  2 without Front and Back Faces",
+      "author": "Owen Burgoyne [C3POwen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "box4t.dat": {
+      "path": "p/box4t.dat",
+      "url": "https://library.ldraw.org/library/official/p/box4t.dat",
+      "sha256": "9e85c281fff9c33ce26931d772310c8faeeaba4dca1036acf1e6ac578dc50c00",
+      "title": "Box with 4 Adjacent Faces and All Edges",
+      "author": "Tore Eriksson [Tore_Eriksson]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stug-1x4.dat": {
+      "path": "p/stug-1x4.dat",
+      "url": "https://library.ldraw.org/library/official/p/stug-1x4.dat",
+      "sha256": "e88852b15ca37121e12f7052a234e4a90dc99a8c6d22d45e041f47103c2fb71c",
+      "title": "Stud Group  1 x  4",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stug3-1x3.dat": {
+      "path": "p/stug3-1x3.dat",
+      "url": "https://library.ldraw.org/library/official/p/stug3-1x3.dat",
+      "sha256": "80f86a2ea87dfabc79c3daf963a14c7757caceea6b402ac4f2178a6088de08ac",
+      "title": "Stud Tube Solid Group  1 x  3",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "s/3023bs01.dat": {
+      "path": "parts/s/3023bs01.dat",
+      "url": "https://library.ldraw.org/library/official/parts/s/3023bs01.dat",
+      "sha256": "d5d511e8fce3653ea9c0c8662952006394725f4f7a2234842946c417a737ecad",
+      "title": "~Plate  1 x  2 without Front Face",
+      "author": "Massimo Maso [Sirio]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "box4.dat": {
+      "path": "p/box4.dat",
+      "url": "https://library.ldraw.org/library/official/p/box4.dat",
+      "sha256": "2cbfcf075ef5c87c6a5f543f837972a78d43274ac7771b92229b5fe5da797c1e",
+      "title": "Box with 4 Faces (2 Parallel Pairs) and All Edges",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stug3-1x5.dat": {
+      "path": "p/stug3-1x5.dat",
+      "url": "https://library.ldraw.org/library/official/p/stug3-1x5.dat",
+      "sha256": "85d37bfc3cbb90f12a55dfe2543f507c1763f0336962c712cbec327d688b5624",
+      "title": "Stud Tube Solid Group  1 x  5",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stug3-1x7.dat": {
+      "path": "p/stug3-1x7.dat",
+      "url": "https://library.ldraw.org/library/official/p/stug3-1x7.dat",
+      "sha256": "381169c4592a6ed096c0011e06e6000c65200492fe6126b3aa9e6a51ae2ba244",
+      "title": "Stud Tube Solid Group  1 x  7",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3-8cyli.dat": {
+      "path": "p/3-8cyli.dat",
+      "url": "https://library.ldraw.org/library/official/p/3-8cyli.dat",
+      "sha256": "9224d4e5edc6f5b0f75f6fa358fd1368a4fd65f676b74fe1bb6e3bbb05046206",
+      "title": "Cylinder 0.375",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3-8ring2.dat": {
+      "path": "p/3-8ring2.dat",
+      "url": "https://library.ldraw.org/library/official/p/3-8ring2.dat",
+      "sha256": "c65d4b41084dd68c63f74ca1f92d7ae9e7a79e5b1632823f24739f3ff8196691",
+      "title": "Ring  2 x 0.375",
+      "author": "Willy Tschager [Holly-Wood]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3-8ring12.dat": {
+      "path": "p/3-8ring12.dat",
+      "url": "https://library.ldraw.org/library/official/p/3-8ring12.dat",
+      "sha256": "3480b87412d6592fcbcfbbea7e1c1120c63b13b96a88bf64a0cbc689ce2aec00",
+      "title": "Ring 12 x 0.375",
+      "author": "Niels Karsdorp [nielsk]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "3-8edge.dat": {
+      "path": "p/3-8edge.dat",
+      "url": "https://library.ldraw.org/library/official/p/3-8edge.dat",
+      "sha256": "a590f230678d592d514a9c5e307c6a30945e50e4c529fc06accf37530d0e0ed5",
+      "title": "Circle 0.375",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "1-4edge.dat": {
+      "path": "p/1-4edge.dat",
+      "url": "https://library.ldraw.org/library/official/p/1-4edge.dat",
+      "sha256": "9ce2de7e67bbac575d52cfdc771b9d00856efc9b88002d97db8e665e50f4d467",
+      "title": "Circle 0.25",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "1-4ndis.dat": {
+      "path": "p/1-4ndis.dat",
+      "url": "https://library.ldraw.org/library/official/p/1-4ndis.dat",
+      "sha256": "ff6685838636e7ab6152356d8f09e4f00a38af0d878b0881423f5c45fb868f0c",
+      "title": "Disc Negative 0.25",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "1-4cyli.dat": {
+      "path": "p/1-4cyli.dat",
+      "url": "https://library.ldraw.org/library/official/p/1-4cyli.dat",
+      "sha256": "5a7168952a5a3570327873b9a5802fa7b3be40967ab78c03b6a2bfd4419a1f10",
+      "title": "Cylinder 0.25",
+      "author": "James Jessiman",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stug-2x2.dat": {
+      "path": "p/stug-2x2.dat",
+      "url": "https://library.ldraw.org/library/official/p/stug-2x2.dat",
+      "sha256": "16114159ea25719341a852d5403dc9982a6211f2fcb23f5c4c3eac05a2ad43f7",
+      "title": "Stud Group  2 x  2",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "stug-1x2.dat": {
+      "path": "p/stug-1x2.dat",
+      "url": "https://library.ldraw.org/library/official/p/stug-1x2.dat",
+      "sha256": "5842fa1baf6ea7f18fe4e355238cd733ff9bdbdc3d722be5cf8988f1c5fce414",
+      "title": "Stud Group  1 x  2",
+      "author": "Steffen [Steffen]",
+      "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+    },
+    "ldconfig.ldr": {
+      "path": "LDConfig.ldr",
+      "url": "https://library.ldraw.org/library/official/LDConfig.ldr",
+      "sha256": "d3490047460ad7a511b150006b009830fc52ecc1899b514c7380e9de644b3cfb"
+    },
+    "careadme.txt": {
+      "path": "CAreadme.txt",
+      "url": "https://library.ldraw.org/library/official/CAreadme.txt",
+      "sha256": "c67a824bdab18e646337b5b26f7f039c84b0be71273c0c878e2749e648820497"
+    }
+  }
+}

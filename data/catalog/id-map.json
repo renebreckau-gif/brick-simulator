@@ -1,0 +1,30 @@
+{
+  "schema": "baustein-sim/id-map@1",
+  "version": "2026-10-14.1",
+  "note": "Zuordnung LDraw-Teildatei → Rebrickable-Teilnummer. 'identical' = gleiche Nummer, Bezeichnung in beiden Quellen manuell verglichen. 'manual' = abweichende Nummer, Begründung angegeben. Nicht durch die Rebrickable-API (external_ids) bestätigt, da kein API-Schlüssel vorliegt.",
+  "parts": [
+    { "ldraw": "3001", "rebrickable": "3001", "basis": "identical" },
+    { "ldraw": "3002", "rebrickable": "3002", "basis": "identical" },
+    { "ldraw": "3003", "rebrickable": "3003", "basis": "identical" },
+    { "ldraw": "3004", "rebrickable": "3004", "basis": "identical" },
+    { "ldraw": "3005", "rebrickable": "3005", "basis": "identical" },
+    { "ldraw": "3009", "rebrickable": "3009", "basis": "identical" },
+    { "ldraw": "3010", "rebrickable": "3010", "basis": "identical" },
+    { "ldraw": "2456", "rebrickable": "2456", "basis": "identical" },
+    { "ldraw": "3023", "rebrickable": "3023", "basis": "identical" },
+    { "ldraw": "3024", "rebrickable": "3024", "basis": "identical" },
+    { "ldraw": "3032", "rebrickable": "3032", "basis": "identical" },
+    { "ldraw": "3030", "rebrickable": "3030", "basis": "identical" },
+    { "ldraw": "3069b", "rebrickable": "3069b", "basis": "identical" },
+    { "ldraw": "3070b", "rebrickable": "3070b", "basis": "identical" },
+    { "ldraw": "6636", "rebrickable": "6636", "basis": "identical" },
+    { "ldraw": "4162", "rebrickable": "4162", "basis": "identical" },
+    { "ldraw": "4162p0b", "rebrickable": "4162pr0068", "basis": "manual", "reason": "LDraw-Titel 'Tile 1 x 8 with \"Empire State Building\" Pattern'; Rebrickable 'Tile 1 x 8 with \"Empire State Building\" Print' im Inventar von 21002-1. Gleiche Grundform 4162." },
+    { "ldraw": "3794a", "rebrickable": "3794a", "basis": "identical", "reason": "Rebrickable führt 3794b (mit Nut) als Formvariante (Relation M) von 3794a." },
+    { "ldraw": "6541", "rebrickable": "6541", "basis": "identical" },
+    { "ldraw": "2458", "rebrickable": "2458", "basis": "identical" },
+    { "ldraw": "59900", "rebrickable": "59900", "basis": "identical" },
+    { "ldraw": "30374", "rebrickable": "30374", "basis": "identical" },
+    { "ldraw": "3008", "rebrickable": "3008", "basis": "identical", "reason": "Nur als Beispiel 'Teil außerhalb des unterstützten Umfangs' (Grenzfall), keine Geometrie geladen." }
+  ]
+}
