@@ -115,7 +115,7 @@ export function StepsPanel({ model, analysis, stepIndex, onStep, catalog, stale 
   if (!model.steps.length) return <p className="empty">Für dieses Modell ist keine Baufolge belegt. Die Montageprüfung bleibt ungeprüft; ein automatischer Baufolgenplaner ist nicht Teil dieser Phase.</p>;
   return (
     <div className="steps">
-      <p className="muted small">Quelle der Baufolge: {{ 'source-file': 'Quelldatei (0 STEP / Untermodelle)', 'fixture-declared': 'Fixture-Deklaration', 'instructions-mapped': 'LEGO-Anleitung, eigene Zuordnung der Schritte auf die OMR-Instanzen', none: '–' }[model.stepsSource]}. Einschubrichtungen sind, wo nicht deklariert, aus den Steckverbindungen abgeleitet.{stale ? ' Achtung: Die Prüfergebnisse unten gehören zur vorherigen Modellversion.' : ''}</p>
+      <p className="muted small">Quelle der Baufolge: {{ 'source-file': 'Quelldatei (0 STEP / Untermodelle)', 'fixture-declared': 'Fixture-Deklaration', 'instructions-mapped': 'LEGO-Anleitung, eigene Zuordnung der Schritte auf die OMR-Instanzen', generated: 'vom Generator aus dem Konstruktionsprozess erzeugt (im Bewegungsmodell geprüft, keine Herstelleranleitung, nicht physisch erprobt)', none: '–' }[model.stepsSource]}. Einschubrichtungen sind, wo nicht deklariert, aus den Steckverbindungen abgeleitet.{stale ? ' Achtung: Die Prüfergebnisse unten gehören zur vorherigen Modellversion.' : ''}</p>
       <ol>
         {model.steps.map((s, i) => {
           const r = analysis.steps.find((x) => x.stepId === s.stepId);
@@ -281,6 +281,8 @@ export function SourcePanel({ model, bundle, item, expectations, report }: { mod
           <dt>Version</dt><dd>{model.version}</dd>
           <dt>Einheiten</dt><dd>LDU, LDraw-Koordinaten (rechtshändig, −Y oben), Schwerkraft +Y</dd>
           <dt>Baugruppen</dt><dd>{model.assemblies.map((a) => a.name).join('; ')}</dd>
+          <dt>Herkunft</dt><dd>{model.origin.label}</dd>
+          {model.generator && (<><dt>Generator</dt><dd className="code">{model.generator.version}</dd><dt>Eingaben</dt><dd className="code">{JSON.stringify(model.generator.params)}</dd></>)}
         </dl>
         {model.changeLog.length > 0 && (<><h4>Änderungsprotokoll</h4><ul>{model.changeLog.map((c) => <li key={c.toVersion}>v{c.fromVersion} → v{c.toVersion}: {c.description}</li>)}</ul></>)}
       </section>

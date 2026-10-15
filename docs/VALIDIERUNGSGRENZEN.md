@@ -68,6 +68,14 @@ Die Kataloglogik wird in der regulären Suite mit einer synthetischen, ausdrück
 
 BrickLink Studio beschreibt seine Kollisions- und Stabilitätsprüfung selbst als Orientierung: Sie sei konservativ, markiere oft auch gut verbundene Teile, und Kollisionen würden nicht immer korrekt erkannt. Dieser Prüfkern trennt deshalb ausdrücklich zwischen bestätigt, heuristisch und ungeprüft.
 
+## Erzeugte Modelle (Raumschiff-Generator, seit Auftrag 03)
+
+- Erzeugte Modelle durchlaufen denselben Validator ohne Ausnahmen oder abgeschwächte Regeln. Dass der Generator kollisionsfrei plant, wird nicht als Beleg gewertet.
+- Die Baufolge ist erzeugt und im Bewegungsmodell geprüft, aber nicht physisch erprobt. Sie ist keine Herstelleranleitung.
+- Heuristische Strukturwarnungen in der Beplankung (1 Noppe breite Streifen) sind bekannte Entwurfsgrenzen und werden angezeigt, nicht unterdrückt.
+- Kaufbarkeit, Preise und Verfügbarkeit sind nicht geprüft. Teil-Farb-Belege gibt es nur mit lokalem Katalogauszug.
+- Mechanische Belastbarkeit ist ungeprüft (siehe `RAUMSCHIFF.md`, offene Fragen).
+
 ## Sonderverbindung „Unterseitenstift in Hohlnoppe“ (R-UPIN-HOLLOWSTUD, connect-rules@1.1.0)
 
 **Technische Beschreibung (aus LDraw geprüft, trifft zu).** Der massive Unterseitenstift eines 1×2-Steins greift koaxial in das Loch einer Hohlnoppe. Die Noppenwand sitzt im Hohlraum zwischen Stift und Seitenwänden.

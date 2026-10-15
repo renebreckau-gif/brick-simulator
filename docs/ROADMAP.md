@@ -14,6 +14,10 @@ Kanonisches Modell, LDraw-Import, Katalog mit getrennten Eigenschaften, versioni
 4. Erste Sonderregeln implementieren und mit Grenzfällen absichern: Unterseitenstift in Hohlnoppe ✔ (02B, nur 3004 auf 6541); Stange in Halter offen.
 5. Zylindrische Noppen statt Quader, um Fehlalarme in engen Lagen zu vermeiden.
 
+## Auftrag 03 – erstes eigenes Raumschiff ✔
+
+Parametrischer, deterministischer Generator (`spaceship-gen@1.0.0`) mit drei Varianten, Raumschiff-Labor in der Oberfläche, erzeugte und geprüfte Baufolge, Protokoll für einen späteren physischen Probeaufbau (siehe `RAUMSCHIFF.md`). Nächste sinnvolle Schritte: Dachsteine und Keile mit belegten Regeln (Schrägen), physischer Probeaufbau der langgestreckten Variante, danach Einkaufsintegration und freie Text-zu-Modell-Generierung.
+
 ## Spätere Phasen (nicht begonnen)
 
 - **Entwurf**: Konzeptbilder ausdrücklich als „Konzept“ gekennzeichnet. Eine Modellansicht gilt nur, wenn sie aus einer konstruierten Version gerendert ist.
@@ -23,6 +27,6 @@ Kanonisches Modell, LDraw-Import, Katalog mit getrennten Eigenschaften, versioni
 - **SNOT, Technic, Scharniere**: erst wenn Regeln implementiert und mit Grenzfällen belegt sind.
 - **Beschaffung**: Provider (z. B. BrickLink Store API) mit echten Angeboten und Prüfzeitpunkt, Abzug des eigenen Bestands. Substitutionen lösen eine erneute Prüfung von Konstruktion, Anleitung und Stückliste aus.
 - **Kalibrierung**: physische Prüfprotokolle (siehe `PHYSISCHE-PRUEFPROTOKOLLE.md`).
-- **Raumschiff-Projekt**: Randbedingungen (Teilezahl, Größe, Budget, Nutzung) als Profil, dann Entwurf → Konstruktion → Prüfung.
+- **Raumschiff-Projekt**: erste Stufe mit Teilezahl und Größe umgesetzt (Auftrag 03); Budget und Nutzungsprofil folgen mit der Beschaffung.
 
 Ausdrücklich **nicht** in Phase 1: Text-zu-Modell, allgemeine Physiksimulation, Mechanismenbibliothek, PDF-Anleitungen, automatische Bestellung.

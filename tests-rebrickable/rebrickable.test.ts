@@ -5,6 +5,7 @@ import { compareBom, computeBom } from '../src/core/bom/bom';
 import { loadBundle, type DataBundle } from '../src/core/data/bundle';
 import { validate } from '../src/core/validation/validate';
 import { EDGE_CASES } from '../src/fixtures/edgeCases';
+import { generateSpaceship, PALETTES, VARIANTS, type PaletteId } from '../src/generator/spaceship';
 import { fsReader, readData, referenceModel } from '../tests/helpers';
 
 let cached: Promise<DataBundle> | null = null;
@@ -63,6 +64,23 @@ describe('Unabhängiger Stücklistenabgleich gegen Rebrickable-Inventare', () =>
     expect(diff.map((l) => `${l.rebrickablePart}|${l.color}|${l.modelQty}|${l.referenceQty}`).sort()).toEqual(['3004|14|7|8', '3005|14|2|0']);
     expect(cmp.summary.modelTotal).toBe(82);
     expect(cmp.summary.referenceTotal).toBe(81);
+  });
+});
+
+describe('Raumschiff-Generator mit echtem Katalog', () => {
+  it('alle Teil-Farb-Kombinationen aller Paletten und Varianten sind im Auszug belegt; Katalogprüfung ohne Blocker', async () => {
+    const b = await real();
+    for (const palette of Object.keys(PALETTES) as PaletteId[])
+      for (const [name, v] of Object.entries(VARIANTS)) {
+        const { model } = generateSpaceship({ ...v.params, palette });
+        const bom = computeBom(model, b.catalog);
+        const label = `${name}/${palette}`;
+        expect(bom.unresolved, label).toEqual([]);
+        expect(bom.lines.filter((l) => l.combination !== 'evidenced').map((l) => `${l.ldrawPart}|${l.ldrawColor}`), label).toEqual([]);
+        const r = validate(model, b.catalog);
+        expect(r.report.findings.filter((f) => f.severity === 'blocker' && f.status === 'failed').map((f) => f.code), label).toEqual([]);
+        expect(r.report.findings.map((f) => f.code), label).not.toContain('CAT_SOURCE_UNAVAILABLE');
+      }
   });
 });
 
