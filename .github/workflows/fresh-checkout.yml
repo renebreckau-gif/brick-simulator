@@ -1,0 +1,60 @@
+# Prüft, dass ein frischer Checkout OHNE private Daten installierbar, testbar und baubar ist
+# und dass der öffentliche Build keine privaten Daten enthält.
+name: Frischer Checkout
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-checkout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Sicherstellen, dass keine privaten Daten im Checkout liegen
+        run: |
+          test ! -e data/catalog/rebrickable-extract.json
+          test ! -e data-raw
+
+      - name: Installation anhand der Lockdatei
+        run: npm ci
+
+      - name: Typprüfung
+        run: npm run typecheck
+
+      - name: Reguläre Tests (ohne privaten Katalog)
+        run: npm test
+
+      - name: Produktions-Build inkl. Prüfung öffentlicher Daten
+        run: npm run build
+
+      - name: Optionale Rebrickable-Integration meldet fehlende Daten ausdrücklich
+        run: |
+          set +e
+          npm run test:rebrickable > integration.log 2>&1
+          code=$?
+          set -e
+          cat integration.log
+          test "$code" -ne 0
+          grep -q "Rebrickable-Integrationstests NICHT ausgeführt" integration.log
+
+      - name: Öffentliche Vorschau liefert Pflichtdaten, aber keinen Katalog
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ > /dev/null && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4173/)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4173/data/ldraw/manifest.json)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4173/data/references/omr/40013-1.mpd)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4173/data/catalog/rebrickable-extract.json)" = 404

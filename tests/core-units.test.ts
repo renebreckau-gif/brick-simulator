@@ -1,6 +1,6 @@
 // Kleinere Einheiten: LDraw-Parser, Katalogtrennung, Änderungen/Invalidierung, Exporte, Beschaffung.
 import { describe, expect, it } from 'vitest';
-import { computeBom } from '../src/core/bom/bom';
+import { compareBom, computeBom } from '../src/core/bom/bom';
 import { exportBomCsv, exportLdraw, exportModelJson, exportReportJson } from '../src/core/export/exporters';
 import { parseMpd } from '../src/core/ldraw/parse';
 import { applyEdit, artifactStatus } from '../src/core/model/edit';
@@ -9,7 +9,8 @@ import { importLdraw } from '../src/core/model/ldrawImport';
 import { initialProcurementState, shortfall } from '../src/core/procurement/types';
 import { validate } from '../src/core/validation/validate';
 import { EDGE_CASES } from '../src/fixtures/edgeCases';
-import { bundle, referenceModel } from './helpers';
+import { loadBundle, RequiredDataError } from '../src/core/data/bundle';
+import { bundle, fsReader, readerWithCatalog, referenceModel } from './helpers';
 
 describe('LDraw-Parser', () => {
   it('trennt MPD-Dateien, erkennt STEP und liest die Matrix zeilenweise (a..i)', () => {
@@ -26,14 +27,14 @@ describe('LDraw-Parser', () => {
   });
 });
 
-describe('Katalog: getrennte Eigenschaften', () => {
+describe('Katalog: getrennte Eigenschaften (TESTFIXTURE – synthetisch, kein Beleg)', () => {
   it('Katalogexistenz, Simulation und Beschaffung sind unabhängig', async () => {
-    const b = await bundle();
+    const b = await bundle('fixture');
+    expect(b.catalog.source).toMatchObject({ state: 'loaded', kind: 'test-fixture' });
     const p3008 = b.catalog.part('3008');
     expect(p3008.catalogStatus).toBe('known');
     expect(p3008.simulation).toBe('none');
-    const p3001 = b.catalog.part('3001');
-    expect(p3001.simulation).toBe('supported');
+    expect(b.catalog.part('3001').simulation).toBe('supported');
     expect(b.catalog.part('6541').simulation).toBe('partial');
     expect(b.catalog.part('59900').simulation).toBe('unsupported');
     expect(b.catalog.part('9999x').catalogStatus).toBe('unknown');
@@ -41,15 +42,90 @@ describe('Katalog: getrennte Eigenschaften', () => {
     expect(initialProcurementState(bom).status).toBe('not-checked');
   });
 
-  it('Farbzuordnung LDraw ↔ Rebrickable nur bei gleichem Code und Namen', async () => {
-    const b = await bundle();
+  it('Farbzuordnung nur bei gleichem Code UND gleichem Namen', async () => {
+    const b = await bundle('fixture');
     for (const code of [0, 1, 2, 4, 14, 15, 19, 71]) expect(b.catalog.color(code)?.mappingBasis, String(code)).toBe('code-and-name');
+    // Fixture-Farbe 25 hat absichtlich einen anderen Namen als LDraw (Orange) → keine Zuordnung
+    expect(b.catalog.color(25)).toMatchObject({ mappingBasis: 'none', rebrickableId: null });
     expect(b.catalog.color(0x2ff8800)).toBeNull();
   });
 
-  it('jede ID-Zuordnung zeigt auf ein Teil im Rebrickable-Auszug', async () => {
-    const b = await bundle();
-    for (const e of b.catalog.idMap.parts) expect(b.catalog.extract.parts[e.rebrickable], e.ldraw).toBeDefined();
+  it('Teil-Farb-Beleg aus Fixture ist als Fixture gekennzeichnet; fehlender Beleg ist „nicht belegt“', async () => {
+    const b = await bundle('fixture');
+    expect(b.catalog.partColorEvidence('3001', 15)).toMatchObject({ status: 'evidenced', source: expect.stringContaining('Testfixture') });
+    expect(b.catalog.partColorEvidence('3794a', 15).status).toBe('not-evidenced');
+    const r = validate(EDGE_CASES[0].model(), b.catalog);
+    expect(r.report.findings.find((f) => f.code === 'CAT_COMBO_EVIDENCED')?.message).toContain('TESTFIXTURE');
+  });
+
+  it('Inventarabgleich-Logik: Übereinstimmung, Mengenabweichung, Formvariante, nur im Inventar, Ersatzteile', async () => {
+    const b = await bundle('fixture');
+    const model = EDGE_CASES.find((e) => e.caseId === 'ec-08a-jumper-offset')!.model();
+    const cmp = compareBom(computeBom(model, b.catalog), 'FX-SET-1', b.catalog)!;
+    expect(cmp.source).toContain('TESTFIXTURE');
+    expect(cmp.lines.map((l) => `${l.rebrickablePart}|${l.color}|${l.status}|${l.modelQty}|${l.referenceQty}`)).toEqual([
+      '3001|15|match|1|1',
+      '3003|1|only-in-reference|0|1',
+      '3005|4|quantity-differs|1|2',
+      '3794a|15|variant-of|1|0',
+      '3794b|15|variant-of|0|1',
+    ]);
+    expect(cmp.summary.spareExcluded).toBe(1);
+  });
+});
+
+describe('Katalog fehlt (frischer Checkout)', () => {
+  it('alle Katalogaussagen bleiben ungeprüft – keine Ersatzdaten', async () => {
+    const b = await bundle('none');
+    expect(b.catalog.available).toBe(false);
+    expect(b.catalog.source.state).toBe('missing');
+    expect(b.catalog.extract).toBeNull();
+    expect(b.catalog.part('3001')).toMatchObject({ catalogStatus: 'unavailable', name: null, simulation: 'supported' });
+    expect(b.catalog.color(15)).toMatchObject({ ldrawName: 'White', rebrickableId: null, mappingBasis: 'unavailable' });
+    expect(b.catalog.partColorEvidence('3001', 15).status).toBe('unchecked');
+    expect(b.catalog.version).toContain('katalog-nicht-geladen');
+    expect(b.sources.find((s) => s.id === 'catalog')).toMatchObject({ state: 'missing', required: false });
+    const r = validate(EDGE_CASES[0].model(), b.catalog);
+    const cat = r.report.findings.filter((f) => f.layer === 'catalog');
+    expect(cat.map((f) => f.code)).toEqual(['CAT_SOURCE_UNAVAILABLE']);
+    expect(cat[0].affected.instanceIds).toHaveLength(2);
+    expect(r.report.layers.find((l) => l.layer === 'catalog')?.status).toBe('unchecked');
+  });
+});
+
+describe('Katalog beschädigt', () => {
+  const S = 'baustein-sim/rebrickable-extract@1';
+  const variants: [string, string, RegExp][] = [
+    ['kein JSON', '{ "schema": ', /kein gültiges JSON/],
+    ['falsches Schema', JSON.stringify({ schema: 'etwas/anderes@1' }), /Schema/],
+    ['Feld fehlt', JSON.stringify({ schema: S, source: { provider: 'x', fetchedAt: '2026-10-14' } }), /„parts“/],
+    ['kaputter Beleg', JSON.stringify({ schema: S, source: { provider: 'x', fetchedAt: '2026-10-14' }, parts: {}, colors: {}, referenceSets: {}, referenceInventories: {}, partColorEvidence: [{ part: 3001 }], relationships: [] }), /partColorEvidence\[0\]/],
+    ['Datum ungültig', JSON.stringify({ schema: S, source: { provider: 'x', fetchedAt: 'gestern' } }), /fetchedAt/],
+  ];
+  for (const [label, text, reason] of variants)
+    it(`${label}: nachvollziehbare Meldung, Anwendung bleibt nutzbar`, async () => {
+      const b = await loadBundle(readerWithCatalog(text));
+      expect(b.catalog.available).toBe(false);
+      expect(b.catalog.source.state).toBe('corrupt');
+      const err = b.catalog.source.state === 'corrupt' ? b.catalog.source.error : '';
+      expect(err).toContain('catalog/rebrickable-extract.json');
+      expect(err).toMatch(reason);
+      expect(b.sources.find((s) => s.id === 'catalog')?.state).toBe('corrupt');
+      const r = validate(EDGE_CASES[0].model(), b.catalog);
+      const f = r.report.findings.find((x) => x.code === 'CAT_SOURCE_CORRUPT')!;
+      expect(f.status).toBe('unchecked');
+      expect(f.message).toMatch(reason);
+      expect(r.world.connections.length).toBe(8); // Geometrie unberührt
+    });
+
+  it('Lesefehler (nicht „fehlt“) wird nicht als fehlender Katalog verschluckt', async () => {
+    const base = fsReader();
+    await expect(loadBundle((p) => (p === 'catalog/rebrickable-extract.json' ? Promise.reject(new Error('EACCES: Zugriff verweigert')) : base(p)))).rejects.toThrow('EACCES');
+  });
+
+  it('fehlende Pflichtdatei ergibt eindeutige Meldung', async () => {
+    const base = fsReader();
+    await expect(loadBundle((p) => (p === 'ldraw/LDConfig.ldr' ? Promise.resolve(null) : base(p)))).rejects.toThrow(RequiredDataError);
   });
 });
 
@@ -103,8 +179,8 @@ describe('Exporte', () => {
 });
 
 describe('Beschaffung', () => {
-  it('Fehlmengen nach Abzug eines eigenen Bestands (ohne Preise)', async () => {
-    const b = await bundle();
+  it('Fehlmengen nach Abzug eines eigenen Bestands (ohne Preise, TESTFIXTURE-Zuordnung)', async () => {
+    const b = await bundle('fixture');
     const bom = computeBom(await referenceModel('ref-40013-1'), b.catalog);
     const s = shortfall(bom, { inventoryId: 'eigen', source: 'Test', lines: [{ rebrickablePart: '3004', rebrickableColor: 15, quantity: 3 }] });
     expect(s.find((x) => x.rebrickablePart === '3004' && x.rebrickableColor === 15)).toEqual({ rebrickablePart: '3004', rebrickableColor: 15, needed: 8, owned: 3, toProcure: 5 });

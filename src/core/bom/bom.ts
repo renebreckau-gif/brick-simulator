@@ -7,12 +7,16 @@ export interface BomLine {
   ldrawPart: string;
   ldrawColor: number;
   quantity: number;
-  rebrickablePart: string;
-  rebrickableColor: number;
+  /** null, wenn kein Katalog geladen ist (Zuordnung ungeprüft). */
+  rebrickablePart: string | null;
+  rebrickableColor: number | null;
+  /** Katalogname, sonst LDraw-Titel. */
   partName: string;
+  /** Katalogname, sonst LDraw-Farbname. */
   colorName: string;
   simulation: string;
-  combination: 'evidenced' | 'not-evidenced';
+  /** unchecked = kein Katalog geladen; weder Existenz noch Nichtexistenz belegt. */
+  combination: 'evidenced' | 'not-evidenced' | 'unchecked';
   elementIds: string[];
   instanceIds: string[];
 }
@@ -29,6 +33,8 @@ export interface Bom {
   schema: 'baustein-sim/bom@1';
   modelRef: ModelRef;
   catalogVersion: string;
+  /** loaded = Katalogabgleich durchgeführt; missing/corrupt = Zeilen nur aus Modell + LDraw, Katalogabgleich ungeprüft. */
+  catalogState: 'loaded' | 'missing' | 'corrupt';
   lines: BomLine[];
   unresolved: UnresolvedLine[];
   totalInstances: number;
@@ -46,8 +52,12 @@ export function computeBom(model: CanonicalModel, catalog: Catalog): Bom {
     const p = catalog.part(g.part);
     const c = catalog.color(g.color);
     const reasons: string[] = [];
-    if (!p.rebrickableId || p.catalogStatus !== 'known') reasons.push('Teil nicht im Katalogauszug');
-    if (!c || c.rebrickableId === null) reasons.push('Farbe ohne Katalogzuordnung');
+    // Unabhängig vom Katalog: Farbcodes außerhalb von LDConfig.ldr (z. B. LDraw-Direktfarben) sind keine realen Katalogfarben.
+    if (!c) reasons.push('Farbcode nicht in LDConfig.ldr (z. B. LDraw-Direktfarbe) – keine reale Katalogfarbe');
+    if (catalog.available) {
+      if (!p.rebrickableId || p.catalogStatus !== 'known') reasons.push('Teil nicht im Katalogauszug');
+      if (c && c.rebrickableId === null) reasons.push('Farbe ohne Katalogzuordnung');
+    }
     const ids = [...g.ids].sort();
     if (reasons.length) {
       unresolved.push({ ldrawPart: g.part, ldrawColor: g.color, quantity: ids.length, reasons, instanceIds: ids });
@@ -58,12 +68,12 @@ export function computeBom(model: CanonicalModel, catalog: Catalog): Bom {
       ldrawPart: g.part,
       ldrawColor: g.color,
       quantity: ids.length,
-      rebrickablePart: p.rebrickableId!,
-      rebrickableColor: c!.rebrickableId!,
+      rebrickablePart: catalog.available ? p.rebrickableId : null,
+      rebrickableColor: catalog.available ? c!.rebrickableId : null,
       partName: p.name ?? p.ldrawTitle ?? g.part,
       colorName: c!.rebrickableName ?? c!.ldrawName ?? String(g.color),
       simulation: p.simulation,
-      combination: ev.status === 'evidenced' ? 'evidenced' : 'not-evidenced',
+      combination: ev.status === 'evidenced' ? 'evidenced' : ev.status === 'unchecked' ? 'unchecked' : 'not-evidenced',
       elementIds: ev.elementIds,
       instanceIds: ids,
     });
@@ -73,6 +83,7 @@ export function computeBom(model: CanonicalModel, catalog: Catalog): Bom {
     schema: 'baustein-sim/bom@1',
     modelRef: modelRef(model),
     catalogVersion: catalog.version,
+    catalogState: catalog.source.state,
     lines: lines.sort(sortKey),
     unresolved: unresolved.sort(sortKey),
     totalInstances: model.instances.length,
@@ -100,7 +111,10 @@ export interface BomComparison {
 
 /** Abgleich gegen ein unabhängiges Inventar (Rebrickable). Ersatzteile (spare) werden nicht mitgezählt. */
 export function compareBom(bom: Bom, setNum: string, catalog: Catalog): BomComparison | null {
-  const inv = catalog.extract.referenceInventories[setNum];
+  // Ohne geladenen Katalog kein Abgleich (bleibt ungeprüft, siehe Aufrufer).
+  if (!catalog.available || !catalog.extract) return null;
+  const ex = catalog.extract;
+  const inv = ex.referenceInventories[setNum];
   if (!inv) return null;
   const ref = new Map<string, { qty: number; name: string | null }>();
   let spare = 0;
@@ -112,7 +126,7 @@ export function compareBom(bom: Bom, setNum: string, catalog: Catalog): BomCompa
     ref.set(k, e);
   }
   const mine = new Map<string, number>();
-  for (const l of bom.lines) mine.set(`${l.rebrickablePart}|${l.rebrickableColor}`, (mine.get(`${l.rebrickablePart}|${l.rebrickableColor}`) ?? 0) + l.quantity);
+  for (const l of bom.lines) if (l.rebrickablePart !== null) mine.set(`${l.rebrickablePart}|${l.rebrickableColor}`, (mine.get(`${l.rebrickablePart}|${l.rebrickableColor}`) ?? 0) + l.quantity);
   const keys = [...new Set([...ref.keys(), ...mine.keys()])].sort();
   const lines: CompareLine[] = keys.map((k) => {
     const [part, color] = k.split('|');
@@ -122,16 +136,16 @@ export function compareBom(bom: Bom, setNum: string, catalog: Catalog): BomCompa
     let note: string | null = null;
     if (status === 'only-in-model' || status === 'only-in-reference') {
       // Formvarianten (Rebrickable-Relation M) als Hinweis kennzeichnen – nicht als Übereinstimmung
-      const rel = catalog.extract.relationships.find((x) => x.type === 'M' && (x.child === part || x.parent === part) && [...(status === 'only-in-model' ? ref.keys() : mine.keys())].some((kk) => kk === `${x.child === part ? x.parent : x.child}|${color}`));
+      const rel = ex.relationships.find((x) => x.type === 'M' && (x.child === part || x.parent === part) && [...(status === 'only-in-model' ? ref.keys() : mine.keys())].some((kk) => kk === `${x.child === part ? x.parent : x.child}|${color}`));
       if (rel) {
         status = 'variant-of';
         note = `Formvariante laut Rebrickable (Relation M: ${rel.child} ↔ ${rel.parent}); Quelle und Modell nennen unterschiedliche Varianten.`;
       }
     }
-    return { rebrickablePart: part, color: Number(color), colorName: catalog.extract.colors[color]?.name ?? null, partName: ref.get(k)?.name ?? catalog.extract.parts[part]?.name ?? null, modelQty: m, referenceQty: r, status, note };
+    return { rebrickablePart: part, color: Number(color), colorName: ex.colors[color]?.name ?? null, partName: ref.get(k)?.name ?? ex.parts[part]?.name ?? null, modelQty: m, referenceQty: r, status, note };
   });
   return {
-    source: `Rebrickable-Inventar ${setNum} (inventory_id ${inv.inventoryId}, Version ${inv.version}), Auszug vom ${catalog.extract.source.fetchedAt.slice(0, 10)}`,
+    source: `${catalog.source.state === 'loaded' && catalog.source.kind === 'test-fixture' ? 'TESTFIXTURE-Inventar (synthetisch, kein Beleg)' : 'Rebrickable-Inventar'} ${setNum} (inventory_id ${inv.inventoryId}, Version ${inv.version}), Auszug vom ${ex.source.fetchedAt.slice(0, 10)}`,
     lines,
     summary: {
       match: lines.filter((l) => l.status === 'match').length,

@@ -9,6 +9,27 @@ import { affected, finding, type Finding } from './findings';
 import { allBoxes, type World } from './world';
 
 export function checkCatalog(model: CanonicalModel, catalog: Catalog): Finding[] {
+  if (!catalog.available) return [catalogSourceFinding(model, catalog), ...checkSimulationSupport(model, catalog)];
+  return [...checkCatalogEvidence(model, catalog), ...checkSimulationSupport(model, catalog)];
+}
+
+/** Kein (gültiger) Katalog: Existenz, Farbe, Teil-Farb-Belege und Inventarabgleich bleiben ungeprüft. */
+function catalogSourceFinding(model: CanonicalModel, catalog: Catalog): Finding {
+  const corrupt = catalog.source.state === 'corrupt';
+  return finding({
+    code: corrupt ? 'CAT_SOURCE_CORRUPT' : 'CAT_SOURCE_UNAVAILABLE', layer: 'catalog', dimension: 'data', status: 'unchecked', severity: 'warning', evidenceLevel: 'unchecked',
+    title: corrupt ? 'Katalogauszug beschädigt – nicht verwendet' : 'Kein Katalog geladen – Katalogprüfungen ungeprüft',
+    message: corrupt
+      ? `${catalog.source.state === 'corrupt' ? catalog.source.error : ''}. Teilexistenz, Farbzuordnung, Teil-Farb-Belege und Inventarabgleich bleiben ungeprüft.`
+      : `Für ${model.instances.length} Teile bleiben Katalogexistenz, Farbzuordnung zu Rebrickable, Teil-Farb-Belege und Inventarabgleich ungeprüft. Geometrie, Verbindungen und Montage sind davon nicht betroffen.`,
+    affected: affected(model.instances.map((i) => i.instanceId)), ruleVersion: catalog.version,
+    evidence: { source: catalog.source },
+    limitation: 'Fehlende Katalogdaten belegen weder Existenz noch Nichtexistenz einer Teil-Farb-Kombination.',
+    remedy: corrupt ? 'Auszug mit scripts/extract-rebrickable.mjs neu erzeugen.' : 'Optional: Katalogauszug lokal erzeugen (siehe README, Rebrickable-Bedingungen beachten).',
+  });
+}
+
+function checkCatalogEvidence(model: CanonicalModel, catalog: Catalog): Finding[] {
   const out: Finding[] = [];
   const unknownParts = new Map<string, string[]>();
   const unmappedColors = new Map<number, string[]>();
@@ -60,13 +81,19 @@ export function checkCatalog(model: CanonicalModel, catalog: Catalog): Finding[]
     out.push(finding({
       code: 'CAT_COMBO_EVIDENCED', layer: 'catalog', dimension: 'data', status: 'passed', severity: 'info', evidenceLevel: 'confirmed',
       title: `${evidenced} Teil-Farb-Zuordnungen belegt`,
-      message: 'Teil und Farbe sind über Element-ID oder Set-Inventar im Rebrickable-Auszug belegt.',
+      message: catalog.source.state === 'loaded' && catalog.source.kind === 'test-fixture'
+        ? 'Belegt nur in der synthetischen TESTFIXTURE – kein Nachweis für reale Teile.'
+        : 'Teil und Farbe sind über Element-ID oder Set-Inventar im Rebrickable-Auszug belegt.',
       ruleVersion: catalog.version,
-      evidence: { instances: evidenced },
+      evidence: { instances: evidenced, source: catalog.source },
       limitation: 'Beleg der Existenz – keine Aussage über aktuelle Kaufverfügbarkeit.',
     }));
+  return out;
+}
 
-  // Simulationsunterstützung (getrennt von Katalogexistenz)
+/** Simulationsunterstützung (aus eigenen Teil-Metadaten, unabhängig vom Katalog). */
+function checkSimulationSupport(model: CanonicalModel, catalog: Catalog): Finding[] {
+  const out: Finding[] = [];
   const bySupport = new Map<string, string[]>();
   for (const i of model.instances) {
     const s = catalog.part(i.part).simulation;

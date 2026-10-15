@@ -6,13 +6,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build": "tsc --noEmit -p tsconfig.json && vite build && node scripts/check-public-build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "data:ldraw": "node scripts/fetch-ldraw.mjs",
     "data:rebrickable": "node scripts/extract-rebrickable.mjs data-raw/rebrickable",
-    "check": "npm run typecheck && npm run test && npm run build"
+    "check": "npm run typecheck && npm run test && npm run build",
+    "check:dist": "node scripts/check-public-build.mjs",
+    "test:rebrickable": "vitest run --config vitest.rebrickable.config.ts"
   },
   "dependencies": {
     "react": "19.3.0",

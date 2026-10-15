@@ -1,5 +1,5 @@
-// Referenzkorpus: unabhängiger Stücklistenabgleich (OMR-Geometrie ↔ Rebrickable-Inventar),
-// Konsistenz von Baufolge und Stückliste, Herkunftsangaben.
+// Referenzkorpus ohne privaten Katalog: Herkunft, Baufolge, Baugruppen, Stückliste aus Modellinstanzen.
+// Der unabhängige Abgleich gegen echte Rebrickable-Inventare liegt in tests-rebrickable/ (optional).
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { compareBom, computeBom } from '../src/core/bom/bom';
@@ -7,9 +7,9 @@ import { sameModelVersion } from '../src/core/model/hash';
 import { validate } from '../src/core/validation/validate';
 import { bundle, readData, referenceModel } from './helpers';
 
-describe('Referenzen', () => {
+describe('Referenzen (ohne Katalog)', () => {
   it('Herkunft: Datei-Hashes entsprechen dem Register', async () => {
-    const b = await bundle();
+    const b = await bundle('none');
     for (const r of b.references) {
       const text = await readData(r.file);
       expect(createHash('sha256').update(text).digest('hex'), r.referenceId).toBe(r.source.sha256);
@@ -18,40 +18,32 @@ describe('Referenzen', () => {
     }
   });
 
-  it('40013-1: Stückliste stimmt vollständig mit dem Rebrickable-Inventar überein', async () => {
-    const b = await bundle();
-    const cmp = compareBom(computeBom(await referenceModel('ref-40013-1'), b.catalog), '40013-1', b.catalog)!;
-    expect(cmp.lines.every((l) => l.status === 'match')).toBe(true);
-    expect(cmp.summary.modelTotal).toBe(18);
-    expect(cmp.summary.referenceTotal).toBe(18);
+  it('Stückliste entsteht aus den Modellinstanzen; Katalogfelder bleiben ungeprüft', async () => {
+    const b = await bundle('none');
+    for (const [id, set, total] of [['ref-40013-1', '40013-1', 18], ['ref-21002-1', '21002-1', 77], ['ref-1869-1', '1869-1', 82]] as const) {
+      const bom = computeBom(await referenceModel(id), b.catalog);
+      expect(bom.catalogState).toBe('missing');
+      expect(bom.unresolved).toEqual([]);
+      expect(bom.lines.reduce((a, l) => a + l.quantity, 0)).toBe(total);
+      for (const l of bom.lines) {
+        expect(l.rebrickablePart).toBeNull();
+        expect(l.rebrickableColor).toBeNull();
+        expect(l.combination).toBe('unchecked');
+        expect(l.partName.length).toBeGreaterThan(0); // LDraw-Titel statt Katalogname
+      }
+      // Inventarabgleich ohne Katalog: findet nicht statt (weder Übereinstimmung noch Abweichung)
+      expect(compareBom(bom, set, b.catalog)).toBeNull();
+    }
   });
 
-  it('21002-1: einzige Abweichung ist die Jumper-Formvariante 3794a ↔ 3794b (in references.json dokumentiert)', async () => {
-    const b = await bundle();
-    const cmp = compareBom(computeBom(await referenceModel('ref-21002-1'), b.catalog), '21002-1', b.catalog)!;
-    const diff = cmp.lines.filter((l) => l.status !== 'match');
-    expect(diff.map((l) => `${l.rebrickablePart}|${l.color}|${l.status}|${l.modelQty}|${l.referenceQty}`).sort()).toEqual([
-      '3794a|19|variant-of|9|0',
-      '3794b|19|variant-of|0|9',
-    ]);
-    // Druckteil über manuelle Zuordnung aufgelöst
-    expect(cmp.lines.find((l) => l.rebrickablePart === '4162pr0068')?.status).toBe('match');
-    expect(cmp.summary.modelTotal).toBe(77);
-    expect(cmp.summary.referenceTotal).toBe(77);
-    expect(cmp.summary.spareExcluded).toBe(2);
-  });
-
-  it('1869-1: Abweichung 3004/3005 gelb wird ausgewiesen, nicht verdeckt', async () => {
-    const b = await bundle();
-    const cmp = compareBom(computeBom(await referenceModel('ref-1869-1'), b.catalog), '1869-1', b.catalog)!;
-    const diff = cmp.lines.filter((l) => l.status !== 'match');
-    expect(diff.map((l) => `${l.rebrickablePart}|${l.color}|${l.modelQty}|${l.referenceQty}`).sort()).toEqual(['3004|14|7|8', '3005|14|2|0']);
-    expect(cmp.summary.modelTotal).toBe(82);
-    expect(cmp.summary.referenceTotal).toBe(81);
+  it('Ghost 40013-1: Stückliste nach LDraw-Teil und -Farbe (aus der OMR-Datei abgezählt)', async () => {
+    const b = await bundle('none');
+    const bom = computeBom(await referenceModel('ref-40013-1'), b.catalog);
+    expect(bom.lines.map((l) => `${l.ldrawPart}|${l.ldrawColor}|${l.quantity}|${l.colorName}`)).toEqual(['3002|15|5|White', '3003|15|3|White', '3004|0|2|Black', '3004|15|8|White']);
   });
 
   it('Baufolge und Stückliste beziehen sich auf dieselbe Modellversion; jedes Teil genau einmal verbaut', async () => {
-    const b = await bundle();
+    const b = await bundle('none');
     for (const id of ['ref-40013-1', 'ref-21002-1']) {
       const m = await referenceModel(id);
       const bom = computeBom(m, b.catalog);
@@ -59,7 +51,6 @@ describe('Referenzen', () => {
       expect(sameModelVersion(bom.modelRef, r.report.modelRef)).toBe(true);
       const added = m.steps.flatMap((s) => s.add).sort();
       expect(added).toEqual(m.instances.map((i) => i.instanceId).sort());
-      // Baugruppen: jede Unterbaugruppe wird genau einmal angesetzt
       const attached = m.steps.flatMap((s) => s.attach).sort();
       expect(attached).toEqual(m.assemblies.filter((a) => a.parentId).map((a) => a.assemblyId).sort());
       expect(r.assembly.steps.length).toBe(m.steps.length);
