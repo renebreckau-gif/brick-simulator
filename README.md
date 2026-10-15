@@ -115,6 +115,10 @@ Die LDraw-Dateien lassen sich bei Bedarf mit `node scripts/fetch-ldraw.mjs` neu 
 - **Änderungen**: Ein ausgewähltes Teil kann verschoben oder entfernt werden. Danach gelten Bericht, Baufolgenprüfung, Stückliste und Beschaffungsstand als veraltet, bis die neue Version geprüft ist.
 - **Export**: Modell (JSON), Prüfbericht (JSON), Stückliste (CSV), LDraw (mit STEP je Schritt).
 
+## Raumschiff-Labor
+
+Der zweite Bereich in der Seitenleiste erzeugt ein eigenes, kleines Raumschiff aus dem vorhandenen Teileumfang. Es ist ein eigener Entwurf, kein offizielles LEGO-Modell. Eingaben: Rumpflänge, Spannweite, Teilezahlbereich, Farbpalette, Variantenkennung. Dazu kommen drei Vorgaben: kompakt (109 Teile), langgestreckt (140), breit (138). Jede Änderung erzeugt sofort einen neuen Modellstand und prüft ihn mit dem regulären Validator. Angezeigt werden geplante und tatsächliche Teilezahl, Außenmaße aus der Geometrie, Prüfstatus, Baufolge, Stückliste und Exporte. Nicht erfüllbare Eingaben ergeben eine Meldung mit dem erreichbaren Bereich. Der zuletzt gültige Stand bleibt dann sichtbar, ist aber als nicht passend gekennzeichnet, und die Exporte sind gesperrt. Preise werden nicht angezeigt. Generatorprinzip, Grenzen und Protokoll für einen späteren physischen Probeaufbau: [docs/RAUMSCHIFF.md](docs/RAUMSCHIFF.md).
+
 ## Projektaufbau
 
 ```
@@ -129,6 +133,7 @@ src/core/          UI-unabhängiger Kern
   export/          JSON, CSV, LDraw
   data/            Laden aller Daten über eine austauschbare Lesefunktion
 src/fixtures/      Grenzfälle und Fehlervarianten (synthetisch, gekennzeichnet)
+src/generator/     Raumschiff-Generator (deterministisch, versioniert)
 src/ui/            React-Oberfläche, Three.js-Ansicht
 data/              LDraw-Dateien, Katalogauszug, Referenzen, Erwartungen
 tests/             reguläre Vitest-Suite (ohne private Daten; Kataloglogik mit synthetischer Testfixture)
@@ -145,6 +150,7 @@ docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüf
 - [Referenzmatrix und Grenzfälle](docs/REFERENZMATRIX.md)
 - [Validierungsgrenzen](docs/VALIDIERUNGSGRENZEN.md)
 - [Physische Prüfprotokolle (Kalibrierung, noch nicht durchgeführt)](docs/PHYSISCHE-PRUEFPROTOKOLLE.md)
+- [Raumschiff-Labor: Generator, Varianten, Grenzen, Probeaufbau-Protokoll](docs/RAUMSCHIFF.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Namensnennung

@@ -4,12 +4,15 @@ import { loadBundle, type DataBundle } from '../core/data/bundle';
 import { exportBomCsv, exportLdraw, exportModelJson, exportReportJson } from '../core/export/exporters';
 import { applyEdit, artifactStatus, type ModelEdit } from '../core/model/edit';
 import { modelRef } from '../core/model/hash';
+import { modelDimensions } from '../core/model/dimensions';
+import { generateSpaceship, GeneratorError, VARIANTS, type ShipParams, type ShipPlan } from '../generator/spaceship';
 import type { CanonicalModel } from '../core/model/types';
 import { initialProcurementState } from '../core/procurement/types';
 import { OVERALL_LABEL, validate, type ValidationResult } from '../core/validation/validate';
 import { labItems, type LabItem } from './items';
 import { BomPanel, ReportPanel, SourcePanel, StepsPanel, type Expectations } from './panels';
 import { Viewer } from './Viewer';
+import { ShipLab } from './ShipLab';
 
 type Tab = 'report' | 'steps' | 'bom' | 'source';
 
@@ -38,6 +41,11 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>('report');
+  const [mode, setMode] = useState<'pruef' | 'schiff'>('pruef');
+  const [shipParams, setShipParams] = useState<ShipParams>(VARIANTS.kompakt.params);
+  const [shipPlan, setShipPlan] = useState<ShipPlan | null>(null);
+  const [shipError, setShipError] = useState<{ message: string; hints: string[] } | null>(null);
+  const [shownShipParams, setShownShipParams] = useState<ShipParams | null>(null);
 
   useEffect(() => {
     // null = Datei existiert nicht (404 oder SPA-Fallback als HTML); andere Fehler werden gemeldet.
@@ -60,21 +68,46 @@ export function App() {
     setValidated({ result, bom: computeBom(m, bundle!.catalog) });
   };
 
-  // Modell laden und prüfen; beim Fall „veralteter Bericht“ anschließend die Änderung anwenden
-  useEffect(() => {
-    if (!bundle || !item) return;
-    const m = item.make();
-    runValidation(m);
-    setModel(item.staleEdit ? applyEdit(m, { kind: 'move', ...item.staleEdit }) : m);
+  const resetView = () => {
     setStepIndex(-1);
     setSelected(null);
     setHighlight([]);
+  };
+
+  // Raumschiff-Labor: jede Parameteränderung erzeugt einen neuen Modellstand und prüft ihn sofort
+  useEffect(() => {
+    if (!bundle || mode !== 'schiff') return;
+    try {
+      const { model: m, plan } = generateSpaceship(shipParams);
+      runValidation(m);
+      setModel(m);
+      setShipPlan(plan);
+      setShipError(null);
+      setShownShipParams(shipParams);
+      resetView();
+    } catch (e) {
+      if (e instanceof GeneratorError) setShipError({ message: e.message, hints: e.hints });
+      else setShipError({ message: String(e), hints: [] });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle, itemId]);
+  }, [bundle, mode, shipParams]);
+
+  // Modell laden und prüfen; beim Fall „veralteter Bericht“ anschließend die Änderung anwenden
+  useEffect(() => {
+    if (!bundle || !item || mode !== 'pruef') return;
+    const m = item.make();
+    runValidation(m);
+    setModel(item.staleEdit ? applyEdit(m, { kind: 'move', ...item.staleEdit }) : m);
+    resetView();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundle, itemId, mode]);
 
   const ref = model ? modelRef(model) : null;
+  const dims = useMemo(() => (bundle && model && model.origin.kind === 'generated' ? modelDimensions(model, bundle.library) : null), [bundle, model]);
   const reportState = ref ? artifactStatus('report', validated?.result.report.modelRef ?? null, ref) : null;
   const stale = reportState?.state === 'stale';
+  // Raumschiff-Labor: Eingaben nicht erfüllbar → angezeigter Stand gehört nicht zu den aktuellen Eingaben
+  const shipStale = mode === 'schiff' && !!shipError;
 
   const steps = model?.steps ?? [];
   const { visible, current } = useMemo(() => {
@@ -106,7 +139,14 @@ export function App() {
     <div className="app">
       <aside className="side">
         <h1 className="brand">Baustein-Prüflabor</h1>
-        <nav aria-label="Modelle">
+        <div className="modes" role="tablist" aria-label="Bereich">
+          <button role="tab" aria-selected={mode === 'pruef'} className={mode === 'pruef' ? 'tab active' : 'tab'} onClick={() => setMode('pruef')}>Prüflabor</button>
+          <button role="tab" aria-selected={mode === 'schiff'} className={mode === 'schiff' ? 'tab active' : 'tab'} onClick={() => setMode('schiff')}>Raumschiff-Labor</button>
+        </div>
+        {mode === 'schiff' && (
+          <ShipLab params={shipParams} onChange={setShipParams} plan={shipPlan} error={shipError} actualParts={model.origin.kind === 'generated' ? model.instances.length : null} dims={dims} shownParams={shownShipParams} />
+        )}
+        {mode === 'pruef' && <nav aria-label="Modelle">
           {groups.map((g) => (
             <section key={g} className="navgroup">
               <h2>{g}</h2>
@@ -124,7 +164,7 @@ export function App() {
               </ul>
             </section>
           ))}
-        </nav>
+        </nav>}
         <section className="datastate" aria-label="Datenquellen und Prüfumfang">
           <h2>Datenquellen</h2>
           <ul className="sources">
@@ -185,6 +225,11 @@ export function App() {
             <button className="primary" onClick={() => runValidation(model)}>Version {model.version} prüfen</button>
           </div>
         )}
+        {shipStale && (
+          <div className="stalebar" role="alert">
+            <span>Die aktuellen Eingaben sind nicht erfüllbar. Angezeigt werden Modell, Prüfbericht und Stückliste des letzten gültigen Stands ({ref.modelId}); Exporte sind gesperrt, bis die Eingaben wieder erfüllbar sind.</span>
+          </div>
+        )}
         <div className="viewwrap">
           <Viewer model={model} library={bundle.library} catalog={bundle.catalog} visible={visible} current={current} highlighted={new Set(highlight)} selected={selected} onSelect={setSelected} />
           <div className="provenance">Gerendert aus Modell {ref.modelId}, Version {ref.version}, Hash {ref.contentHash}</div>
@@ -218,14 +263,14 @@ export function App() {
         </div>
         <div className="exports">
           <span>Export</span>
-          <button onClick={() => download(`${ref.modelId}-v${ref.version}.model.json`, exportModelJson(model), 'application/json')}>Modell (JSON)</button>
-          <button onClick={() => download(`${report.modelRef.modelId}-v${report.modelRef.version}.report.json`, exportReportJson(report), 'application/json')}>
+          <button disabled={shipStale} onClick={() => download(`${ref.modelId}-v${ref.version}.model.json`, exportModelJson(model), 'application/json')}>Modell (JSON)</button>
+          <button disabled={shipStale} onClick={() => download(`${report.modelRef.modelId}-v${report.modelRef.version}.report.json`, exportReportJson(report), 'application/json')}>
             Prüfbericht v{report.modelRef.version} (JSON){stale ? ' – veraltet' : ''}
           </button>
-          <button onClick={() => download(`${validated.bom.modelRef.modelId}-v${validated.bom.modelRef.version}.stueckliste.csv`, exportBomCsv(validated.bom), 'text/csv')}>
+          <button disabled={shipStale} onClick={() => download(`${validated.bom.modelRef.modelId}-v${validated.bom.modelRef.version}.stueckliste.csv`, exportBomCsv(validated.bom), 'text/csv')}>
             Stückliste v{validated.bom.modelRef.version} (CSV){stale ? ' – veraltet' : ''}
           </button>
-          <button onClick={() => download(`${ref.modelId}-v${ref.version}.ldr`, exportLdraw(model), 'text/plain')}>LDraw</button>
+          <button disabled={shipStale} onClick={() => download(`${ref.modelId}-v${ref.version}.ldr`, exportLdraw(model), 'text/plain')}>LDraw</button>
         </div>
       </main>
 
@@ -237,11 +282,11 @@ export function App() {
             </button>
           ))}
         </div>
-        <div className={stale ? 'tabbody is-stale' : 'tabbody'}>
+        <div className={stale || shipStale ? 'tabbody is-stale' : 'tabbody'}>
           {tab === 'report' && <ReportPanel report={report} onHighlight={(ids) => { setHighlight(ids); }} highlighted={highlight} />}
           {tab === 'steps' && <StepsPanel model={model} analysis={validated.result.assembly} stepIndex={stepIndex} onStep={setStepIndex} catalog={bundle.catalog} stale={stale} />}
           {tab === 'bom' && <BomPanel bom={validated.bom} bundle={bundle} referenceId={item?.referenceId} procurement={initialProcurementState(validated.bom)} onHighlight={setHighlight} />}
-          {tab === 'source' && <SourcePanel model={model} bundle={bundle} item={item} expectations={expectations} report={report} />}
+          {tab === 'source' && <SourcePanel model={model} bundle={bundle} item={mode === 'pruef' ? item : undefined} expectations={expectations} report={report} />}
         </div>
       </section>
     </div>

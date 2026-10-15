@@ -29,7 +29,7 @@ export function cyrb53(str: string, seed = 0): string {
 /** Hash über alles, was Konstruktion, Baufolge oder Nutzung betrifft (nicht Name/Änderungsprotokoll). */
 export function contentHash(m: CanonicalModel): string {
   const instances = [...m.instances].sort((a, b) => a.instanceId.localeCompare(b.instanceId));
-  return cyrb53(stableStringify({ instances, assemblies: m.assemblies, steps: m.steps, usage: m.usage, root: m.rootAssemblyId }));
+  return cyrb53(stableStringify({ instances, assemblies: m.assemblies, steps: m.steps, usage: m.usage, root: m.rootAssemblyId, generator: m.generator }));
 }
 
 export function modelRef(m: CanonicalModel): ModelRef {

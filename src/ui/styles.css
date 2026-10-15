@@ -177,3 +177,19 @@ button.danger { color: var(--block); }
 .datastate h2 + .sources, .datastate h2 + p { margin-top: var(--s1); }
 .catalogbar { margin: 0 var(--s4) var(--s2); padding: var(--s2) var(--s3); border: 1px dashed var(--open); border-radius: 6px; font-size: 14px; color: var(--ink-2); background: var(--surface); }
 .catalogbar.corrupt { border: 1px solid var(--block); color: var(--block); }
+
+/* Raumschiff-Labor */
+.modes { display: flex; gap: var(--s1); border-bottom: 1px solid var(--rule); }
+.modes .tab { padding: var(--s2) var(--s2); }
+.shiplab { display: grid; gap: var(--s2); font-size: 14px; }
+.shiplab h2 { font-size: 14px; margin-top: var(--s2); }
+.variants { display: grid; gap: 2px; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+.form label { display: grid; gap: 2px; font-size: 13px; color: var(--ink-2); }
+.form label.wide { grid-column: 1 / -1; }
+.form select, .form input { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; padding: 4px 6px; min-width: 0; }
+.shiperror { border: 1px solid var(--block); color: var(--block); border-radius: 6px; padding: var(--s2) var(--s3); background: var(--surface); }
+.shiperror ul { margin: 4px 0; padding-left: 18px; }
+.shipfacts { display: grid; grid-template-columns: max-content 1fr; gap: 3px var(--s3); margin: 0; font-size: 13px; }
+.shipfacts dt { color: var(--ink-2); }
+.shipfacts dd { margin: 0; }
