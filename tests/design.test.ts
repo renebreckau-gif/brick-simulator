@@ -183,7 +183,7 @@ describe('Entwurfsauftrag: Versionen, Korrekturen, Veralten, Bestätigung', () =
   it('Speichern und Wiederherstellen ohne Datenverlust; veränderte Datei wird abgelehnt', async () => {
     const b = correct(confirm(await readyBrief(), at), 'summary', 'geändert', at);
     const back = parseBrief(JSON.stringify(b));
-    expect(back).toEqual(b);
+    expect(back).toEqual({ brief: b, issues: [], downgraded: false });
     const tampered = JSON.parse(JSON.stringify(b));
     tampered.requirements.partMax = 5000;
     expect(() => parseBrief(JSON.stringify(tampered))).toThrow(/Inhalts-Hash/);

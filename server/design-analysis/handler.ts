@@ -36,9 +36,13 @@ export interface AnalysisProvider {
   analyze(images: AnalysisImage[], notes: string): Promise<ProviderResult>;
 }
 
-export type AnalyzeResponse =
+export type AnalyzeResponse = (
   | { ok: true; interpretation: Interpretation; warnings: string[]; meta: { provider: string; model: string; requestId: string | null; promptVersion: string } }
-  | { ok: false; code: 'not_configured' | 'invalid_request' | ProviderErrorCode | 'invalid_response' | 'contradictory_response'; message: string; errors?: string[]; candidate?: Interpretation; setup?: string[] };
+  | { ok: false; code: 'not_configured' | 'invalid_request' | ProviderErrorCode | 'invalid_response' | 'contradictory_response'; message: string; errors?: string[]; candidate?: Interpretation; setup?: string[] }
+) & {
+  /** Kennung der Anfrage, unverändert zurückgegeben – der Browser ordnet Antworten nur darüber zu. */
+  ticketId: string | null;
+};
 
 export const SETUP_HINTS = [
   'Im Projektordner eine Datei .env.local anlegen (wird nicht versioniert, siehe .env.example).',
@@ -48,6 +52,16 @@ export const SETUP_HINTS = [
 ];
 
 export async function analyzeRequest(provider: AnalysisProvider, body: unknown, promptVersion: string): Promise<{ status: number; body: AnalyzeResponse }> {
+  const raw = (body as { ticketId?: unknown } | null)?.ticketId;
+  const ticketId = typeof raw === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(raw) ? raw : null;
+  const r = await analyzeInner(provider, body, promptVersion);
+  return { status: r.status, body: { ...r.body, ticketId } as AnalyzeResponse };
+}
+
+type InnerResponse = { status: number; body: DistributiveOmit<AnalyzeResponse, 'ticketId'> };
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+async function analyzeInner(provider: AnalysisProvider, body: unknown, promptVersion: string): Promise<InnerResponse> {
   const problem = provider.configurationProblem();
   if (problem) return { status: 503, body: { ok: false, code: 'not_configured', message: problem, setup: SETUP_HINTS } };
   const b = body as { images?: AnalysisImage[]; notes?: unknown } | null;

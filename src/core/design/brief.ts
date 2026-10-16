@@ -2,9 +2,11 @@
 // Er ist Eingabe für die spätere Bausteinkonstruktion (Auftrag 05B) und enthält ausdrücklich
 // KEINE Teilinstanzen. Jede Änderung erzeugt eine neue Version mit neuem Inhalts-Hash; Bild-
 // wechsel und Korrekturen machen Analyse bzw. Bestätigung nachvollziehbar veraltet.
+import { z } from 'zod';
 import { cyrb53, stableStringify } from '../model/hash';
 import type { DesignProvenance } from '../model/types';
-import { checkInterpretation, type Interpretation } from './interpretation';
+import { MAX_EDGE_PX, MAX_IMAGE_BYTES, MAX_IMAGES, MIN_EDGE_PX } from './images';
+import { checkInterpretation, Interpretation } from './interpretation';
 
 export const BRIEF_SCHEMA = 'baustein-sim/design-brief@1';
 export const ANALYSIS_METHOD_VERSION = 'design-analysis@1.0.0';
@@ -12,77 +14,98 @@ export const ANALYSIS_METHOD_VERSION = 'design-analysis@1.0.0';
 export const VIEW_LABELS = ['unbekannt', 'vorn', 'seitlich', 'hinten', 'oben', 'schräg'] as const;
 export type ViewLabel = (typeof VIEW_LABELS)[number];
 
-export interface ImageRef {
+// ---- Laufzeitschema: Typen und Importprüfung kommen aus derselben Quelle
+const Sha256 = z.string().regex(/^[0-9a-f]{64}$/, 'keine SHA-256-Prüfsumme (64 Hex-Zeichen)');
+const IsoTime = z.string().refine((t) => !Number.isNaN(Date.parse(t)), 'kein gültiger Zeitpunkt');
+const PositiveInt = z.number().int().positive();
+
+export const ImageRefSchema = z.object({
   /** = SHA-256 des Dateiinhalts; gleicher Dateiname mit anderem Inhalt ergibt eine andere Kennung. */
-  sha256: string;
-  mediaType: 'image/png' | 'image/jpeg';
-  bytes: number;
-  width: number;
-  height: number;
+  sha256: Sha256,
+  mediaType: z.enum(['image/png', 'image/jpeg']),
+  bytes: z.number().int().positive().max(MAX_IMAGE_BYTES),
+  width: z.number().int().min(MIN_EDGE_PX).max(MAX_EDGE_PX),
+  height: z.number().int().min(MIN_EDGE_PX).max(MAX_EDGE_PX),
   /** Nur zur Anzeige; wird nie analysiert. */
-  fileName: string;
-  view: ViewLabel;
-  addedAt: string;
-}
+  fileName: z.string(),
+  view: z.enum(VIEW_LABELS),
+  addedAt: IsoTime,
+});
+export type ImageRef = z.infer<typeof ImageRefSchema>;
 
-export interface AnalysisRecord {
-  method: 'anthropic-vision' | 'manual' | 'import';
+export const AnalysisRecordSchema = z.object({
+  method: z.enum(['anthropic-vision', 'manual', 'import']),
   /** Dienst bzw. „Nutzer“ beim manuellen Weg. */
-  provider: string;
-  model: string | null;
-  methodVersion: string;
-  promptVersion: string | null;
-  /** Prüfsummen der Bilder, auf denen die Interpretation beruht (in Reihenfolge der imageIndex-Werte). */
-  imageHashes: string[];
-  at: string;
-  requestId: string | null;
-  status: 'current' | 'stale';
-  staleReason: string | null;
-}
+  provider: z.string(),
+  model: z.string().nullable(),
+  methodVersion: z.string(),
+  promptVersion: z.string().nullable(),
+  /** Prüfsummen der Bilder, auf denen die Interpretation tatsächlich beruht (Reihenfolge = imageIndex). */
+  imageHashes: z.array(Sha256),
+  /** Ansichtsbezeichnungen, mit denen die Bilder analysiert wurden. */
+  inputViews: z.array(z.enum(VIEW_LABELS)).default([]),
+  /** An die Analyse übergebene Hinweise des Nutzers. */
+  notes: z.string().default(''),
+  /** Kennung der Analyseanfrage (null beim manuellen Weg). */
+  ticketId: z.string().nullable().default(null),
+  at: IsoTime,
+  requestId: z.string().nullable(),
+  status: z.enum(['current', 'stale']),
+  staleReason: z.string().nullable(),
+});
+export type AnalysisRecord = z.infer<typeof AnalysisRecordSchema>;
 
-export interface Correction {
-  at: string;
-  path: string;
-  before: unknown;
-  after: unknown;
-}
+export const CorrectionSchema = z.object({ at: IsoTime, path: z.string().min(1), before: z.unknown(), after: z.unknown() });
+export type Correction = z.infer<typeof CorrectionSchema>;
 
-export interface Requirements {
-  partMin: number;
-  partMax: number;
+export const RequirementsSchema = z.object({
+  partMin: PositiveInt,
+  partMax: PositiveInt,
   /** Höchstmaße in Noppen bzw. Steinhöhen; null = keine Vorgabe. */
-  maxLengthStuds: number | null;
-  maxWidthStuds: number | null;
-  maxHeightBricks: number | null;
-  preferredSize: 'klein' | 'mittel' | 'gross' | null;
+  maxLengthStuds: PositiveInt.nullable(),
+  maxWidthStuds: PositiveInt.nullable(),
+  maxHeightBricks: PositiveInt.nullable(),
+  preferredSize: z.enum(['klein', 'mittel', 'gross']).nullable(),
   /** Wichtigste wiederzuerkennende Merkmale (Merkmal-IDs der Interpretation), nach Priorität. */
-  keyFeatureIds: string[];
-  intendedUse: 'display' | 'careful-handling' | 'play-goal';
-  notes: string;
-}
+  keyFeatureIds: z.array(z.string()),
+  intendedUse: z.enum(['display', 'careful-handling', 'play-goal']),
+  notes: z.string(),
+});
+export type Requirements = z.infer<typeof RequirementsSchema>;
 
-export interface Confirmation {
-  status: 'unconfirmed' | 'confirmed' | 'stale';
-  at: string | null;
+export const ConfirmationSchema = z.object({
+  status: z.enum(['unconfirmed', 'confirmed', 'stale']),
+  at: IsoTime.nullable(),
   /** Hash des bestätigten Inhalts (ohne Bestätigung und Verlauf). */
-  confirmedHash: string | null;
-  reason: string | null;
+  confirmedHash: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+export type Confirmation = z.infer<typeof ConfirmationSchema>;
+
+/** Verständliche deutsche Meldung für eine Schemaabweichung. */
+function issueText(i: z.core.$ZodIssue): string {
+  const where = i.path.join('.') || '(Wurzel)';
+  if (i.code === 'invalid_type' && /received undefined/.test(i.message)) return `${where}: Pflichtfeld fehlt`;
+  if (i.code === 'invalid_type') return `${where}: falscher Datentyp (${i.message})`;
+  if (i.code === 'invalid_value') return `${where}: unzulässiger Wert`;
+  return `${where}: ${i.message}`;
 }
 
-export interface DesignBrief {
-  schema: typeof BRIEF_SCHEMA;
-  briefId: string;
-  version: number;
-  title: string;
-  images: ImageRef[];
-  analysis: AnalysisRecord | null;
-  interpretation: Interpretation | null;
-  corrections: Correction[];
-  requirements: Requirements | null;
-  confirmation: Confirmation;
-  history: { version: number; at: string; event: string }[];
-  contentHash: string;
-}
+export const DesignBriefSchema = z.object({
+  schema: z.literal(BRIEF_SCHEMA),
+  briefId: z.string().min(1),
+  version: PositiveInt,
+  title: z.string(),
+  images: z.array(ImageRefSchema).max(MAX_IMAGES),
+  analysis: AnalysisRecordSchema.nullable(),
+  interpretation: Interpretation.nullable(),
+  corrections: z.array(CorrectionSchema),
+  requirements: RequirementsSchema.nullable(),
+  confirmation: ConfirmationSchema,
+  history: z.array(z.object({ version: PositiveInt, at: IsoTime, event: z.string() })).min(1),
+  contentHash: z.string().min(1),
+});
+export type DesignBrief = z.infer<typeof DesignBriefSchema>;
 
 const now = () => new Date().toISOString();
 
@@ -142,12 +165,36 @@ export function setView(b: DesignBrief, sha: string, view: ViewLabel): DesignBri
   return next(b, reason, { images: b.images.map((i) => (i.sha256 === sha ? { ...i, view } : i)), confirmation: staleConfirmation(b, reason) });
 }
 
-/** Neue Interpretation (Analyse, manuell oder Import); frühere Korrekturen gelten für die alte und entfallen. */
-export function setInterpretation(b: DesignBrief, interpretation: Interpretation, analysis: Omit<AnalysisRecord, 'status' | 'staleReason' | 'imageHashes' | 'methodVersion'>): DesignBrief {
+export type AnalysisMeta = Pick<AnalysisRecord, 'method' | 'provider' | 'model' | 'promptVersion' | 'at' | 'requestId'>;
+
+/** Worauf sich eine Interpretation bezieht: tatsächlich analysierte Bilder, Ansichten, Hinweise, Anfrage. */
+export interface InputBinding {
+  imageHashes: string[];
+  views: ViewLabel[];
+  notes: string;
+  ticketId: string | null;
+}
+
+export function currentBinding(b: DesignBrief, notes = '', ticketId: string | null = null): InputBinding {
+  return { imageHashes: b.images.map((i) => i.sha256), views: b.images.map((i) => i.view), notes, ticketId };
+}
+
+const sameImages = (b: DesignBrief, hashes: string[]) => stableStringify(hashes) === stableStringify(b.images.map((i) => i.sha256));
+
+/**
+ * Neue Interpretation (Analyse, manuell oder Import); frühere Korrekturen gelten für die alte und entfallen.
+ * Der Bildbezug kommt aus der Bindung (bei Analysen: die tatsächlich gesendeten Bilder), nie stillschweigend
+ * aus dem aktuellen Stand. Passt er nicht zu den aktuellen Bildern, ist die Interpretation sofort veraltet.
+ */
+export function setInterpretation(b: DesignBrief, interpretation: Interpretation, analysis: AnalysisMeta, binding: InputBinding = currentBinding(b)): DesignBrief {
   const reason = analysis.method === 'manual' ? 'Interpretation manuell begonnen' : `Interpretation durch ${analysis.provider}${analysis.model ? ` (${analysis.model})` : ''}`;
+  const matches = sameImages(b, binding.imageHashes);
   return next(b, reason, {
     interpretation,
-    analysis: { ...analysis, methodVersion: ANALYSIS_METHOD_VERSION, imageHashes: b.images.map((i) => i.sha256), status: 'current', staleReason: null },
+    analysis: {
+      ...analysis, methodVersion: ANALYSIS_METHOD_VERSION, imageHashes: [...binding.imageHashes], inputViews: [...binding.views], notes: binding.notes, ticketId: binding.ticketId,
+      status: matches ? 'current' : 'stale', staleReason: matches ? null : `Interpretation bezieht sich auf andere Bilder (${binding.imageHashes.map((h) => h.slice(0, 12)).join(', ') || 'keine'}) als die aktuellen`,
+    },
     corrections: [],
     confirmation: staleConfirmation(b, reason),
   });
@@ -160,7 +207,78 @@ export function setInterpretation(b: DesignBrief, interpretation: Interpretation
 export function rebaseInterpretation(b: DesignBrief, at = now()): DesignBrief {
   if (!b.interpretation || !b.analysis || b.analysis.status !== 'stale') return b;
   const reason = `Interpretation vom Nutzer für die aktuellen Bilder übernommen (vorher: ${b.analysis.staleReason})`;
-  return next(b, reason, { analysis: { ...b.analysis, imageHashes: b.images.map((i) => i.sha256), status: 'current', staleReason: null }, confirmation: staleConfirmation(b, reason) }, at);
+  return next(b, reason, { analysis: { ...b.analysis, imageHashes: b.images.map((i) => i.sha256), inputViews: b.images.map((i) => i.view), status: 'current', staleReason: null }, confirmation: staleConfirmation(b, reason) }, at);
+}
+
+// ---- Analyseanfragen: unveränderliche Bindung an den Eingabestand zum Zeitpunkt der Anfrage
+
+/** Eingaben einer Analyse: Bilder samt Reihenfolge und Ansicht. */
+export function analysisInputHash(b: DesignBrief): string {
+  return cyrb53(stableStringify(b.images.map((i) => [i.sha256, i.view])));
+}
+/**
+ * Stand, den eine eintreffende Antwort überschreiben würde: Interpretation, Korrekturen, Analyseherkunft.
+ * Der Veraltet-Status selbst zählt nicht dazu – er folgt aus Bildänderungen, die der Eingabe-Hash erfasst.
+ */
+export function interpretationStateHash(b: DesignBrief): string {
+  const analysis = b.analysis && { ...b.analysis, status: undefined, staleReason: undefined };
+  return cyrb53(stableStringify({ interpretation: b.interpretation, corrections: b.corrections, analysis }));
+}
+
+export interface AnalysisTicket {
+  ticketId: string;
+  briefId: string;
+  briefVersion: number;
+  inputHash: string;
+  interpretationHash: string;
+  binding: InputBinding;
+  startedAt: string;
+}
+
+export function createTicket(b: DesignBrief, notes: string, ticketId: string, at = now()): AnalysisTicket {
+  if (!/^[A-Za-z0-9-]{8,64}$/.test(ticketId)) throw new BriefError('Ungültige Anfragekennung');
+  return Object.freeze({ ticketId, briefId: b.briefId, briefVersion: b.version, inputHash: analysisInputHash(b), interpretationHash: interpretationStateHash(b), binding: Object.freeze(currentBinding(b, notes, ticketId)), startedAt: at }) as AnalysisTicket;
+}
+
+/** Eine nicht automatisch übernommene Analyseantwort – behält ihren ursprünglichen Bildbezug. */
+export interface HeldAnalysis {
+  ticket: AnalysisTicket;
+  interpretation: Interpretation;
+  meta: AnalysisMeta;
+  reasons: string[];
+  /** Fehler bei widersprüchlichen Antworten (Kandidat zur Korrektur). */
+  problems: string[];
+}
+
+export type ApplyOutcome =
+  | { kind: 'applied'; brief: DesignBrief }
+  | { kind: 'held'; held: HeldAnalysis }
+  | { kind: 'rejected'; reason: string };
+
+/** Gründe, aus denen eine Antwort zu diesem Ticket den aktuellen Stand nicht mehr automatisch ersetzen darf. */
+export function ticketConflicts(current: DesignBrief, t: AnalysisTicket): string[] {
+  const r: string[] = [];
+  if (analysisInputHash(current) !== t.inputHash) r.push('Bilder, ihre Reihenfolge oder Ansichten wurden seit der Anfrage geändert');
+  if (interpretationStateHash(current) !== t.interpretationHash) r.push('Die Interpretation wurde seit der Anfrage geändert (Korrektur, neuer Beginn oder Import)');
+  return r;
+}
+
+/**
+ * Wendet eine eintreffende Analyseantwort an – nur, wenn sich der relevante Entwurfsstand seit der Anfrage
+ * nicht geändert hat. Sonst wird sie zurückgehalten (mit ursprünglichem Bildbezug) bzw. bei einem anderen
+ * Entwurf verworfen. Widersprüchliche Antworten (problems) werden nie automatisch übernommen.
+ */
+export function applyAnalysisResult(current: DesignBrief, t: AnalysisTicket, interpretation: Interpretation, meta: AnalysisMeta, problems: string[] = []): ApplyOutcome {
+  if (current.briefId !== t.briefId) return { kind: 'rejected', reason: `Die Antwort gehört zu Entwurf „${t.briefId}“; inzwischen ist „${current.briefId}“ geöffnet. Sie wurde verworfen.` };
+  const reasons = ticketConflicts(current, t);
+  if (reasons.length || problems.length) return { kind: 'held', held: { ticket: t, interpretation, meta, reasons, problems } };
+  return { kind: 'applied', brief: setInterpretation(current, interpretation, meta, t.binding) };
+}
+
+/** Ausdrückliche Übernahme einer zurückgehaltenen Antwort durch den Nutzer – mit ihrem ursprünglichen Bildbezug. */
+export function adoptHeldAnalysis(current: DesignBrief, h: HeldAnalysis): DesignBrief {
+  if (current.briefId !== h.ticket.briefId) throw new BriefError('Die zurückgehaltene Antwort gehört zu einem anderen Entwurf.');
+  return setInterpretation(current, h.interpretation, h.meta, h.ticket.binding);
 }
 
 function getAt(obj: unknown, path: string[]): unknown {
@@ -246,8 +364,51 @@ export function confirm(b: DesignBrief, at = now()): DesignBrief {
 }
 
 /** Ist die Bestätigung noch gültig (Inhalt seit der Bestätigung unverändert)? */
+/**
+ * Fachliche Prüfung eines vollständigen Entwurfsauftrags (über die Strukturprüfung hinaus).
+ * Leere Liste = fachlich stimmig. Ein korrekter Inhalts-Hash ersetzt diese Prüfung nicht.
+ */
+export function briefIssues(b: DesignBrief): string[] {
+  const out: string[] = [];
+  const v = DesignBriefSchema.safeParse(b);
+  if (!v.success) return v.error.issues.slice(0, 10).map((i) => `Struktur: ${issueText(i)}`);
+  const shas = b.images.map((i) => i.sha256);
+  if (new Set(shas).size !== shas.length) out.push('Bilder: dieselbe Prüfsumme mehrfach');
+  b.history.forEach((h, k) => h.version !== k + 1 && out.push(`Verlauf: Eintrag ${k + 1} trägt Version ${h.version}`));
+  if (b.history.at(-1)!.version !== b.version) out.push(`Verlauf endet bei Version ${b.history.at(-1)!.version}, Auftrag hat Version ${b.version}`);
+  if (!!b.analysis !== !!b.interpretation) out.push('Analyseherkunft und Interpretation müssen gemeinsam vorhanden sein');
+  if (b.analysis) {
+    if (b.analysis.inputViews.length && b.analysis.inputViews.length !== b.analysis.imageHashes.length) out.push('Analyseherkunft: Anzahl der Ansichten passt nicht zu den Bildern');
+    if (b.analysis.status === 'current' && !sameImages(b, b.analysis.imageHashes)) out.push('Analyse ist als aktuell markiert, beruht aber auf anderen Bildern als den vorhandenen');
+    if (b.analysis.status === 'stale' && !b.analysis.staleReason) out.push('Veraltete Analyse ohne Begründung');
+  }
+  if (b.interpretation) {
+    const c = checkInterpretation(b.interpretation, b.analysis?.imageHashes.length ?? b.images.length);
+    out.push(...c.errors.map((e) => `Interpretation: ${e}`));
+  }
+  if (b.requirements) {
+    const r = b.requirements;
+    if (r.partMin > r.partMax) out.push('Anforderungen: Teilezahl-Minimum größer als Maximum');
+    const fids = new Set(b.interpretation?.features.map((f) => f.id) ?? []);
+    for (const id of r.keyFeatureIds) if (!fids.has(id)) out.push(`Anforderungen: wichtiges Merkmal „${id}“ existiert nicht`);
+  }
+  const c = b.confirmation;
+  if (c.status === 'confirmed' && (!c.at || !c.confirmedHash)) out.push('Bestätigung ohne Zeitpunkt oder bestätigten Hash');
+  if (c.status === 'confirmed' && c.confirmedHash !== substanceHash(b)) out.push('Bestätigter Hash passt nicht zum Inhalt');
+  if (c.status === 'unconfirmed' && c.confirmedHash) out.push('Unbestätigter Auftrag trägt einen bestätigten Hash');
+  return out;
+}
+
+/**
+ * Gültig bestätigt = bestätigt, Inhalt seit der Bestätigung unverändert, fachlich stimmig und alle
+ * Voraussetzungen (u. a. aktuelle Bildzuordnung) erfüllt. Wirft nie, auch nicht bei defekten Daten.
+ */
 export function isConfirmedCurrent(b: DesignBrief): boolean {
-  return b.confirmation.status === 'confirmed' && b.confirmation.confirmedHash === substanceHash(b);
+  try {
+    return b?.confirmation?.status === 'confirmed' && b.confirmation.confirmedHash === substanceHash(b) && briefIssues(b).length === 0 && readiness(b).every((r) => r.ok);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -273,20 +434,46 @@ export function toDesignProvenance(b: DesignBrief): DesignProvenance {
   };
 }
 
-/** Prüft eine importierte Datei grob auf das Brief-Schema und den gespeicherten Inhalts-Hash. */
-export function parseBrief(text: string): DesignBrief {
-  let o: DesignBrief;
+export interface LoadedBrief {
+  brief: DesignBrief;
+  /** Fachliche Probleme; der Auftrag ist dann höchstens unbestätigt zur Korrektur geladen. */
+  issues: string[];
+  /** true = eine vorhandene Bestätigung oder ein „aktueller“ Analysestand wurde beim Laden aufgehoben. */
+  downgraded: boolean;
+}
+
+/**
+ * Lädt einen Entwurfsauftrag (Import oder lokale Wiederherstellung) mit vollständiger Laufzeitprüfung:
+ * 1. JSON, Schema-Kennung, Struktur aller Felder (zod) – sonst Ablehnung mit Meldung;
+ * 2. Inhalts-Hash – sonst Ablehnung;
+ * 3. fachliche Prüfung – Probleme führen nicht zur Ablehnung, aber eine Bestätigung bzw. ein als aktuell
+ *    markierter Analysestand wird nachvollziehbar aufgehoben (neue Version, Eintrag im Verlauf).
+ */
+export function parseBrief(text: string, at = now()): LoadedBrief {
+  let raw: unknown;
   try {
-    o = JSON.parse(text) as DesignBrief;
+    raw = JSON.parse(text);
   } catch {
     throw new BriefError('Keine gültige JSON-Datei.');
   }
-  if (o?.schema !== BRIEF_SCHEMA) throw new BriefError(`Unbekanntes Schema „${String(o?.schema)}“ (erwartet ${BRIEF_SCHEMA}).`);
-  if (!Array.isArray(o.images) || !Array.isArray(o.history) || typeof o.version !== 'number') throw new BriefError('Entwurfsauftrag unvollständig.');
-  if (briefHash(o) !== o.contentHash) throw new BriefError('Inhalts-Hash stimmt nicht – die Datei wurde verändert oder ist beschädigt.');
-  if (o.interpretation) {
-    const c = checkInterpretation(o.interpretation, o.images.length);
-    if (!c.value) throw new BriefError(`Interpretation im Import ungültig: ${c.errors[0]}`);
-  }
-  return o;
+  const schema = (raw as { schema?: unknown } | null)?.schema;
+  if (schema !== BRIEF_SCHEMA) throw new BriefError(`Unbekanntes Schema „${String(schema)}“ (erwartet ${BRIEF_SCHEMA}).`);
+  const parsed = DesignBriefSchema.safeParse(raw);
+  if (!parsed.success) throw new BriefError(`Entwurfsauftrag strukturell ungültig: ${parsed.error.issues.slice(0, 3).map(issueText).join('; ')}`);
+  // Hash über die Rohdaten (nicht über ergänzte Standardwerte), damit veränderte Dateien auffallen
+  if (briefHash(raw as DesignBrief) !== parsed.data.contentHash) throw new BriefError('Inhalts-Hash stimmt nicht – die Datei wurde verändert oder ist beschädigt.');
+  let brief = parsed.data;
+  if (briefHash(brief) !== brief.contentHash) brief = { ...brief, contentHash: briefHash(brief) }; // ältere Datei: Standardwerte ergänzt
+  const issues = briefIssues(brief);
+  if (!issues.length) return { brief, issues, downgraded: false };
+  const reason = `Beim Laden fachlich ungültig: ${issues[0]}${issues.length > 1 ? ` (+${issues.length - 1} weitere)` : ''}`;
+  const confirmed = brief.confirmation.status === 'confirmed';
+  // Ein als „aktuell“ markierter Analysestand wird nur aufgehoben, wenn er nicht zu den Bildern passt
+  const currentAnalysis = brief.analysis?.status === 'current' && issues.some((i) => i.startsWith('Analyse ist als aktuell markiert'));
+  if (!confirmed && !currentAnalysis) return { brief, issues, downgraded: false };
+  brief = next(brief, reason, {
+    confirmation: confirmed ? { ...brief.confirmation, status: 'stale', reason } : brief.confirmation,
+    analysis: currentAnalysis && brief.analysis ? { ...brief.analysis, status: 'stale', staleReason: reason } : brief.analysis,
+  }, at);
+  return { brief, issues, downgraded: true };
 }

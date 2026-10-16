@@ -10,7 +10,7 @@ Erster Abschnitt der Kette aus A18: **Bild → nachvollziehbare Interpretation �
 2. **Interpretation:** entweder automatisch über den lokalen Analysedienst oder manuell.
    - Vor dem Senden zeigt ein Dialog, welcher Dienst welche Bilder erhält: Prüfsummen, Ansichtsbezeichnung und Hinweise, keine Dateinamen. Gesendet wird erst nach ausdrücklicher Einwilligung.
    - Bild und Interpretation stehen nebeneinander. Die Bildbereiche der Baugruppen erscheinen als Rahmen im Bild: durchgezogen für beobachtet, gestrichelt für angenommen oder vorgegeben.
-   - Eine schematische Vorschau ist ausdrücklich als „Räumliche Interpretation – noch ohne echte Steine“ gekennzeichnet.
+   - Darunter zeigt eine Vorschau die **eingefärbten 2D-Bildbereiche** (je Baugruppe ein Rechteck in ihrer ersten Farbe). Sie ist ausdrücklich keine räumliche Rekonstruktion: Sie enthält weder Tiefe noch eine räumlich stimmige Form, und Proportionen sind darin nicht geprüft.
 3. **Korrigieren:** Baugruppen, Proportionen relativ zum Hauptkörper, Bildbereiche, Farben, Merkmale, Symmetrie, verdeckte Bereiche, Vereinfachungen und offene Fragen sind editierbar. Jede Korrektur wird protokolliert (Pfad, vorher, nachher) und setzt die Grundlage der betroffenen Aussage auf „vom Nutzer vorgegeben“.
 4. **Anforderungen:** Teilezahlbereich, Höchstmaße in Noppen bzw. Steinhöhen, bevorzugte Größe, wichtigste wiederzuerkennende Merkmale (sortiert nach Priorität), Nutzung (Ausstellungsmodell, vorsichtige Handhabung, Spielmodell als Ziel) und Hinweise. Das sind **Anforderungen, keine Zusage der Machbarkeit**. Es wird keine Alters- oder Sicherheitsfreigabe abgeleitet.
 5. **Bestätigen:** Eine Checkliste zeigt, was fehlt. Bestätigt werden kann erst, wenn alle Punkte erfüllt sind: Bild vorhanden, Interpretation passt zu den aktuellen Bildern, strukturell gültig und widerspruchsfrei, Teilezahlbereich, Merkmale und Maße angegeben.
@@ -94,6 +94,33 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
   - die Meldung „nicht eingerichtet“.
 
   Die Interpretation hat der Claude-Code-Assistent im Chat nach Betrachtung des Bildes manuell eingetragen. Sie ist im Auftrag ausdrücklich als „manuell eingetragen, nicht die App-Integration“ gekennzeichnet. Danach folgten im Browser Korrektur, Widerspruch, Bildaustausch, Neu-Bestätigung und Wiederherstellen nach dem Neuladen. Bild und Auftrag liegen nur lokal (`local-designs/`, von Git ausgeschlossen).
+
+## Import und Analysezuordnung (Korrekturauftrag 05A.1)
+
+- **Vollständige Laufzeitprüfung beim Laden** (Import und lokale Wiederherstellung, `parseBrief`):
+  1. JSON und Schema-Kennung.
+  2. Struktur aller Felder (zod): Bildreferenzen, Analyseherkunft, Anforderungen, Korrekturen, Verlauf, Version, Bestätigung, Interpretation.
+  3. Inhalts-Hash.
+  4. Fachliche Prüfung (`briefIssues`).
+
+  Strukturfehler führen zur Ablehnung mit Meldung. Fachlich widersprüchliche Aufträge werden nur **unbestätigt zur Korrektur** geladen: Eine vorhandene Bestätigung wird mit Verlaufseintrag aufgehoben. Ein korrekter Hash ersetzt keine fachliche Prüfung.
+- **`isConfirmedCurrent` und `toDesignProvenance`** setzen voraus, dass der Auftrag fachlich gültig ist und die Interpretation zu den aktuellen Bildern gehört. `isConfirmedCurrent` wirft nie.
+- **Analyseanfragen sind unveränderlich gebunden** (`createTicket`): Projekt-ID, Version, Eingabe-Hash (Bilder samt Reihenfolge und Ansicht), Stand der Interpretation, Bildprüfsummen, Ansichten, Hinweise und eine eindeutige Anfragekennung, die der Server zurückgibt.
+  - Eine Antwort wird nur übernommen, wenn sich der relevante Stand nicht geändert hat.
+  - Hat sich etwas geändert (Bildwechsel, Entfernen, Ansicht, Korrektur, Import), wird die Antwort **zurückgehalten** und behält ihren ursprünglichen Bildbezug.
+  - Bei einem anderen Projekt (neuer Entwurf, Import) wird sie verworfen.
+  - Eine ausdrückliche Übernahme durch den Nutzer setzt den Bildbezug der Anfrage. Passt er nicht zu den aktuellen Bildern, ist die Interpretation sofort veraltet.
+  - Widersprüchliche Dienstantworten werden nie automatisch übernommen.
+
+## Nächster Schritt vor der Steinkonstruktion: gemeinsames Volumenmodell
+
+Die 2D-Bildbereiche reichen nicht, um Steine zu setzen: Sie haben keine Tiefe, und Rechtecke aus verschiedenen Ansichten passen nicht zwingend zusammen. Vor der Konstruktion (05B) soll daher ein **gemeinsames räumliches Volumenmodell** entstehen.
+
+- Je Baugruppe einfache Körper (zunächst Quader) mit Lage und Größe in einem gemeinsamen Koordinatensystem, abgeleitet aus den bestätigten Bildbereichen, den relativen Größen und der Symmetrie.
+- Jede Annahme bleibt gekennzeichnet (beobachtet, angenommen, Vorgabe).
+- Aus diesem einen Modell werden **sechs Ansichten gerendert** (vorn, hinten, links, rechts, oben, unten). Der Nutzer prüft sie gegen die Vorlage und korrigiert, bis Proportionen und Silhouette stimmen.
+- Widersprüche zwischen Ansichten werden sichtbar, statt in der Steinkonstruktion zu verschwinden.
+- Erst ein bestätigtes Volumenmodell dient als Eingabe für die Bausteinkonstruktion. Der Entwurfsauftrag verweist dann auf dessen Version und Hash.
 
 ## Grenzen
 

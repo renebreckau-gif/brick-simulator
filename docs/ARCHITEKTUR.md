@@ -117,7 +117,7 @@ Produktziel: Nutzer laden ein Konzeptbild hoch und erhalten daraus eine Konstruk
 | Stufe | Eingabe → Ausgabe | Stand |
 | --- | --- | --- |
 | 1. Bildanalyse | Konzeptbild → Bildmerkmale (Umriss, Farbflächen, Proportionen) mit Prüfsumme der Quelle | umgesetzt (05A): Upload mit Inhaltsprüfung und SHA-256; Analyse über Claude API (gekapselt, nur lokaler Server) oder manuell |
-| 2. Räumliche Interpretation | Bildmerkmale → Volumen-/Formannahme mit ausdrücklich markierten Annahmen (z. B. verdeckte Rückseite) | umgesetzt (05A): Interpretation mit Grundlage je Aussage, Nutzerkorrektur, bestätigter Entwurfsauftrag |
+| 2. Räumliche Interpretation | Bildmerkmale → Volumen-/Formannahme mit ausdrücklich markierten Annahmen (z. B. verdeckte Rückseite) | teilweise (05A): Interpretation mit Grundlage je Aussage als 2D-Bildbereiche und relative Größen, Nutzerkorrektur, bestätigter Entwurfsauftrag; gemeinsames Volumenmodell mit sechs Ansichten offen |
 | 3. Bausteinkonstruktion | Formannahme → `CanonicalModel` aus realen Teilen und implementierten Verbindungen, mit `design`-Herkunft und Baufolge | Generator-Schnittstelle vorhanden (Raumschiff als erster Erzeuger) |
 | 4. Validierung | Modell → Prüfbericht | vorhanden, unverändert für alle Erzeuger |
 | 5. Visueller Abgleich | Konzeptbild ↔ Rendering des Modells → Abweichungen, gespeichert in `design.visualComparison` und `design.deviations` | offen; Felder vorhanden |
@@ -136,4 +136,7 @@ Regeln für die künftigen Stufen 1–3:
 - **Grundlage je Aussage:** `observed`, `assumed` oder `user`. Ein gemeinsames Schema (zod, `src/core/design/interpretation.ts`) und eine gemeinsame Widerspruchsprüfung gelten für Dienstantworten, Importe und manuelle Eingaben.
 - **Anbieter gekapselt:** `AnalysisProvider` mit Konfigurationsprüfung und typisierten Fehlern. Der Anthropic-Anbieter läuft nur im lokalen Node-Server; der Browser kennt weder Schlüssel noch SDK, und der Public-Build-Check prüft das.
 - **Veralten statt Überschreiben:** Bildwechsel und Korrekturen erzeugen neue Versionen, markieren Analyse und Bestätigung nachvollziehbar als veraltet und stehen im Verlauf. Bestätigt wird ein Inhalts-Hash (`substanceHash`), nicht ein Zeitpunkt.
+- **Laden heißt prüfen:** Struktur (zod) → Hash → fachliche Prüfung. Widersprüchliche Aufträge werden nur unbestätigt geladen; `isConfirmedCurrent` verlangt fachliche Gültigkeit und aktuelle Bildzuordnung (05A.1).
+- **Analyseanfragen gebunden:** Ticket mit Projekt-ID, Eingabe-Hash, Interpretationsstand, Bildern, Ansichten, Hinweisen und Kennung. Antworten werden nur bei unverändertem Stand übernommen, sonst zurückgehalten oder verworfen; der Bildbezug kommt immer aus der Anfrage (05A.1).
+- **Vorschau ehrlich benannt:** Sie zeigt eingefärbte 2D-Bildbereiche. Räumlich wird es erst mit dem geplanten Volumenmodell (sechs gerenderte Ansichten), das vor der Steinkonstruktion steht.
 - **Bilder bleiben lokal:** IndexedDB im Browser. Im Auftrag stehen nur Prüfsumme, Typ, Maße und Anzeigename; der Dateiname wird nie analysiert.

@@ -2,8 +2,8 @@
 // Noch keine Steine: Konstruktion, Bauanleitung und Stückliste entstehen erst aus einem echten Modell (05B).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  addImage, confirm, correct, isConfirmedCurrent, newBrief, parseBrief, readiness, rebaseInterpretation, removeImage, replaceImage, setInterpretation, setRequirements, setTitle, setView,
-  substanceHash, toDesignProvenance, VIEW_LABELS, type DesignBrief, type ImageRef, type Requirements, type ViewLabel,
+  addImage, adoptHeldAnalysis, applyAnalysisResult, confirm, correct, createTicket, isConfirmedCurrent, newBrief, parseBrief, readiness, rebaseInterpretation, removeImage, replaceImage, setInterpretation, setRequirements, setTitle, setView,
+  substanceHash, toDesignProvenance, VIEW_LABELS, type AnalysisMeta, type DesignBrief, type HeldAnalysis, type ImageRef, type Requirements, type ViewLabel,
 } from '../../core/design/brief';
 import { checkImageBytes, MAX_IMAGES, sha256Hex } from '../../core/design/images';
 import { BASIS_LABEL, checkInterpretation, manualInterpretationTemplate, type Basis, type Interpretation } from '../../core/design/interpretation';
@@ -73,11 +73,16 @@ export function DesignLab() {
   const [status, setStatus] = useState<ServerStatus | null | 'none'>(null);
   const [consent, setConsent] = useState<{ open: boolean; agreed: boolean; notes: string }>({ open: false, agreed: false, notes: '' });
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string; errors?: string[]; setup?: string[]; candidate?: Interpretation } | null>(null);
+  const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string; errors?: string[]; setup?: string[] } | null>(null);
+  /** Zurückgehaltene Analyseantwort (Eingaben inzwischen geändert oder Antwort widersprüchlich) – mit ursprünglichem Bildbezug. */
+  const [held, setHeld] = useState<HeldAnalysis | null>(null);
   const [sel, setSel] = useState(0);
   const [focusGroup, setFocusGroup] = useState<string | null>(null);
   const replaceFor = useRef<string | null>(null);
   const replaceInput = useRef<HTMLInputElement>(null);
+  // Aktueller Stand für eintreffende Antworten (Closures laufender Anfragen sehen sonst einen alten Stand)
+  const briefRef = useRef<DesignBrief | null>(null);
+  briefRef.current = brief;
 
   // Wiederherstellen aus der lokalen Ablage (Hash geprüft); Bilder nach Prüfsumme
   useEffect(() => {
@@ -85,7 +90,11 @@ export function DesignLab() {
       let b: DesignBrief | null = null;
       try {
         const t = await loadBrief();
-        if (t) b = parseBrief(t);
+        if (t) {
+          const loaded = parseBrief(t);
+          b = loaded.brief;
+          if (loaded.issues.length) setMessage({ kind: 'error', text: `Gespeicherter Entwurf ist fachlich nicht stimmig und wurde nur zur Korrektur geladen${loaded.downgraded ? ' (Bestätigung bzw. aktueller Analysestand aufgehoben)' : ''}.`, errors: loaded.issues });
+        }
       } catch (e) {
         setMessage({ kind: 'error', text: `Gespeicherter Entwurf nicht lesbar: ${(e as Error).message} Ein neuer Entwurf wurde angelegt.` });
       }
@@ -169,20 +178,35 @@ export function DesignLab() {
   const runAnalysis = async () => {
     setBusy(true);
     setMessage(null);
+    setHeld(null);
+    // Anfrage unveränderlich an Entwurf, Eingabestand, Bilder, Ansichten, Hinweise und Kennung binden
+    const ticket = createTicket(brief, consent.notes, crypto.randomUUID());
+    const sent = brief.images.map((i) => ({ ...i }));
+    const meta = (m: { provider: string; model: string | null; promptVersion: string | null; requestId: string | null }): AnalysisMeta => ({ method: 'anthropic-vision', provider: m.provider, model: m.model, promptVersion: m.promptVersion, at: new Date().toISOString(), requestId: m.requestId });
     try {
       const images = [];
-      for (const img of brief.images) {
+      for (const img of sent) {
         const blob = await loadImage(img.sha256);
         if (!blob) throw new Error(`Bild ${img.fileName} fehlt lokal`);
         images.push({ sha256: img.sha256, mediaType: img.mediaType, view: img.view, data: toBase64(new Uint8Array(await blob.arrayBuffer())) });
       }
-      const r = await fetch('/api/design/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, notes: consent.notes }) });
+      const r = await fetch('/api/design/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: ticket.ticketId, images, notes: ticket.binding.notes }) });
       const body = await r.json().catch(() => null);
+      // Antwort gegen den Stand zum Eintreffen prüfen, nicht gegen den Stand beim Absenden
+      const current = briefRef.current!;
       if (!body) setMessage({ kind: 'error', text: `Analysedienst nicht erreichbar (HTTP ${r.status}). Im statischen Build gibt es keinen Analyse-Endpunkt.` });
-      else if (body.ok) {
-        update((b) => setInterpretation(b, body.interpretation, { method: 'anthropic-vision', provider: body.meta.provider, model: body.meta.model, promptVersion: body.meta.promptVersion, at: new Date().toISOString(), requestId: body.meta.requestId }));
-        setMessage({ kind: 'info', text: `Interpretation von ${body.meta.provider} (${body.meta.model}) übernommen. Bitte prüfen und korrigieren.`, errors: body.warnings });
-      } else setMessage({ kind: 'error', text: body.message, errors: body.errors, setup: body.setup, candidate: body.candidate });
+      else if (body.ticketId !== ticket.ticketId) setMessage({ kind: 'error', text: 'Antwort gehört nicht zu dieser Anfrage (Anfragekennung abweichend) und wurde verworfen.' });
+      else if (body.ok || body.code === 'contradictory_response') {
+        const interpretation = body.ok ? body.interpretation : body.candidate;
+        const svc = status && status !== 'none' ? status : null;
+        const m = body.ok ? meta(body.meta) : meta({ provider: svc?.provider ?? 'Analysedienst', model: svc?.model ?? null, promptVersion: svc?.promptVersion ?? null, requestId: null });
+        const outcome = applyAnalysisResult(current, ticket, interpretation, m, body.ok ? [] : body.errors ?? []);
+        if (outcome.kind === 'applied') {
+          setBrief(outcome.brief);
+          setMessage({ kind: 'info', text: `Interpretation von ${m.provider}${m.model ? ` (${m.model})` : ''} übernommen. Bitte prüfen und korrigieren.`, errors: body.warnings });
+        } else if (outcome.kind === 'held') setHeld(outcome.held);
+        else setMessage({ kind: 'error', text: outcome.reason });
+      } else setMessage({ kind: 'error', text: body.message, errors: body.errors, setup: body.setup });
     } catch (e) {
       setMessage({ kind: 'error', text: `Analyse fehlgeschlagen: ${(e as Error).message}` });
     } finally {
@@ -214,11 +238,22 @@ export function DesignLab() {
             {message.errors && message.errors.length > 0 && <ul>{message.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
             {message.setup && <ol>{message.setup.map((s) => <li key={s}>{s}</li>)}</ol>}
           </span>
-          {message.candidate && (
-            <button className="primary" onClick={() => { update((b) => setInterpretation(b, message.candidate!, { method: 'anthropic-vision', provider: status && status !== 'none' ? status.provider : 'Analysedienst', model: status && status !== 'none' ? status.model : null, promptVersion: status && status !== 'none' ? status.promptVersion : null, at: new Date().toISOString(), requestId: null })); setMessage(null); }}>
-              Als Entwurf übernehmen und korrigieren
-            </button>
-          )}
+        </div>
+      )}
+      {held && (
+        <div className="stalebar" role="alert">
+          <span>
+            <strong>Analyseantwort zurückgehalten</strong> (Anfrage {held.ticket.ticketId.slice(0, 8)}…, analysierte Bilder {held.ticket.binding.imageHashes.map((h) => `${h.slice(0, 10)}…`).join(', ')}). Sie wurde nicht automatisch übernommen:
+            <ul>
+              {held.reasons.map((r) => <li key={r}>{r}</li>)}
+              {held.problems.length > 0 && <li>Die Antwort ist unvollständig oder widersprüchlich: {held.problems.join('; ')}</li>}
+            </ul>
+            Bei Übernahme behält sie ihren ursprünglichen Bildbezug; passt der nicht zu den aktuellen Bildern, ist sie sofort als veraltet markiert. Bestätigen lässt sie sich erst nach Prüfung bzw. Korrektur.
+          </span>
+          <span className="dbtns">
+            <button className="primary" onClick={() => { try { setBrief(adoptHeldAnalysis(briefRef.current!, held)); setHeld(null); } catch (e) { setMessage({ kind: 'error', text: (e as Error).message }); setHeld(null); } }}>Trotzdem übernehmen</button>
+            <button onClick={() => setHeld(null)}>Verwerfen</button>
+          </span>
         </div>
       )}
 
@@ -309,7 +344,7 @@ export function DesignLab() {
                 </figure>
               ) : <p className="muted">Kein Bild ausgewählt.</p>}
               <figure className="dschema">
-                <svg viewBox="0 0 1 1" preserveAspectRatio="none" style={{ aspectRatio: img ? `${img.width} / ${img.height}` : '1' }} aria-label="Schematische räumliche Interpretation">
+                <svg viewBox="0 0 1 1" preserveAspectRatio="none" style={{ aspectRatio: img ? `${img.width} / ${img.height}` : '1' }} aria-label="Eingefärbte 2D-Bildbereiche der Baugruppen">
                   {/* je Baugruppe nur der erste (Haupt-)Bildbereich; groß zuerst, damit kleine Teile sichtbar bleiben */}
                   {interp.groups
                     .map((g) => ({ g, b: g.boxes.find((x) => x.imageIndex === sel) }))
@@ -319,7 +354,7 @@ export function DesignLab() {
                       <rect key={g.id} x={b.x} y={b.y} width={b.w} height={b.h} fill={colorOf(g)} fillOpacity={g.role === 'detail' ? 0.9 : 0.75} stroke="#18212c" strokeWidth={0.004} strokeDasharray={g.basis === 'observed' ? undefined : '0.02 0.012'}><title>{g.name}</title></rect>
                     ))}
                 </svg>
-                <figcaption className="small"><strong>Räumliche Interpretation – noch ohne echte Steine.</strong> Je Baugruppe der erste Bildbereich mit ihrer ersten Farbe, nicht maßstäblich. Liegt dieser Bereich in einer Teilansicht (z. B. Einsatzbild), erscheint er an dessen Bildposition.</figcaption>
+                <figcaption className="small"><strong>Eingefärbte 2D-Bildbereiche – keine räumliche Rekonstruktion, keine Steine.</strong> Je Baugruppe nur das markierte Rechteck im Bild, gefüllt mit ihrer ersten Farbe. Tiefe, Form und Proportionen sind darin nicht enthalten und nicht geprüft; Rechtecke aus Teilansichten (z. B. Einsatzbildern) stehen an ihrer Bildposition.</figcaption>
               </figure>
             </div>
             <div className="deditor">
@@ -449,15 +484,18 @@ export function DesignLab() {
             e.target.value = '';
             if (!f) return;
             try {
-              const b = parseBrief(await f.text());
+              const loaded = parseBrief(await f.text());
+              const b = loaded.brief;
               const u: Record<string, string> = {};
               const miss: string[] = [];
               for (const im of b.images) { const blob = await loadImage(im.sha256); if (blob) u[im.sha256] = URL.createObjectURL(blob); else miss.push(im.sha256); }
               setUrls(u); setMissing(miss); setBrief(b); setSel(0);
-              setMessage({ kind: 'info', text: `Entwurfsauftrag ${b.briefId} Version ${b.version} importiert (Hash geprüft).${miss.length ? ` ${miss.length} Bild(er) fehlen lokal.` : ''}` });
+              setHeld(null);
+              if (loaded.issues.length) setMessage({ kind: 'error', text: `Entwurfsauftrag ${b.briefId} importiert, aber fachlich nicht stimmig – nur zur Korrektur geladen${loaded.downgraded ? '; Bestätigung bzw. aktueller Analysestand aufgehoben' : ''}.${miss.length ? ` ${miss.length} Bild(er) fehlen lokal.` : ''}`, errors: loaded.issues });
+              else setMessage({ kind: 'info', text: `Entwurfsauftrag ${b.briefId} Version ${b.version} importiert (Struktur, Hash und Inhalt geprüft).${miss.length ? ` ${miss.length} Bild(er) fehlen lokal.` : ''}` });
             } catch (er) { setMessage({ kind: 'error', text: `Import abgelehnt: ${(er as Error).message}` }); }
           }} /></label>
-          <button className="danger" onClick={async () => { if (window.confirm('Lokalen Entwurf und alle lokal gespeicherten Bilder löschen?')) { await clearAll(); setUrls({}); setMissing([]); setBrief(newBrief(newId())); setMessage(null); } }}>Neuer Entwurf</button>
+          <button className="danger" onClick={async () => { if (window.confirm('Lokalen Entwurf und alle lokal gespeicherten Bilder löschen?')) { await clearAll(); setUrls({}); setMissing([]); setBrief(newBrief(newId())); setMessage(null); setHeld(null); } }}>Neuer Entwurf</button>
         </div>
         <p className="inotice small">
           Ein bestätigter Entwurfsauftrag ist eine <strong>Anforderung</strong>, keine Zusage der Machbarkeit. Er enthält keine Steine. Bauanleitung und Stückliste gibt es erst, wenn daraus ein echtes kanonisches Modell mit geprüfter Baufolge konstruiert ist (nächster Schritt). Es wird keine Alters- oder Sicherheitsfreigabe abgeleitet.
