@@ -107,7 +107,7 @@ describe('Import: vollständige Laufzeitprüfung (korrekter Hash ersetzt keine f
     ['Minimum > Maximum', (o) => { o.requirements.partMin = 900; }, /Minimum größer als Maximum/],
     ['Merkmal existiert nicht', (o) => { o.requirements.keyFeatureIds = ['f9']; }, /„f9“ existiert nicht/],
     ['Verlauf passt nicht zur Version', (o) => { o.version = 9; }, /Verlauf endet bei Version/],
-    ['Analyse „aktuell“, aber andere Bilder', (o) => { o.analysis.imageHashes = ['b'.repeat(64)]; }, /als aktuell markiert, beruht aber auf anderen Bildern/],
+    ['Analyse „aktuell“, aber andere Bilder', (o) => { o.analysis.imageHashes = ['b'.repeat(64)]; }, /als aktuell markiert, passt aber nicht zu den vorhandenen Bildern: andere Bilder/],
     ['Bestätigung ohne Zeitpunkt', (o) => { o.confirmation.at = null; }, /ohne Zeitpunkt/],
   ];
   for (const [name, mutate, msg] of semantic)
@@ -196,9 +196,11 @@ describe('Analyse: verspätete Antworten überschreiben keinen geänderten Entwu
       // ausdrückliche Übernahme: ursprünglicher Bezug; passt er nicht zu den Bildern, sofort veraltet
       const adopted = adoptHeldAnalysis(changed, held);
       expect(adopted.analysis!.imageHashes).toEqual([i.ref.sha256]);
-      const imagesSame = JSON.stringify(changed.images.map((x) => x.sha256)) === JSON.stringify([i.ref.sha256]);
-      expect(adopted.analysis!.status).toBe(imagesSame ? 'current' : 'stale');
-      if (!imagesSame) expect(readiness(adopted).find((x) => x.label.startsWith('Interpretation beruht'))!.ok).toBe(false);
+      // aktuell nur, wenn Prüfsummen, Reihenfolge UND Ansichten der Anfrage zu den aktuellen Bildern passen
+      const bindingSame = JSON.stringify(changed.images.map((x) => [x.sha256, x.view])) === JSON.stringify([[i.ref.sha256, 'vorn']]);
+      expect(adopted.analysis!.status).toBe(bindingSame ? 'current' : 'stale');
+      expect(adopted.analysis!.inputViews).toEqual(['vorn']);
+      if (!bindingSame) expect(readiness(adopted).find((x) => x.label.startsWith('Interpretation beruht'))!.ok).toBe(false);
     });
 
   it('neuer Entwurf bzw. Import eines anderen Projekts während der Analyse → Antwort verworfen', async () => {

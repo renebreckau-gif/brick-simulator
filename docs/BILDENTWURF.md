@@ -112,6 +112,15 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
   - Eine ausdrückliche Übernahme durch den Nutzer setzt den Bildbezug der Anfrage. Passt er nicht zu den aktuellen Bildern, ist die Interpretation sofort veraltet.
   - Widersprüchliche Dienstantworten werden nie automatisch übernommen.
 
+### Ansichten gehören zur Bindung (Nachtrag 05A.2)
+
+Eine Interpretation gilt nur als aktuell, wenn **Prüfsummen, Reihenfolge und Ansichtsbezeichnungen** der analysierten Bilder mit den aktuellen übereinstimmen (`bindingMismatch`). Dieselbe Prüfung nutzen Übernahme, `readiness`, `confirm`, `isConfirmedCurrent`, `toDesignProvenance` und der Import.
+
+- Ändert sich die Ansicht eines Bildes (`setView`), ist die Interpretation sofort veraltet.
+- Übernommene Antworten behalten ihre ursprünglichen Ansichten und bleiben bei Abweichung veraltet.
+- Aktualisieren lassen sich der Stand nur durch eine neue Analyse oder eine ausdrücklich protokollierte Neubewertung für die aktuellen Bilder und Ansichten.
+- Ältere Dateien ohne `inputViews`: Hier gelten die Ansichten als **nicht belegt** (`null`), es wird keine Zuordnung erfunden. Die Analyse wird beim Laden mit Begründung als veraltet markiert und braucht eine Neubewertung.
+
 ## Nächster Schritt vor der Steinkonstruktion: gemeinsames Volumenmodell
 
 Die 2D-Bildbereiche reichen nicht, um Steine zu setzen: Sie haben keine Tiefe, und Rechtecke aus verschiedenen Ansichten passen nicht zwingend zusammen. Vor der Konstruktion (05B) soll daher ein **gemeinsames räumliches Volumenmodell** entstehen.
