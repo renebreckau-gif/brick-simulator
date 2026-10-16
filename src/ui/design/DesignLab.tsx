@@ -297,7 +297,7 @@ export function DesignLab() {
         {brief.analysis && (
           <p className={brief.analysis.status === 'stale' ? 'stalebar' : 'small muted'} role={brief.analysis.status === 'stale' ? 'alert' : undefined}>
             Herkunft: {brief.analysis.provider}{brief.analysis.model ? ` (${brief.analysis.model})` : ''}, Verfahren {brief.analysis.methodVersion}{brief.analysis.promptVersion ? `, ${brief.analysis.promptVersion}` : ''}, {brief.corrections.length} Korrektur(en).
-            {brief.analysis.status === 'stale' && <> <strong>Veraltet:</strong> {brief.analysis.staleReason}. Neu analysieren, manuell neu beginnen oder <button className="linklike" onClick={() => update(rebaseInterpretation)}>bestehende Interpretation für die aktuellen Bilder übernehmen</button> (wird protokolliert; Bildbereiche bitte prüfen).</>}
+            {brief.analysis.status === 'stale' && <> <strong>Veraltet:</strong> {brief.analysis.staleReason}. Neu analysieren, manuell neu beginnen oder <button className="linklike" onClick={() => update(rebaseInterpretation)}>bestehende Interpretation ausdrücklich für die aktuellen Bilder und Ansichten neu bewerten</button> (wird protokolliert; Bildbereiche bitte prüfen).</>}
           </p>
         )}
         <div className="dactions">

@@ -173,7 +173,7 @@ describe('Entwurfsauftrag: Versionen, Korrekturen, Veralten, Bestätigung', () =
     // ausdrückliche Übernahme durch den Nutzer: protokolliert, Bestätigung bleibt veraltet bis zur Neubestätigung
     const rb = rebaseInterpretation(r, at);
     expect(rb.analysis).toMatchObject({ status: 'current', imageHashes: [neu.sha256] });
-    expect(rb.history.at(-1)!.event).toMatch(/vom Nutzer für die aktuellen Bilder übernommen/);
+    expect(rb.history.at(-1)!.event).toMatch(/vom Nutzer ausdrücklich für die aktuellen Bilder und Ansichten .* neu bewertet/);
     expect(isConfirmedCurrent(rb)).toBe(false);
     expect(isConfirmedCurrent(confirm(rb, at))).toBe(true);
     const removed = removeImage(ok, ok.images[0].sha256);

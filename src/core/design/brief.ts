@@ -42,8 +42,11 @@ export const AnalysisRecordSchema = z.object({
   promptVersion: z.string().nullable(),
   /** Prüfsummen der Bilder, auf denen die Interpretation tatsächlich beruht (Reihenfolge = imageIndex). */
   imageHashes: z.array(Sha256),
-  /** Ansichtsbezeichnungen, mit denen die Bilder analysiert wurden. */
-  inputViews: z.array(z.enum(VIEW_LABELS)).default([]),
+  /**
+   * Ansichtsbezeichnungen, mit denen die Bilder analysiert wurden (Reihenfolge = imageHashes).
+   * null = nicht belegt (ältere Datei ohne dieses Feld) – dann gilt die Bindung als nicht nachgewiesen.
+   */
+  inputViews: z.array(z.enum(VIEW_LABELS)).nullable().default(null),
   /** An die Analyse übergebene Hinweise des Nutzers. */
   notes: z.string().default(''),
   /** Kennung der Analyseanfrage (null beim manuellen Weg). */
@@ -161,8 +164,10 @@ export function removeImage(b: DesignBrief, sha: string): DesignBrief {
 }
 
 export function setView(b: DesignBrief, sha: string, view: ViewLabel): DesignBrief {
-  const reason = `Ansicht von Bild ${sha.slice(0, 12)}… auf „${view}“ gesetzt`;
-  return next(b, reason, { images: b.images.map((i) => (i.sha256 === sha ? { ...i, view } : i)), confirmation: staleConfirmation(b, reason) });
+  const img = b.images.find((i) => i.sha256 === sha);
+  if (!img || img.view === view) return b;
+  const reason = `Ansicht von Bild ${sha.slice(0, 12)}… von „${img.view}“ auf „${view}“ geändert`;
+  return next(b, reason, { images: b.images.map((i) => (i.sha256 === sha ? { ...i, view } : i)), analysis: staleAnalysis(b, reason), confirmation: staleConfirmation(b, reason) });
 }
 
 export type AnalysisMeta = Pick<AnalysisRecord, 'method' | 'provider' | 'model' | 'promptVersion' | 'at' | 'requestId'>;
@@ -179,7 +184,28 @@ export function currentBinding(b: DesignBrief, notes = '', ticketId: string | nu
   return { imageHashes: b.images.map((i) => i.sha256), views: b.images.map((i) => i.view), notes, ticketId };
 }
 
-const sameImages = (b: DesignBrief, hashes: string[]) => stableStringify(hashes) === stableStringify(b.images.map((i) => i.sha256));
+/**
+ * Einheitliche Bindungsprüfung: Passt eine Interpretation (Prüfsummen, Reihenfolge, Ansichten) zu den
+ * aktuellen Bildern? Ohne belegte Ansichten (null) gilt die Bindung als nicht nachgewiesen.
+ * Gibt null zurück, wenn alles passt, sonst die Abweichung als Text.
+ */
+export function bindingMismatch(b: DesignBrief, hashes: readonly string[], views: readonly ViewLabel[] | null): string | null {
+  const cur = b.images.map((i) => i.sha256);
+  if (stableStringify(hashes) !== stableStringify(cur))
+    return [...hashes].sort().join() === [...cur].sort().join()
+      ? 'Reihenfolge der Bilder weicht ab'
+      : `andere Bilder (${hashes.map((h) => h.slice(0, 12)).join(', ') || 'keine'}) als die aktuellen`;
+  if (views === null) return 'Ansichten der Analyse nicht belegt (ältere Datei ohne inputViews)';
+  const curViews = b.images.map((i) => i.view);
+  if (stableStringify(views) !== stableStringify(curViews))
+    return `andere Ansichten (${views.join(', ')}) als die aktuellen (${curViews.join(', ')})`;
+  return null;
+}
+
+/** Gilt die vorhandene Interpretation als aktuell und an die vorhandenen Bilder und Ansichten gebunden? */
+export function analysisBound(b: DesignBrief): boolean {
+  return !!b.analysis && b.analysis.status === 'current' && bindingMismatch(b, b.analysis.imageHashes, b.analysis.inputViews) === null;
+}
 
 /**
  * Neue Interpretation (Analyse, manuell oder Import); frühere Korrekturen gelten für die alte und entfallen.
@@ -188,12 +214,13 @@ const sameImages = (b: DesignBrief, hashes: string[]) => stableStringify(hashes)
  */
 export function setInterpretation(b: DesignBrief, interpretation: Interpretation, analysis: AnalysisMeta, binding: InputBinding = currentBinding(b)): DesignBrief {
   const reason = analysis.method === 'manual' ? 'Interpretation manuell begonnen' : `Interpretation durch ${analysis.provider}${analysis.model ? ` (${analysis.model})` : ''}`;
-  const matches = sameImages(b, binding.imageHashes);
+  const mismatch = bindingMismatch(b, binding.imageHashes, binding.views);
+  const matches = mismatch === null;
   return next(b, reason, {
     interpretation,
     analysis: {
       ...analysis, methodVersion: ANALYSIS_METHOD_VERSION, imageHashes: [...binding.imageHashes], inputViews: [...binding.views], notes: binding.notes, ticketId: binding.ticketId,
-      status: matches ? 'current' : 'stale', staleReason: matches ? null : `Interpretation bezieht sich auf andere Bilder (${binding.imageHashes.map((h) => h.slice(0, 12)).join(', ') || 'keine'}) als die aktuellen`,
+      status: matches ? 'current' : 'stale', staleReason: matches ? null : `Interpretation bezieht sich auf ${mismatch}`,
     },
     corrections: [],
     confirmation: staleConfirmation(b, reason),
@@ -206,7 +233,7 @@ export function setInterpretation(b: DesignBrief, interpretation: Interpretation
  */
 export function rebaseInterpretation(b: DesignBrief, at = now()): DesignBrief {
   if (!b.interpretation || !b.analysis || b.analysis.status !== 'stale') return b;
-  const reason = `Interpretation vom Nutzer für die aktuellen Bilder übernommen (vorher: ${b.analysis.staleReason})`;
+  const reason = `Interpretation vom Nutzer ausdrücklich für die aktuellen Bilder und Ansichten (${b.images.map((i) => `${i.sha256.slice(0, 12)}…/${i.view}`).join(', ')}) neu bewertet (vorher: ${b.analysis.staleReason})`;
   return next(b, reason, { analysis: { ...b.analysis, imageHashes: b.images.map((i) => i.sha256), inputViews: b.images.map((i) => i.view), status: 'current', staleReason: null }, confirmation: staleConfirmation(b, reason) }, at);
 }
 
@@ -344,10 +371,9 @@ export function readiness(b: DesignBrief): ReadinessItem[] {
   const check = b.interpretation ? checkInterpretation(b.interpretation, b.images.length) : null;
   const r = b.requirements;
   const featureIds = new Set(b.interpretation?.features.map((f) => f.id) ?? []);
-  const sameImages = !!b.analysis && stableStringify(b.analysis.imageHashes) === stableStringify(b.images.map((i) => i.sha256));
   return [
     { ok: b.images.length > 0, label: 'Mindestens ein Bild vorhanden' },
-    { ok: !!b.analysis && b.analysis.status === 'current' && sameImages, label: 'Interpretation beruht auf den aktuellen Bildern' },
+    { ok: analysisBound(b), label: 'Interpretation beruht auf den aktuellen Bildern und Ansichten' },
     { ok: !!check?.ok, label: check ? (check.ok ? 'Interpretation strukturell gültig und widerspruchsfrei' : `Interpretation fehlerhaft: ${check.errors[0]}`) : 'Interpretation vorhanden' },
     { ok: !!r && Number.isInteger(r.partMin) && Number.isInteger(r.partMax) && r.partMin > 0 && r.partMin <= r.partMax, label: 'Teilezahlbereich angegeben (ganze Zahlen, Minimum ≤ Maximum)' },
     { ok: !!r && r.keyFeatureIds.length > 0 && r.keyFeatureIds.every((id) => featureIds.has(id)), label: 'Wichtigste Merkmale ausgewählt' },
@@ -368,6 +394,8 @@ export function confirm(b: DesignBrief, at = now()): DesignBrief {
  * Fachliche Prüfung eines vollständigen Entwurfsauftrags (über die Strukturprüfung hinaus).
  * Leere Liste = fachlich stimmig. Ein korrekter Inhalts-Hash ersetzt diese Prüfung nicht.
  */
+const BOUND_ISSUE = 'Analyse ist als aktuell markiert, passt aber nicht zu den vorhandenen Bildern';
+
 export function briefIssues(b: DesignBrief): string[] {
   const out: string[] = [];
   const v = DesignBriefSchema.safeParse(b);
@@ -378,8 +406,9 @@ export function briefIssues(b: DesignBrief): string[] {
   if (b.history.at(-1)!.version !== b.version) out.push(`Verlauf endet bei Version ${b.history.at(-1)!.version}, Auftrag hat Version ${b.version}`);
   if (!!b.analysis !== !!b.interpretation) out.push('Analyseherkunft und Interpretation müssen gemeinsam vorhanden sein');
   if (b.analysis) {
-    if (b.analysis.inputViews.length && b.analysis.inputViews.length !== b.analysis.imageHashes.length) out.push('Analyseherkunft: Anzahl der Ansichten passt nicht zu den Bildern');
-    if (b.analysis.status === 'current' && !sameImages(b, b.analysis.imageHashes)) out.push('Analyse ist als aktuell markiert, beruht aber auf anderen Bildern als den vorhandenen');
+    if (b.analysis.inputViews && b.analysis.inputViews.length !== b.analysis.imageHashes.length) out.push('Analyseherkunft: Anzahl der Ansichten passt nicht zu den Bildern');
+    const mismatch = bindingMismatch(b, b.analysis.imageHashes, b.analysis.inputViews);
+    if (b.analysis.status === 'current' && mismatch) out.push(`${BOUND_ISSUE}: ${mismatch}`);
     if (b.analysis.status === 'stale' && !b.analysis.staleReason) out.push('Veraltete Analyse ohne Begründung');
   }
   if (b.interpretation) {
@@ -469,7 +498,7 @@ export function parseBrief(text: string, at = now()): LoadedBrief {
   const reason = `Beim Laden fachlich ungültig: ${issues[0]}${issues.length > 1 ? ` (+${issues.length - 1} weitere)` : ''}`;
   const confirmed = brief.confirmation.status === 'confirmed';
   // Ein als „aktuell“ markierter Analysestand wird nur aufgehoben, wenn er nicht zu den Bildern passt
-  const currentAnalysis = brief.analysis?.status === 'current' && issues.some((i) => i.startsWith('Analyse ist als aktuell markiert'));
+  const currentAnalysis = brief.analysis?.status === 'current' && issues.some((i) => i.startsWith(BOUND_ISSUE));
   if (!confirmed && !currentAnalysis) return { brief, issues, downgraded: false };
   brief = next(brief, reason, {
     confirmation: confirmed ? { ...brief.confirmation, status: 'stale', reason } : brief.confirmation,
