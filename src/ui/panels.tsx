@@ -21,6 +21,8 @@ export function EvidenceGlyph({ f }: { f: Pick<Finding, 'evidenceLevel' | 'statu
 }
 
 const STATUS_LABEL: Record<Finding['status'], string> = { passed: 'bestanden', failed: 'beanstandet', unchecked: 'ungeprüft', unsupported: 'nicht unterstützt' };
+/** Befundschwere als Text – der farbige Kartenrand ist nie das einzige Merkmal. */
+const SEVERITY_LABEL: Record<Finding['severity'], string> = { blocker: 'Blocker', warning: 'Warnung', info: 'Hinweis' };
 const DIMENSION_LABEL: Record<Dimension, string> = { assembly: 'Montage', robustness: 'Robustheit', usage: 'Nutzungseignung', data: 'Datenbasis' };
 
 type Filter = 'blocker' | 'warning' | 'open' | 'passed';
@@ -79,7 +81,7 @@ export function ReportPanel({ report, onHighlight, highlighted }: { report: Vali
                     <button className="fhead" onClick={() => { setOpenId(openId === f.id ? null : f.id); onHighlight(active ? [] : f.affected.instanceIds); }} aria-expanded={openId === f.id}>
                       <EvidenceGlyph f={f} />
                       <span className="ftitle">{f.title}</span>
-                      <span className="fstatus">{STATUS_LABEL[f.status]}</span>
+                      <span className="fstatus">{f.status === 'failed' ? `${SEVERITY_LABEL[f.severity]} · ${STATUS_LABEL[f.status]}` : STATUS_LABEL[f.status]}</span>
                     </button>
                     <p className="fmsg">{f.message}</p>
                     {openId === f.id && (
