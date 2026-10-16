@@ -115,6 +115,14 @@ Die LDraw-Dateien lassen sich bei Bedarf mit `node scripts/fetch-ldraw.mjs` neu 
 - **Änderungen**: Ein ausgewähltes Teil kann verschoben oder entfernt werden. Danach gelten Bericht, Baufolgenprüfung, Stückliste und Beschaffungsstand als veraltet, bis die neue Version geprüft ist.
 - **Export**: Modell (JSON), Prüfbericht (JSON), Stückliste (CSV), LDraw (mit STEP je Schritt).
 
+## Aus Bild entwerfen
+
+Der dritte Bereich in der Seitenleiste nimmt eine oder mehrere Konzeptbilder (PNG/JPEG) entgegen. Er prüft jedes Bild am Dateiinhalt und identifiziert es per SHA-256; die Bilder bleiben lokal im Browser. Daraus entsteht eine nachvollziehbare Interpretation, entweder automatisch über die Claude API (nur über den lokalen Server, mit vorheriger Einwilligung) oder manuell. Jede Aussage ist als beobachtet, angenommen oder Nutzervorgabe gekennzeichnet.
+
+Nach Korrekturen und Anforderungen (Teilezahl, Höchstmaße, wichtigste Merkmale, Nutzung) wird ein versionierter Entwurfsauftrag bestätigt. Er enthält noch keine Steine; Bauanleitung und Stückliste gibt es erst mit einem echten Modell.
+
+Automatische Analyse einrichten: `.env.local` mit `ANTHROPIC_API_KEY=…` anlegen (Vorlage `.env.example`), dann den Entwicklungsserver neu starten. Details, Grenzen und Prüfstand: [docs/BILDENTWURF.md](docs/BILDENTWURF.md).
+
 ## Bauanleitung
 
 Der Schalter „Bauanleitung“ über dem Hauptbereich wechselt vom Modell zur Anleitung des angezeigten Modells. Das gilt für jedes Modell ohne Blocker mit Baufolge: Raumschiffe, Referenzen und Grenzfälle. Die Anleitung zeigt eine Übersicht mit tatsächlicher Teilezahl, Außenmaßen, Modell-ID, Hash und Planversion. Dazu kommen Schritte mit großen Bildern aus den Teilinstanzen: neue Teile hervorgehoben, Einsetzpfeile nur bei geprüften Steckwegen. Je Schritt gibt es eine Teileübersicht, für die Ausleger eine isolierte Vormontage, und am Ende die vollständige Stückliste. Druckansicht und PDF-Export (A4, lokal im Browser) nutzen dieselbe Datenbasis. Nach einer Modelländerung ist die Anleitung als veraltet gekennzeichnet, und der Export ist gesperrt. Der Hinweis zur Herkunft richtet sich nach dem Modell (eigener Entwurf, Referenz oder Testfall). Keine Anleitung ist physisch erprobt. Details und Grenzen: [docs/BAUANLEITUNG.md](docs/BAUANLEITUNG.md).
@@ -137,6 +145,7 @@ src/core/          UI-unabhängiger Kern
   export/          JSON, CSV, LDraw
   data/            Laden aller Daten über eine austauschbare Lesefunktion
 src/fixtures/      Grenzfälle und Fehlervarianten (synthetisch, gekennzeichnet)
+src/core/design/   Bildvorlage, Interpretation, Entwurfsauftrag (versioniert, ohne Teilinstanzen)
 src/core/instructions/ Anleitungsplan (abgeleitet, versioniert, mit Modellbezug)
 src/generator/     Raumschiff-Generator (deterministisch, versioniert)
 src/ui/instructions/ Bauanleitung: Rendering, Bildschirm-/Druckansicht, PDF (jsPDF)
@@ -144,6 +153,7 @@ src/ui/            React-Oberfläche, Three.js-Ansicht
 data/              LDraw-Dateien, Katalogauszug, Referenzen, Erwartungen
 tests/             reguläre Vitest-Suite (ohne private Daten; Kataloglogik mit synthetischer Testfixture)
 tests-rebrickable/ optionale Integrationstests gegen den privaten Katalogauszug (npm run test:rebrickable)
+server/            lokale Server-Endpunkte (Bildanalyse, nur Entwicklungsserver)
 scripts/           Datenabruf, Positivliste öffentlicher Daten, Prüfung von dist/
 .github/workflows/ CI: frischer Checkout ohne private Daten
 docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüfprotokolle
@@ -158,6 +168,7 @@ docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüf
 - [Physische Prüfprotokolle (Kalibrierung, noch nicht durchgeführt)](docs/PHYSISCHE-PRUEFPROTOKOLLE.md)
 - [Raumschiff-Labor: Generator, Varianten, Grenzen, Probeaufbau-Protokoll](docs/RAUMSCHIFF.md)
 - [Bauanleitung: Anleitungsplan, Ansichten, PDF, Grenzen](docs/BAUANLEITUNG.md)
+- [Aus Bild entwerfen: Interpretation, Entwurfsauftrag, Analyse einrichten](docs/BILDENTWURF.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Namensnennung

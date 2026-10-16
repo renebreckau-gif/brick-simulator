@@ -259,3 +259,65 @@ button.danger { color: var(--block); }
 }
 .imodule { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
 .imodule img { border: 1px solid var(--rule); border-radius: 4px; background: #fff; }
+
+/* Aus Bild entwerfen (Auftrag 05A) */
+.modes { flex-wrap: wrap; }
+.design { padding: var(--s4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); max-width: 1280px; min-width: 0; }
+.dhead { display: flex; gap: var(--s4); justify-content: space-between; align-items: flex-end; flex-wrap: wrap; }
+.dhead p { margin: 4px 0 0; max-width: 70ch; }
+.design .stalebar, .design .catalogbar { margin: 0; }
+.dsec { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: var(--s3); display: grid; gap: var(--s2); }
+.dsec h3 { font-size: 17px; }
+.dsec p { margin: 0; }
+.dupload { display: inline-flex; gap: var(--s2); align-items: center; font-weight: 700; }
+.dimages { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.dimages li { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto auto; gap: var(--s3); align-items: center; padding: var(--s2); border: 1px solid var(--rule); border-radius: 6px; }
+.dimages li.active { border: 2px solid var(--select); }
+.dthumb { padding: 0 !important; border: 1px solid var(--rule); width: 96px; height: 72px; background: #fff; cursor: pointer; }
+.dthumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.dbtns, .dactions { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+.derrors { margin: 0; padding: var(--s2) var(--s3) var(--s2) 1.6em; color: var(--block); border: 1px solid #e4b4b0; border-radius: 6px; background: #fdf1f0; }
+.derrors ul { margin: 4px 0 0; }
+.dwarn { margin: 0; color: var(--warn); }
+.dconsent { border: 2px solid var(--ink); border-radius: 8px; padding: var(--s3); display: grid; gap: var(--s2); background: #fffaf0; }
+.dconsent ul, .dconsent ol { margin: 0; }
+.dcheck { display: flex; gap: var(--s2); align-items: flex-start; font-weight: 700; }
+.dsplit { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--s4); align-items: start; }
+.dimagepane { position: sticky; top: var(--s2); display: grid; gap: var(--s3); }
+.doverlay { margin: 0; position: relative; }
+.doverlay img { width: 100%; display: block; border: 1px solid var(--rule); border-radius: 6px; }
+.dimgwrap { position: relative; }
+.doverlay svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.doverlay rect { fill: none; stroke: #b3261e; stroke-width: 2; }
+.doverlay rect.focus { stroke: var(--select); stroke-width: 4; }
+.dschema { margin: 0; }
+.dschema svg { width: 100%; background: repeating-linear-gradient(45deg, #f4f6f8, #f4f6f8 8px, #eef1f4 8px, #eef1f4 16px); border: 1px dashed var(--ink-2); border-radius: 6px; }
+.deditor { display: grid; gap: var(--s3); min-width: 0; }
+.deditor fieldset { border: 1px solid var(--rule); border-radius: 6px; display: grid; gap: var(--s2); margin: 0; }
+.deditor legend { font-weight: 700; }
+.ditem { border-top: 1px solid var(--rule); padding-top: var(--s2); display: grid; gap: var(--s1); }
+.ditem.focus { border-left: 4px solid var(--select); padding-left: var(--s2); }
+.ditemhead { display: flex; gap: var(--s2); align-items: baseline; flex-wrap: wrap; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--s2); align-items: end; }
+.dfield { display: grid; gap: 2px; font-size: 13px; min-width: 0; }
+.dfield span { color: var(--ink-2); }
+.dfield input, .dfield select, .dfield textarea { font: inherit; font-size: 14px; padding: 4px 6px; min-width: 0; width: 100%; }
+.dfield input[type='color'] { padding: 0; height: 30px; }
+.btag { font-size: 12px; padding: 1px 6px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+.btag.basis-observed { border-style: solid; }
+.btag.basis-assumed { border-style: dashed; }
+.btag.basis-user { border-style: double; border-width: 3px; }
+.dchips { display: flex; flex-wrap: wrap; gap: var(--s2); font-size: 13px; align-items: center; }
+.dchip { display: inline-flex; gap: 4px; align-items: center; }
+.dbox { display: inline-flex; gap: 4px; align-items: center; margin-right: var(--s2); }
+.dbox input { width: 4.2em; font-size: 12px; }
+.dready { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.dready .ok { color: var(--ok); }
+.dready .open { color: var(--ink-2); }
+.dprio { margin: 0; }
+@media (max-width: 1100px) { .dsplit { grid-template-columns: 1fr; } .dimagepane { position: static; } }
+@media (max-width: 700px) {
+  .design { padding: var(--s2); }
+  .dimages li { grid-template-columns: 72px minmax(0, 1fr); }
+  .dthumb { width: 72px; height: 56px; }
+}

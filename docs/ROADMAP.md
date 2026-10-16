@@ -22,7 +22,20 @@ Parametrischer, deterministischer Generator (`spaceship-gen@1.0.0`) mit drei Var
 
 Versionierter Anleitungsplan, Bereich „Bauanleitung“ mit Schrittnavigation, Druckansicht und PDF-Export für die drei Standardvarianten; Protokoll P4 für den späteren Probeaufbau nach Anleitung. Die Anleitung arbeitet für jedes kanonische Modell ohne Blocker mit Baufolge, nicht nur für Raumschiffe. Parallel möglich: physischer Probeaufbau der langgestreckten Variante nach P4.
 
-## Nächster zentraler Entwicklungsschritt – Bild zu Modell
+## Auftrag 05A – Bildvorlage → bestätigter Entwurfsauftrag ✔
+
+Bereich „Aus Bild entwerfen“ mit Upload und Inhaltsprüfung, Analyse über die Claude API (eingerichtet, aber mangels Schlüssel noch nicht live ausgeführt) oder manuell. Dazu kommen Korrektur, Anforderungen und ein versionierter, bestätigbarer Entwurfsauftrag (siehe `BILDENTWURF.md`).
+
+## Auftrag 05B – bestätigten Entwurf in echte Bausteine konstruieren (nächster Schritt)
+
+0. **Zuerst: gemeinsames räumliches Volumenmodell** aus dem bestätigten Entwurfsauftrag (einfache Körper je Baugruppe in einem Koordinatensystem), daraus **sechs gerenderte Ansichten** zum Abgleich mit der Vorlage und zur Korrektur. Die bisherige Vorschau zeigt nur eingefärbte 2D-Bildbereiche, keine räumliche Rekonstruktion (siehe `BILDENTWURF.md`).
+1. Konstrukteur, der ein bestätigtes Volumenmodell (samt Entwurfsauftrag) liest: Baugruppen, relative Größen, Farben, Prioritäten, Teilebudget und Höchstmaße. Er erzeugt ein `CanonicalModel` mit `design` aus `toDesignProvenance` und einer Baufolge.
+2. Abbildung der Proportionen auf das Noppenraster innerhalb der Höchstmaße; Farbabbildung auf belegte LDraw-/Katalogfarben. Jede Abweichung kommt nach `design.deviations`.
+3. Prüfung mit dem unveränderten Validator; Bauanleitung und Stückliste über die vorhandene Kette.
+4. Visueller Abgleich: Rendering des Modells gegen die Bildbereiche der Vorlage.
+5. Voraussetzung für überzeugende Ergebnisse: weitere Teilefamilien mit belegten Regeln (Dachsteine und Keile für Schrägen, später SNOT und Scharniere).
+
+## Gesamtkette Bild zu Modell (Überblick; Schritt 1 und Teile von Schritt 2 mit 05A umgesetzt)
 
 Ziel: Aus einem hochgeladenen Konzeptbild entsteht ein kanonisches Modell aus realen Teilen, das danach dieselbe Kette durchläuft: Validierung, visueller Abgleich, Bauanleitung, Teileliste (siehe `ARCHITEKTUR.md`, A18). Vorgeschlagene Reihenfolge:
 

@@ -1,9 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import type { Connect, Plugin } from 'vite';
+import { loadEnv, type Connect, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { listPublicDataFiles, PRIVATE_DEV_FILES } from './scripts/data-files.mjs';
+import { designAnalysisApi } from './server/design-analysis/vitePlugin';
 
 const DATA_DIR = resolve(__dirname, 'data');
 const TYPES: Record<string, string> = { '.json': 'application/json; charset=utf-8', '.dat': 'text/plain; charset=utf-8', '.ldr': 'text/plain; charset=utf-8', '.mpd': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
@@ -47,12 +48,14 @@ function dataFiles(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), dataFiles()],
+export default defineConfig(({ mode }) => ({
+  // loadEnv mit Präfix '' liest auch Nicht-VITE-Variablen (z. B. ANTHROPIC_API_KEY aus .env.local) –
+  // nur für den Server-Endpunkt; an den Browser gehen weiterhin ausschließlich VITE_-Variablen.
+  plugins: [react(), dataFiles(), designAnalysisApi(loadEnv(mode, __dirname, ''))],
   // Kein publicDir: data/ wird NICHT pauschal kopiert (enthält lokal ggf. private Dateien).
   publicDir: false,
   test: {
     include: ['tests/**/*.test.ts'],
     testTimeout: 30000,
   },
-});
+}));
