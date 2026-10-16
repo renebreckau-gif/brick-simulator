@@ -105,3 +105,27 @@ Eine Herstelleranleitung wird nicht als Modell nachgebaut. Gespeichert wird nur 
 ## A16 – Erzeugte Modelle bleiben gewöhnliche kanonische Modelle (Auftrag 03)
 
 Der Raumschiff-Generator (`src/generator/spaceship.ts`) erzeugt ein normales `CanonicalModel` mit `origin.kind = 'generated'`, `stepsSource = 'generated'` und dem Feld `generator` (Name, Version, Eingaben). Das Feld geht in den Inhalts-Hash ein. Der Generator hat keine eigene Gültigkeitslogik, die den Validator ersetzt. Sein Belegungsraster dient nur dazu, beim Erzeugen nicht zu überschneiden. Ob das Modell gültig ist, entscheidet allein der unveränderte Validator, und alle Ansichten (3D, Bericht, Baufolge, Stückliste, Exporte) beziehen sich auf dieselbe Modellversion. Zufall kommt aus einem gesetzten PRNG (mulberry32); Sortierungen verwenden vorab gezogene Schlüssel, damit das Ergebnis nicht von der Sortierimplementierung der JS-Engine abhängt. Eine Änderung am Ergebnis erfordert eine neue Generatorversion; die festgeschriebenen Hashes der drei Varianten machen das sichtbar. Details: `RAUMSCHIFF.md`.
+
+## A17 – Bauanleitung als versionierter Anleitungsplan (Auftrag 04)
+
+Die Anleitung ist ein abgeleitetes Artefakt (`src/core/instructions/plan.ts`, `instr-plan@1.0.0`) mit eigenem Hash und `modelRef`. Sie teilt große kanonische Schritte nur innerhalb ihrer Grenzen und behält deren Reihenfolge bei. Die verfeinerte Folge wird mit dem unveränderten Montageprüfer erneut geprüft. Der Plan legt Kameras, Bildausschnitte und hervorgehobene Instanzen fest. Der Renderer (`src/ui/instructions/render.ts`) setzt nur um, was der Plan vorgibt, und zeichnet Einsetzpfeile nur für geprüfte Steckwege. Bildschirm, Druckansicht und PDF (jsPDF, lokal) nutzen dieselbe Datenbasis (`document.ts`). Eine Modelländerung macht den Plan über `modelRef` sichtbar veraltet und sperrt Druck und Export. Details: `BAUANLEITUNG.md`. Der Anleitungscode kennt keinen Generator; er arbeitet auf jedem kanonischen Modell ohne Blocker, das eine Baufolge hat.
+
+## A18 – Offene Kette Bild → Modell → Anleitung (Zielarchitektur)
+
+Produktziel: Nutzer laden ein Konzeptbild hoch und erhalten daraus eine Konstruktion aus realen Bausteinen, eine geprüfte Baufolge, eine verständliche Bauanleitung und eine beschaffbare Teileliste. Die Stufen tauschen nur versionierte Artefakte aus. Jede Stufe kann einzeln ersetzt werden, und keine Stufe entscheidet über Gültigkeit außer dem Validator.
+
+| Stufe | Eingabe → Ausgabe | Stand |
+| --- | --- | --- |
+| 1. Bildanalyse | Konzeptbild → Bildmerkmale (Umriss, Farbflächen, Proportionen) mit Prüfsumme der Quelle | offen |
+| 2. Räumliche Interpretation | Bildmerkmale → Volumen-/Formannahme mit ausdrücklich markierten Annahmen (z. B. verdeckte Rückseite) | offen |
+| 3. Bausteinkonstruktion | Formannahme → `CanonicalModel` aus realen Teilen und implementierten Verbindungen, mit `design`-Herkunft und Baufolge | Generator-Schnittstelle vorhanden (Raumschiff als erster Erzeuger) |
+| 4. Validierung | Modell → Prüfbericht | vorhanden, unverändert für alle Erzeuger |
+| 5. Visueller Abgleich | Konzeptbild ↔ Rendering des Modells → Abweichungen, gespeichert in `design.visualComparison` und `design.deviations` | offen; Felder vorhanden |
+| 6. Bauanleitung | Modell ohne Blocker → Anleitungsplan, Ansicht, PDF | vorhanden (`instr-plan@1.0.0`) |
+| 7. Beschaffung | Stückliste → Angebote | Schema vorhanden, keine Provider |
+
+Regeln für die künftigen Stufen 1–3:
+
+- Erzeugte Modelle tragen `origin.kind = 'generated'`, eine Generatorkennung und eine Entwurfsherkunft (`design`). Bilddaten selbst werden nicht im Modell gespeichert, nur Prüfsumme, Medientyp und Rechteangabe.
+- Eine Interpretation darf Annahmen treffen, muss sie aber als `assumptions` hinterlegen. Eine Abweichung vom Bild (Vereinfachung, fehlende Teileform) wird als `deviations` dokumentiert, nicht verschwiegen.
+- Konzeptbilder werden nie als Modellansicht gezeigt. Anleitung und Ansichten rendern nur Teilinstanzen.

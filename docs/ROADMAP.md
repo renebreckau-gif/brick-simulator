@@ -18,6 +18,20 @@ Kanonisches Modell, LDraw-Import, Katalog mit getrennten Eigenschaften, versioni
 
 Parametrischer, deterministischer Generator (`spaceship-gen@1.0.0`) mit drei Varianten, Raumschiff-Labor in der Oberfläche, erzeugte und geprüfte Baufolge, Protokoll für einen späteren physischen Probeaufbau (siehe `RAUMSCHIFF.md`). Nächste sinnvolle Schritte: Dachsteine und Keile mit belegten Regeln (Schrägen), physischer Probeaufbau der langgestreckten Variante, danach Einkaufsintegration und freie Text-zu-Modell-Generierung.
 
+## Auftrag 04 – Bauanleitung ✔
+
+Versionierter Anleitungsplan, Bereich „Bauanleitung“ mit Schrittnavigation, Druckansicht und PDF-Export für die drei Standardvarianten; Protokoll P4 für den späteren Probeaufbau nach Anleitung. Die Anleitung arbeitet für jedes kanonische Modell ohne Blocker mit Baufolge, nicht nur für Raumschiffe. Parallel möglich: physischer Probeaufbau der langgestreckten Variante nach P4.
+
+## Nächster zentraler Entwicklungsschritt – Bild zu Modell
+
+Ziel: Aus einem hochgeladenen Konzeptbild entsteht ein kanonisches Modell aus realen Teilen, das danach dieselbe Kette durchläuft: Validierung, visueller Abgleich, Bauanleitung, Teileliste (siehe `ARCHITEKTUR.md`, A18). Vorgeschlagene Reihenfolge:
+
+1. Bildaufnahme mit Prüfsumme, Rechteangabe und `design.sources`. Das Bild bleibt außerhalb des Modells und wird nicht veröffentlicht.
+2. Einfache räumliche Interpretation für eine eng begrenzte Bildklasse (z. B. Seitenansicht eines symmetrischen Objekts). Annahmen werden ausdrücklich in `design.assumptions` festgehalten.
+3. Konstruktion aus dem bestehenden, geprüften Teileumfang. Abweichungen kommen nach `design.deviations`; fehlende Formen (Schrägen, Rundungen) werden ehrlich ausgewiesen.
+4. Visueller Abgleich zwischen Bild und Rendering. Das Ergebnis ist ein Hinweis, kein Gültigkeitsnachweis.
+5. Bauanleitung und Teileliste ohne Sonderpfad aus dem vorhandenen System.
+
 ## Spätere Phasen (nicht begonnen)
 
 - **Entwurf**: Konzeptbilder ausdrücklich als „Konzept“ gekennzeichnet. Eine Modellansicht gilt nur, wenn sie aus einer konstruierten Version gerendert ist.

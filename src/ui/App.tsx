@@ -14,6 +14,8 @@ import { BomPanel, ReportPanel, SourcePanel, StepsPanel, type Expectations } fro
 import { Viewer } from './Viewer';
 import { ShipLab } from './ShipLab';
 import { comparisonReferenceId, GENERATED_COMPARISON_NOTE } from './comparison';
+import { buildInstructionPlan, InstructionPlanError, type InstructionPlan } from '../core/instructions/plan';
+import { InstructionView } from './instructions/InstructionView';
 
 type Tab = 'report' | 'steps' | 'bom' | 'source';
 
@@ -47,6 +49,9 @@ export function App() {
   const [shipPlan, setShipPlan] = useState<ShipPlan | null>(null);
   const [shipError, setShipError] = useState<{ message: string; hints: string[] } | null>(null);
   const [shownShipParams, setShownShipParams] = useState<ShipParams | null>(null);
+  const [view, setView] = useState<'labor' | 'anleitung'>('labor');
+  const [instr, setInstr] = useState<{ plan: InstructionPlan; model: CanonicalModel } | null>(null);
+  const [instrError, setInstrError] = useState<string | null>(null);
 
   useEffect(() => {
     // null = Datei existiert nicht (404 oder SPA-Fallback als HTML); andere Fehler werden gemeldet.
@@ -104,6 +109,32 @@ export function App() {
   }, [bundle, itemId, mode]);
 
   const ref = model ? modelRef(model) : null;
+
+  const buildPlan = (m: CanonicalModel) => {
+    try {
+      setInstr({ plan: buildInstructionPlan(m, bundle!.catalog, bundle!.library), model: m });
+      setInstrError(null);
+    } catch (e) {
+      setInstrError(e instanceof InstructionPlanError ? e.message : String(e));
+    }
+  };
+  // Bauanleitung für jedes dargestellte kanonische Modell (Referenz, Grenzfall, erzeugtes Modell):
+  // beim Öffnen bzw. Modellwechsel ableiten. Nach einer Modelländerung (Änderungsprotokoll nicht leer)
+  // bleibt der vorhandene Plan bestehen und wird als veraltet angezeigt, bis er neu erstellt wird.
+  useEffect(() => {
+    if (!bundle || !model || view !== 'anleitung') return;
+    const sameModel = instr && instr.plan.modelRef.modelId === model.modelId;
+    if (sameModel && (model.changeLog.length || instr.plan.modelRef.contentHash === modelRef(model).contentHash)) return;
+    if (!sameModel && instrError) setInstrError(null);
+    if (model.changeLog.length && !sameModel) {
+      setInstr(null);
+      setInstrError('Das Modell wurde geändert; „Anleitung erstellen“ leitet sie für den aktuellen Stand ab.');
+      return;
+    }
+    setInstr(null);
+    buildPlan(model);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundle, model, view]);
   const dims = useMemo(() => (bundle && model && model.origin.kind === 'generated' ? modelDimensions(model, bundle.library) : null), [bundle, model]);
   const reportState = ref ? artifactStatus('report', validated?.result.report.modelRef ?? null, ref) : null;
   const stale = reportState?.state === 'stale';
@@ -197,7 +228,23 @@ export function App() {
         </section>
       </aside>
 
+      {view === 'anleitung' ? (
+        <main className="center instrwrap">
+          <ViewSwitch view={view} onChange={setView} />
+          {instr ? (
+            <InstructionView plan={instr.plan} planModel={instr.model} currentRef={ref} blockedReason={shipStale ? `Die aktuellen Eingaben sind nicht erfüllbar. Gezeigt wird die Anleitung des letzten gültigen Stands (${ref.modelId}); Druck und PDF-Export sind gesperrt.` : null} library={bundle.library} catalog={bundle.catalog} onRebuild={() => buildPlan(model)} rebuildError={instrError} />
+          ) : (
+            <div className="instructions">
+              <p className="stalebar" role="alert">
+                <span>Für „{model.name}“ ist keine Anleitung verfügbar{instrError ? `: ${instrError}` : '.'}</span>
+                {model.changeLog.length > 0 && <button className="primary" onClick={() => buildPlan(model)}>Anleitung erstellen</button>}
+              </p>
+            </div>
+          )}
+        </main>
+      ) : (<>
       <main className="center">
+        <ViewSwitch view={view} onChange={setView} />
         <header className="modelbar">
           <div className="modeltitle">
             <h2>{model.name}</h2>
@@ -290,6 +337,16 @@ export function App() {
           {tab === 'source' && <SourcePanel model={model} bundle={bundle} item={mode === 'pruef' ? item : undefined} expectations={expectations} report={report} />}
         </div>
       </section>
+      </>)}
+    </div>
+  );
+}
+
+function ViewSwitch({ view, onChange }: { view: 'labor' | 'anleitung'; onChange: (v: 'labor' | 'anleitung') => void }) {
+  return (
+    <div className="viewswitch" role="tablist" aria-label="Ansicht">
+      <button role="tab" aria-selected={view === 'labor'} className={view === 'labor' ? 'tab active' : 'tab'} onClick={() => onChange('labor')}>Modell &amp; Prüfung</button>
+      <button role="tab" aria-selected={view === 'anleitung'} className={view === 'anleitung' ? 'tab active' : 'tab'} onClick={() => onChange('anleitung')}>Bauanleitung</button>
     </div>
   );
 }

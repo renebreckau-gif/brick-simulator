@@ -115,6 +115,10 @@ Die LDraw-Dateien lassen sich bei Bedarf mit `node scripts/fetch-ldraw.mjs` neu 
 - **Änderungen**: Ein ausgewähltes Teil kann verschoben oder entfernt werden. Danach gelten Bericht, Baufolgenprüfung, Stückliste und Beschaffungsstand als veraltet, bis die neue Version geprüft ist.
 - **Export**: Modell (JSON), Prüfbericht (JSON), Stückliste (CSV), LDraw (mit STEP je Schritt).
 
+## Bauanleitung
+
+Der Schalter „Bauanleitung“ über dem Hauptbereich wechselt vom Modell zur Anleitung des angezeigten Modells. Das gilt für jedes Modell ohne Blocker mit Baufolge: Raumschiffe, Referenzen und Grenzfälle. Die Anleitung zeigt eine Übersicht mit tatsächlicher Teilezahl, Außenmaßen, Modell-ID, Hash und Planversion. Dazu kommen Schritte mit großen Bildern aus den Teilinstanzen: neue Teile hervorgehoben, Einsetzpfeile nur bei geprüften Steckwegen. Je Schritt gibt es eine Teileübersicht, für die Ausleger eine isolierte Vormontage, und am Ende die vollständige Stückliste. Druckansicht und PDF-Export (A4, lokal im Browser) nutzen dieselbe Datenbasis. Nach einer Modelländerung ist die Anleitung als veraltet gekennzeichnet, und der Export ist gesperrt. Der Hinweis zur Herkunft richtet sich nach dem Modell (eigener Entwurf, Referenz oder Testfall). Keine Anleitung ist physisch erprobt. Details und Grenzen: [docs/BAUANLEITUNG.md](docs/BAUANLEITUNG.md).
+
 ## Raumschiff-Labor
 
 Der zweite Bereich in der Seitenleiste erzeugt ein eigenes, kleines Raumschiff aus dem vorhandenen Teileumfang. Es ist ein eigener Entwurf, kein offizielles LEGO-Modell. Eingaben: Rumpflänge, Spannweite, Teilezahlbereich, Farbpalette, Variantenkennung. Dazu kommen drei Vorgaben: kompakt (109 Teile), langgestreckt (140), breit (138). Jede Änderung erzeugt sofort einen neuen Modellstand und prüft ihn mit dem regulären Validator. Angezeigt werden geplante und tatsächliche Teilezahl, Außenmaße aus der Geometrie, Prüfstatus, Baufolge, Stückliste und Exporte. Nicht erfüllbare Eingaben ergeben eine Meldung mit dem erreichbaren Bereich. Der zuletzt gültige Stand bleibt dann sichtbar, ist aber als nicht passend gekennzeichnet, und die Exporte sind gesperrt. Preise werden nicht angezeigt. Generatorprinzip, Grenzen und Protokoll für einen späteren physischen Probeaufbau: [docs/RAUMSCHIFF.md](docs/RAUMSCHIFF.md).
@@ -133,7 +137,9 @@ src/core/          UI-unabhängiger Kern
   export/          JSON, CSV, LDraw
   data/            Laden aller Daten über eine austauschbare Lesefunktion
 src/fixtures/      Grenzfälle und Fehlervarianten (synthetisch, gekennzeichnet)
+src/core/instructions/ Anleitungsplan (abgeleitet, versioniert, mit Modellbezug)
 src/generator/     Raumschiff-Generator (deterministisch, versioniert)
+src/ui/instructions/ Bauanleitung: Rendering, Bildschirm-/Druckansicht, PDF (jsPDF)
 src/ui/            React-Oberfläche, Three.js-Ansicht
 data/              LDraw-Dateien, Katalogauszug, Referenzen, Erwartungen
 tests/             reguläre Vitest-Suite (ohne private Daten; Kataloglogik mit synthetischer Testfixture)
@@ -151,6 +157,7 @@ docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüf
 - [Validierungsgrenzen](docs/VALIDIERUNGSGRENZEN.md)
 - [Physische Prüfprotokolle (Kalibrierung, noch nicht durchgeführt)](docs/PHYSISCHE-PRUEFPROTOKOLLE.md)
 - [Raumschiff-Labor: Generator, Varianten, Grenzen, Probeaufbau-Protokoll](docs/RAUMSCHIFF.md)
+- [Bauanleitung: Anleitungsplan, Ansichten, PDF, Grenzen](docs/BAUANLEITUNG.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Namensnennung

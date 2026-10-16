@@ -26,7 +26,7 @@ interface Built {
 
 const geoCache = new Map<string, { tris: THREE.BufferGeometry; edges: THREE.BufferGeometry } | null>();
 
-function partGeometry(library: PartLibrary, catalog: Catalog, part: string, color: number) {
+export function partGeometry(library: PartLibrary, catalog: Catalog, part: string, color: number) {
   const key = `${part}|${color}`;
   if (geoCache.has(key)) return geoCache.get(key)!;
   if (!library.has(`${part}.dat`)) {

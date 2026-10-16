@@ -69,7 +69,7 @@ Ohne Katalogauszug bleiben Teil-Farb-Belege ungeprüft (`CAT_SOURCE_UNAVAILABLE`
 Empfohlene Variante: **Langgestreckt** (L 16, S 12, Seed 2, Palette Arrakis, 140 Teile). Sie ist die einzige Variante ohne heuristische Strukturwarnungen, und ihre Bodenplatten-Fuge bietet einen echten Prüfpunkt für Handunterstützung.
 
 1. **Vorbereitung**: Mit dem Simulator Modell-JSON, Prüfbericht, Stückliste (CSV) und LDraw exportieren und den Inhalts-Hash notieren (Sollwert `1985663483f52a`). Teile nach Stückliste bereitlegen. Herkunft (original LEGO oder kompatibel), Zustand und Farbabweichungen je Position festhalten.
-2. **Aufbau nach erzeugter Baufolge**, Schritt für Schritt, je Schritt notieren:
+2. **Aufbau nach der erzeugten Bauanleitung** (PDF aus dem Bereich „Bauanleitung“, siehe `BAUANLEITUNG.md`; Beobachtungen nach Protokoll P4 in `PHYSISCHE-PRUEFPROTOKOLLE.md`), Schritt für Schritt, je Schritt notieren:
    - lässt sich jedes Teil auf dem angegebenen Weg von oben setzen?
    - Wurde Handunterstützung gebraucht? Erwartet wird sie nur bei Schritt „Rumpf: Bodenplatten“, bis die erste Steinlage die Plattenfuge überbrückt.
    - Fühlt sich ein Teil lose an, oder sitzt es nicht vollständig?
