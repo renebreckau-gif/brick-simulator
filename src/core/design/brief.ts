@@ -361,31 +361,112 @@ export function setTitle(b: DesignBrief, title: string): DesignBrief {
   return next(b, 'Titel geändert', { title, confirmation: staleConfirmation(b, 'Titel geändert') });
 }
 
+// ---- Was vor der Bestätigung fehlt: eine gemeinsame Quelle für Kern, Checkliste und Oberfläche
+
+export type RequirementsField = 'partMin' | 'partMax' | 'maxLengthStuds' | 'maxWidthStuds' | 'maxHeightBricks' | 'keyFeatureIds' | 'intendedUse';
+
+/** Eingabestand der Anforderungen vor dem Übernehmen; null = noch nicht angegeben (nie still vorbelegt). */
+export interface RequirementsDraft {
+  partMin: number | null;
+  partMax: number | null;
+  maxLengthStuds: number | null;
+  maxWidthStuds: number | null;
+  maxHeightBricks: number | null;
+  preferredSize: Requirements['preferredSize'];
+  keyFeatureIds: string[];
+  intendedUse: Requirements['intendedUse'] | null;
+  notes: string;
+}
+
+export const EMPTY_REQUIREMENTS: RequirementsDraft = { partMin: null, partMax: null, maxLengthStuds: null, maxWidthStuds: null, maxHeightBricks: null, preferredSize: null, keyFeatureIds: [], intendedUse: null, notes: '' };
+
+export interface FieldProblem {
+  field: RequirementsField;
+  message: string;
+}
+
+const posInt = (v: number | null) => v !== null && Number.isInteger(v) && v > 0;
+
+/** Fachliche Prüfung der Anforderungen je Feld (gilt für gespeicherte Anforderungen und Eingabestände). */
+export function checkRequirements(r: RequirementsDraft | null, featureIds: readonly string[]): FieldProblem[] {
+  const d = r ?? EMPTY_REQUIREMENTS;
+  const out: FieldProblem[] = [];
+  for (const [f, label] of [['partMin', 'von'], ['partMax', 'bis']] as const) {
+    if (d[f] === null || Number.isNaN(d[f])) out.push({ field: f, message: `Teilezahl „${label}“ fehlt.` });
+    else if (!posInt(d[f])) out.push({ field: f, message: `Teilezahl „${label}“ muss eine ganze Zahl größer als 0 sein.` });
+  }
+  if (posInt(d.partMin) && posInt(d.partMax) && d.partMin! > d.partMax!) out.push({ field: 'partMax', message: 'Teilezahl „bis“ muss mindestens so groß sein wie „von“.' });
+  for (const f of ['maxLengthStuds', 'maxWidthStuds', 'maxHeightBricks'] as const)
+    if (d[f] !== null && !posInt(d[f])) out.push({ field: f, message: 'Höchstmaß leer lassen oder eine ganze Zahl größer als 0 angeben.' });
+  if (d.keyFeatureIds.length === 0) out.push({ field: 'keyFeatureIds', message: 'Mindestens ein wichtiges Merkmal auswählen.' });
+  for (const id of d.keyFeatureIds) if (!featureIds.includes(id)) out.push({ field: 'keyFeatureIds', message: `Das gewählte Merkmal „${id}“ gibt es in der Interpretation nicht mehr.` });
+  if (d.intendedUse === null) out.push({ field: 'intendedUse', message: 'Nutzung auswählen.' });
+  return out;
+}
+
+/** Eingabestand → speicherbare Anforderungen, nur wenn er fachlich vollständig ist. */
+export function toRequirements(d: RequirementsDraft, featureIds: readonly string[]): Requirements | null {
+  if (checkRequirements(d, featureIds).length) return null;
+  return { ...d, partMin: d.partMin!, partMax: d.partMax!, intendedUse: d.intendedUse! };
+}
+
+export type BlockerTarget = 'images' | 'interpretation' | `req-${RequirementsField}`;
+
+export interface Blocker {
+  /** Gruppe der Checkliste, zu der die Lücke gehört. */
+  group: 'images' | 'bound' | 'interpretation' | 'partRange' | 'features' | 'dims' | 'use' | 'brief';
+  message: string;
+  /** Eingabebereich, zu dem die Oberfläche führt. */
+  target: BlockerTarget;
+}
+
+const FIELD_GROUP: Record<RequirementsField, Blocker['group']> = { partMin: 'partRange', partMax: 'partRange', maxLengthStuds: 'dims', maxWidthStuds: 'dims', maxHeightBricks: 'dims', keyFeatureIds: 'features', intendedUse: 'use' };
+
+/**
+ * Konkret fehlende oder fehlerhafte Angaben vor der Bestätigung, in Bearbeitungsreihenfolge.
+ * Leere Liste = bestätigbar. Grundlage sind dieselben Regeln wie bei Import und isConfirmedCurrent.
+ */
+export function confirmationBlockers(b: DesignBrief): Blocker[] {
+  const out: Blocker[] = [];
+  if (b.images.length === 0) out.push({ group: 'images', target: 'images', message: 'Mindestens ein Bild hochladen.' });
+  if (!b.interpretation) out.push({ group: 'interpretation', target: 'interpretation', message: 'Interpretation fehlt. Bild automatisch analysieren, manuell beschreiben oder einen vorhandenen Entwurfsauftrag importieren.' });
+  else {
+    if (!analysisBound(b))
+      out.push({ group: 'bound', target: 'interpretation', message: `Interpretation nach Bild- oder Ansichtsänderung erneut prüfen${b.analysis?.staleReason ? ` (${b.analysis.staleReason})` : ''}: neu analysieren, manuell neu beginnen oder ausdrücklich für die aktuellen Bilder und Ansichten neu bewerten.` });
+    for (const e of checkInterpretation(b.interpretation, b.analysis?.imageHashes.length ?? b.images.length).errors) out.push({ group: 'interpretation', target: 'interpretation', message: `Interpretation: ${e}` });
+  }
+  const featureIds = b.interpretation?.features.map((f) => f.id) ?? [];
+  for (const p of checkRequirements(b.requirements, featureIds)) out.push({ group: FIELD_GROUP[p.field], target: `req-${p.field}`, message: p.message });
+  // übrige fachliche Probleme (Verlauf, Bestätigungsfelder …), soweit nicht schon oben erfasst
+  for (const i of briefIssues(b)) if (!/^(Interpretation:|Anforderungen:|Analyse ist als aktuell)/.test(i)) out.push({ group: 'brief', target: 'interpretation', message: i });
+  return out;
+}
+
 export interface ReadinessItem {
   ok: boolean;
   label: string;
 }
 
-/** Was vor der Bestätigung erfüllt sein muss. */
+/** Checkliste vor der Bestätigung – abgeleitet aus confirmationBlockers. */
 export function readiness(b: DesignBrief): ReadinessItem[] {
-  const check = b.interpretation ? checkInterpretation(b.interpretation, b.images.length) : null;
-  const r = b.requirements;
-  const featureIds = new Set(b.interpretation?.features.map((f) => f.id) ?? []);
+  const groups = new Set(confirmationBlockers(b).map((x) => x.group));
+  const interpErr = confirmationBlockers(b).find((x) => x.group === 'interpretation');
   return [
-    { ok: b.images.length > 0, label: 'Mindestens ein Bild vorhanden' },
-    { ok: analysisBound(b), label: 'Interpretation beruht auf den aktuellen Bildern und Ansichten' },
-    { ok: !!check?.ok, label: check ? (check.ok ? 'Interpretation strukturell gültig und widerspruchsfrei' : `Interpretation fehlerhaft: ${check.errors[0]}`) : 'Interpretation vorhanden' },
-    { ok: !!r && Number.isInteger(r.partMin) && Number.isInteger(r.partMax) && r.partMin > 0 && r.partMin <= r.partMax, label: 'Teilezahlbereich angegeben (ganze Zahlen, Minimum ≤ Maximum)' },
-    { ok: !!r && r.keyFeatureIds.length > 0 && r.keyFeatureIds.every((id) => featureIds.has(id)), label: 'Wichtigste Merkmale ausgewählt' },
-    { ok: !!r && [r.maxLengthStuds, r.maxWidthStuds, r.maxHeightBricks].every((v) => v === null || (Number.isInteger(v) && v > 0)), label: 'Höchstmaße leer oder positive ganze Zahlen' },
+    { ok: !groups.has('images'), label: 'Mindestens ein Bild vorhanden' },
+    { ok: !!b.interpretation && !groups.has('bound'), label: 'Interpretation beruht auf den aktuellen Bildern und Ansichten' },
+    { ok: !groups.has('interpretation'), label: !b.interpretation ? 'Interpretation vorhanden' : interpErr ? interpErr.message : 'Interpretation strukturell gültig und widerspruchsfrei' },
+    { ok: !groups.has('partRange'), label: 'Teilezahlbereich angegeben (ganze Zahlen, Minimum ≤ Maximum)' },
+    { ok: !groups.has('features'), label: 'Wichtigste Merkmale ausgewählt' },
+    { ok: !groups.has('dims'), label: 'Höchstmaße leer oder positive ganze Zahlen' },
+    { ok: !groups.has('use'), label: 'Nutzung angegeben' },
   ];
 }
 
 export class BriefError extends Error {}
 
 export function confirm(b: DesignBrief, at = now()): DesignBrief {
-  const missing = readiness(b).filter((i) => !i.ok);
-  if (missing.length) throw new BriefError(`Nicht bestätigbar: ${missing.map((m) => m.label).join('; ')}`);
+  const missing = confirmationBlockers(b);
+  if (missing.length) throw new BriefError(`Nicht bestätigbar: ${missing.map((m) => m.message).join(' ')}`);
   return next(b, 'Entwurfsauftrag bestätigt', { confirmation: { status: 'confirmed', at, confirmedHash: substanceHash(b), reason: null } }, at);
 }
 

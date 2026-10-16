@@ -324,3 +324,23 @@ button.danger { color: var(--block); }
   .dimages li { grid-template-columns: 72px minmax(0, 1fr); }
   .dthumb { width: 72px; height: 56px; }
 }
+
+/* Bestätigung verständlich bedienbar (Korrekturauftrag 05A.3) */
+.dnext { border: 1px solid var(--rule); border-radius: 8px; padding: var(--s3); display: grid; gap: var(--s2); background: #f4f7fb; }
+.dnext p { margin: 0; }
+.ferr { color: var(--block); font-size: 13px; }
+.ferr::before { content: '⚠ '; }
+.dfield [aria-invalid='true'], fieldset[aria-invalid='true'] { border: 2px solid var(--block); }
+.dfeedback { border: 1px solid #e4b4b0; border-radius: 8px; padding: var(--s3); background: #fdf1f0; margin: 0; }
+.dfeedback ol { margin: var(--s1) 0 0; padding-left: 1.4em; display: grid; gap: 2px; }
+.dfeedback p { margin: 0; }
+.dfeedback.ok { border-color: #a9d3b8; background: #eef8f1; }
+.dfeedback .linklike { text-align: left; }
+.dsec:focus, fieldset:focus { outline: 2px solid var(--select); outline-offset: 2px; }
+/* Lange Hinweise in schmalen Ansichten umbrechen statt überlaufen */
+.design .stalebar { flex-wrap: wrap; min-width: 0; }
+.design .stalebar > *, .design .dactions > * { min-width: 0; }
+.design .linklike { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.design .dactions .small { overflow-wrap: anywhere; }
+.dfeedback ol { list-style: none; padding-left: 0; }
+.dfeedback li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr); align-items: start; }

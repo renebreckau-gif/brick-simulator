@@ -95,6 +95,15 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
 
   Die Interpretation hat der Claude-Code-Assistent im Chat nach Betrachtung des Bildes manuell eingetragen. Sie ist im Auftrag ausdrücklich als „manuell eingetragen, nicht die App-Integration“ gekennzeichnet. Danach folgten im Browser Korrektur, Widerspruch, Bildaustausch, Neu-Bestätigung und Wiederherstellen nach dem Neuladen. Bild und Auftrag liegen nur lokal (`local-designs/`, von Git ausgeschlossen).
 
+## Bestätigung verständlich bedienbar (Korrekturauftrag 05A.3)
+
+- **Nach dem Upload** zeigt Abschnitt 2: „Bild hochgeladen. Als Nächstes das Bild interpretieren.“ Ohne eingerichtete Analyse steht dort zusätzlich der Hinweis „Automatische Analyse nicht eingerichtet …“, mit direkten Aktionen „Manuell beschreiben“ und „Entwurfsauftrag importieren“.
+- **Der Bestätigungsbutton ist immer bedienbar.** Ein Versuch ohne vollständige Angaben listet die konkreten Gründe als Warnmeldung (`role="alert"`). Jeder Eintrag führt zum betroffenen Bereich, und der Fokus springt auf die erste Lücke. Beispiele: „Interpretation fehlt“, „Teilezahl ‚von‘ fehlt“, „Mindestens ein wichtiges Merkmal auswählen“, „Interpretation nach Bild- oder Ansichtsänderung erneut prüfen“.
+- **Die Gründe stammen aus dem Kern** (`confirmationBlockers`, `checkRequirements`). Dieselben Regeln gelten für `confirm`, die Checkliste, den Import und `isConfirmedCurrent`. Die Oberfläche ergänzt nur einen Hinweis, wenn Anforderungen eingegeben, aber noch nicht übernommen sind.
+- **Feldfehler stehen am Feld:** `aria-invalid` mit `aria-describedby` auf die Meldung. Pflichtangaben (Teilezahl von/bis, wichtige Merkmale, Nutzung) sind mit * markiert und **nicht vorbelegt**.
+- **Bei Erfolg** erscheinen „Entwurfsauftrag bestätigt.“ und „Die Konstruktion eines Bausteinmodells ist noch nicht verfügbar. Es gibt daher noch keine Bauanleitung und keine Stückliste.“
+- **Prüfhilfe:** Im Entwicklungsserver wählt `?teststore=<name>` eine getrennte lokale Ablage. So berühren Browserprüfungen nie einen laufenden Nutzerentwurf. Im öffentlichen Build gibt es diesen Schalter nicht.
+
 ## Import und Analysezuordnung (Korrekturauftrag 05A.1)
 
 - **Vollständige Laufzeitprüfung beim Laden** (Import und lokale Wiederherstellung, `parseBrief`):

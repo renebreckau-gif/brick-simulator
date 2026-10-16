@@ -2,7 +2,18 @@
 // als JSON. Nichts davon gelangt in Git, in den öffentlichen Build oder in Modell-Exporte.
 import type { DesignBrief } from '../../core/design/brief';
 
-const DB = 'baustein-design';
+/**
+ * Datenbankname. Nur im Entwicklungsserver lässt sich mit ?teststore=<name> eine getrennte Ablage wählen,
+ * damit Browserprüfungen nie einen laufenden Nutzerentwurf berühren. Im öffentlichen Build gibt es den Schalter nicht.
+ */
+function dbName(): string {
+  if (import.meta.env.DEV) {
+    const t = new URLSearchParams(globalThis.location?.search ?? '').get('teststore');
+    if (t && /^[a-z0-9-]{1,32}$/.test(t)) return `baustein-design--test-${t}`;
+  }
+  return 'baustein-design';
+}
+const DB = dbName();
 const DB_VERSION = 1;
 
 function open(): Promise<IDBDatabase> {

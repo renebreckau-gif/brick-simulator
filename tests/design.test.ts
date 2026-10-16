@@ -159,7 +159,7 @@ describe('Entwurfsauftrag: Versionen, Korrekturen, Veralten, Bestätigung', () =
     expect(changed.confirmation.status).toBe('stale');
     expect(isConfirmedCurrent(changed)).toBe(false);
     expect(() => confirm(setRequirements(b, { ...REQ, partMin: 700 }))).toThrow(BriefError);
-    expect(() => confirm(setRequirements(b, { ...REQ, keyFeatureIds: [] }))).toThrow(/Merkmale/);
+    expect(() => confirm(setRequirements(b, { ...REQ, keyFeatureIds: [] }))).toThrow(/Mindestens ein wichtiges Merkmal auswählen/);
   });
   it('Bildwechsel macht Interpretation und Bestätigung nachvollziehbar veraltet', async () => {
     const ok = confirm(await readyBrief(), at);

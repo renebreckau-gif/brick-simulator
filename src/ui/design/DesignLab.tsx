@@ -2,8 +2,8 @@
 // Noch keine Steine: Konstruktion, Bauanleitung und Stückliste entstehen erst aus einem echten Modell (05B).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  addImage, adoptHeldAnalysis, applyAnalysisResult, confirm, correct, createTicket, isConfirmedCurrent, newBrief, parseBrief, readiness, rebaseInterpretation, removeImage, replaceImage, setInterpretation, setRequirements, setTitle, setView,
-  substanceHash, toDesignProvenance, VIEW_LABELS, type AnalysisMeta, type DesignBrief, type HeldAnalysis, type ImageRef, type Requirements, type ViewLabel,
+  addImage, adoptHeldAnalysis, applyAnalysisResult, checkRequirements, confirm, confirmationBlockers, correct, createTicket, EMPTY_REQUIREMENTS, isConfirmedCurrent, newBrief, parseBrief, readiness, rebaseInterpretation, removeImage, replaceImage, setInterpretation, setRequirements, setTitle, setView, toRequirements,
+  substanceHash, toDesignProvenance, VIEW_LABELS, type AnalysisMeta, type Blocker, type DesignBrief, type FieldProblem, type HeldAnalysis, type ImageRef, type Requirements, type RequirementsDraft, type RequirementsField, type ViewLabel,
 } from '../../core/design/brief';
 import { checkImageBytes, MAX_IMAGES, sha256Hex } from '../../core/design/images';
 import { BASIS_LABEL, checkInterpretation, manualInterpretationTemplate, type Basis, type Interpretation } from '../../core/design/interpretation';
@@ -76,6 +76,12 @@ export function DesignLab() {
   const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string; errors?: string[]; setup?: string[] } | null>(null);
   /** Zurückgehaltene Analyseantwort (Eingaben inzwischen geändert oder Antwort widersprüchlich) – mit ursprünglichem Bildbezug. */
   const [held, setHeld] = useState<HeldAnalysis | null>(null);
+  // Anforderungen: Eingabestand (nie vorbelegt), Fehleranzeige nach Übernahme-/Bestätigungsversuch
+  const [reqDraft, setReqDraft] = useState<RequirementsDraft>(EMPTY_REQUIREMENTS);
+  const [showReqErrors, setShowReqErrors] = useState(false);
+  /** Ergebnis des letzten Bestätigungsversuchs; die Liste der Lücken wird live aus dem Kern berechnet. */
+  const [attempt, setAttempt] = useState<'blocked' | 'confirmed' | 'already' | null>(null);
+  const importInput = useRef<HTMLInputElement>(null);
   const [sel, setSel] = useState(0);
   const [focusGroup, setFocusGroup] = useState<string | null>(null);
   const replaceFor = useRef<string | null>(null);
@@ -117,6 +123,10 @@ export function DesignLab() {
   }, [brief]);
 
   const check = useMemo(() => (brief?.interpretation ? checkInterpretation(brief.interpretation, brief.images.length) : null), [brief]);
+  const savedReqKey = JSON.stringify(brief?.requirements ?? null);
+  useEffect(() => {
+    setReqDraft(brief?.requirements ? { ...brief.requirements } : EMPTY_REQUIREMENTS);
+  }, [brief?.briefId, savedReqKey]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!brief) return <section className="design"><p>Lade lokalen Entwurf …</p></section>;
   const interp = brief.interpretation;
   const update = (fn: (b: DesignBrief) => DesignBrief) => setBrief((b) => (b ? fn(b) : b));
@@ -217,6 +227,50 @@ export function DesignLab() {
 
   const startManual = () => update((b) => setInterpretation(b, manualInterpretationTemplate(), { method: 'manual', provider: 'Nutzer (manuelle Beschreibung)', model: null, promptVersion: null, at: new Date().toISOString(), requestId: null }));
 
+  const featureIds = brief.interpretation?.features.map((f) => f.id) ?? [];
+  const reqProblems: FieldProblem[] = checkRequirements(reqDraft, featureIds);
+  const reqDirty = JSON.stringify(reqDraft) !== JSON.stringify(brief.requirements ? { ...brief.requirements } : EMPTY_REQUIREMENTS);
+  type UiBlocker = Blocker | { group: 'unsaved'; target: 'req-save'; message: string };
+  // Lücken aus dem Kern; dazu nur der Hinweis, dass Eingaben noch nicht übernommen sind (keine eigene Prüflogik)
+  // Bei nicht übernommenen Eingaben beziehen sich die Anforderungs-Lücken auf den Eingabestand (gleiche Kernprüfung)
+  const editing = reqDirty && !!brief.interpretation;
+  const blockers: UiBlocker[] = [
+    ...confirmationBlockers(brief).filter((x) => !(editing && x.target.startsWith('req-'))),
+    ...(editing ? reqProblems.map((p) => ({ group: 'partRange' as const, target: `req-${p.field}` as const, message: p.message })) : []),
+    ...(editing ? [{ group: 'unsaved' as const, target: 'req-save' as const, message: 'Anforderungen eingegeben, aber noch nicht übernommen: „Anforderungen übernehmen“ wählen.' }] : []),
+  ];
+  const targetId = (t: UiBlocker['target']) => (t === 'images' ? 'd-images' : t === 'interpretation' ? 'd-interpretation' : document.getElementById(t) ? t : 'd-interpretation');
+  const goTo = (t: UiBlocker['target']) => {
+    const el = document.getElementById(targetId(t));
+    if (!el) return;
+    el.scrollIntoView({ block: 'center' });
+    el.focus({ preventScroll: true });
+  };
+  const saveRequirements = () => {
+    setShowReqErrors(true);
+    const r = toRequirements(reqDraft, featureIds);
+    if (!r) {
+      const first = reqProblems[0];
+      if (first) setTimeout(() => goTo(`req-${first.field}`), 0);
+      return;
+    }
+    update((b) => setRequirements(b, r));
+  };
+  const tryConfirm = () => {
+    if (isConfirmedCurrent(brief)) {
+      setAttempt('already');
+      return;
+    }
+    setShowReqErrors(true);
+    if (blockers.length) {
+      setAttempt('blocked');
+      setTimeout(() => goTo(blockers[0].target), 0);
+      return;
+    }
+    setBrief(confirm(brief));
+    setAttempt('confirmed');
+  };
+  const notConfigured = status === 'none' || (status !== null && !status.configured);
   const img = brief.images[sel];
   const confirmedCurrent = isConfirmedCurrent(brief);
   const ready = readiness(brief);
@@ -258,7 +312,7 @@ export function DesignLab() {
       )}
 
       {/* 1. Bilder */}
-      <section className="dsec" aria-label="Bilder">
+      <section className="dsec" aria-label="Bilder" id="d-images" tabIndex={-1}>
         <h3>1. Bildvorlagen</h3>
         <p className="small muted">PNG oder JPEG, höchstens {MAX_IMAGES} Bilder, je höchstens 5 MB. Geprüft werden Dateiinhalt (nicht die Endung), Dekodierbarkeit und Maße; identifiziert wird jedes Bild über seine SHA-256-Prüfsumme. Die Bilder bleiben in diesem Browser (lokaler Speicher) und gelangen weder in Git noch in den Build oder Modell-Exporte.</p>
         <label className="dupload">
@@ -292,8 +346,19 @@ export function DesignLab() {
       </section>
 
       {/* 2. Interpretation */}
-      <section className="dsec" aria-label="Interpretation">
+      <section className="dsec" aria-label="Interpretation" id="d-interpretation" tabIndex={-1}>
         <h3>2. Interpretation</h3>
+        {brief.images.length === 0 && <p className="small muted">Zuerst ein Bild hochladen (Abschnitt 1).</p>}
+        {brief.images.length > 0 && !interp && (
+          <div className="dnext" role="status">
+            <p><strong>Bild hochgeladen. Als Nächstes das Bild interpretieren.</strong></p>
+            {notConfigured && <p>Automatische Analyse nicht eingerichtet. Beschreibe den Entwurf manuell oder importiere einen vorhandenen Entwurfsauftrag.</p>}
+            <div className="dbtns">
+              <button className="primary" onClick={startManual}>Manuell beschreiben</button>
+              <button onClick={() => importInput.current?.click()}>Entwurfsauftrag importieren</button>
+            </div>
+          </div>
+        )}
         {brief.analysis && (
           <p className={brief.analysis.status === 'stale' ? 'stalebar' : 'small muted'} role={brief.analysis.status === 'stale' ? 'alert' : undefined}>
             Herkunft: {brief.analysis.provider}{brief.analysis.model ? ` (${brief.analysis.model})` : ''}, Verfahren {brief.analysis.methodVersion}{brief.analysis.promptVersion ? `, ${brief.analysis.promptVersion}` : ''}, {brief.corrections.length} Korrektur(en).
@@ -466,7 +531,11 @@ export function DesignLab() {
       </section>
 
       {/* 3. Anforderungen */}
-      {interp && <RequirementsForm brief={brief} onSave={(r) => update((b) => setRequirements(b, r))} />}
+      {interp ? (
+        <RequirementsForm brief={brief} draft={reqDraft} setDraft={setReqDraft} problems={reqProblems} showErrors={showReqErrors} dirty={reqDirty} onSave={saveRequirements} />
+      ) : (
+        <section className="dsec" aria-label="Anforderungen"><h3>3. Anforderungen</h3><p className="small muted">Anforderungen lassen sich angeben, sobald eine Interpretation vorliegt.</p></section>
+      )}
 
       {/* 4. Bestätigung */}
       <section className="dsec" aria-label="Bestätigung">
@@ -477,9 +546,9 @@ export function DesignLab() {
           <strong>{confirmedCurrent ? `bestätigt (${brief.confirmation.at?.slice(0, 16).replace('T', ' ')})` : brief.confirmation.status === 'stale' ? `Bestätigung veraltet – ${brief.confirmation.reason}` : 'unbestätigt'}</strong>
         </p>
         <div className="dactions">
-          <button className="primary" disabled={!ready.every((r) => r.ok) || confirmedCurrent} onClick={() => { try { update(confirm); } catch (e) { setMessage({ kind: 'error', text: (e as Error).message }); } }}>Interpretation und Anforderungen bestätigen</button>
+          <button className="primary" onClick={tryConfirm} aria-describedby={attempt ? 'confirm-feedback' : undefined}>Interpretation und Anforderungen bestätigen</button>
           <button onClick={() => download(`${brief.briefId}-v${brief.version}.entwurfsauftrag.json`, JSON.stringify(brief, null, 2))}>Entwurfsauftrag exportieren (JSON, ohne Bilddaten)</button>
-          <label className="dupload"><span>Importieren</span><input type="file" accept="application/json,.json" aria-label="Entwurfsauftrag importieren" onChange={async (e) => {
+          <label className="dupload"><span>Importieren</span><input ref={importInput} type="file" accept="application/json,.json" aria-label="Entwurfsauftrag importieren" onChange={async (e) => {
             const f = e.target.files?.[0];
             e.target.value = '';
             if (!f) return;
@@ -495,8 +564,23 @@ export function DesignLab() {
               else setMessage({ kind: 'info', text: `Entwurfsauftrag ${b.briefId} Version ${b.version} importiert (Struktur, Hash und Inhalt geprüft).${miss.length ? ` ${miss.length} Bild(er) fehlen lokal.` : ''}` });
             } catch (er) { setMessage({ kind: 'error', text: `Import abgelehnt: ${(er as Error).message}` }); }
           }} /></label>
-          <button className="danger" onClick={async () => { if (window.confirm('Lokalen Entwurf und alle lokal gespeicherten Bilder löschen?')) { await clearAll(); setUrls({}); setMissing([]); setBrief(newBrief(newId())); setMessage(null); setHeld(null); } }}>Neuer Entwurf</button>
+          <button className="danger" onClick={async () => { if (window.confirm('Lokalen Entwurf und alle lokal gespeicherten Bilder löschen?')) { await clearAll(); setUrls({}); setMissing([]); setBrief(newBrief(newId())); setMessage(null); setHeld(null); setAttempt(null); setShowReqErrors(false); } }}>Neuer Entwurf</button>
         </div>
+        {attempt === 'blocked' && blockers.length > 0 && (
+          <div id="confirm-feedback" className="dfeedback" role="alert">
+            <p><strong>Noch nicht bestätigbar.</strong> Es fehlen bzw. stimmen noch nicht ({blockers.length}):</p>
+            <ol>{blockers.map((b, k) => <li key={`${k}-${b.message}`}><span aria-hidden="true">{k + 1}.</span><button className="linklike" onClick={() => goTo(b.target)}>{b.message}</button></li>)}</ol>
+          </div>
+        )}
+        {attempt === 'blocked' && blockers.length === 0 && !confirmedCurrent && (
+          <p id="confirm-feedback" className="dfeedback" role="status">Alle Angaben sind jetzt vollständig – „Interpretation und Anforderungen bestätigen“ erneut wählen.</p>
+        )}
+        {(attempt === 'confirmed' || attempt === 'already') && confirmedCurrent && (
+          <div id="confirm-feedback" className="dfeedback ok" role="status">
+            <p><strong>{attempt === 'already' ? 'Dieser Stand ist bereits bestätigt.' : 'Entwurfsauftrag bestätigt.'}</strong></p>
+            <p>Die Konstruktion eines Bausteinmodells ist noch nicht verfügbar. Es gibt daher noch keine Bauanleitung und keine Stückliste.</p>
+          </div>
+        )}
         <p className="inotice small">
           Ein bestätigter Entwurfsauftrag ist eine <strong>Anforderung</strong>, keine Zusage der Machbarkeit. Er enthält keine Steine. Bauanleitung und Stückliste gibt es erst, wenn daraus ein echtes kanonisches Modell mit geprüfter Baufolge konstruiert ist (nächster Schritt). Es wird keine Alters- oder Sicherheitsfreigabe abgeleitet.
           {confirmedCurrent && <> Verknüpfung für das spätere Modell (<span className="code">CanonicalModel.design.brief</span>): {brief.briefId} v{toDesignProvenance(brief).brief!.version}, bestätigter Inhalt <span className="code">{substanceHash(brief)}</span>.</>}
@@ -510,37 +594,61 @@ export function DesignLab() {
   );
 }
 
-function RequirementsForm({ brief, onSave }: { brief: DesignBrief; onSave: (r: Requirements) => void }) {
+const FIELD_LABEL: Record<RequirementsField, string> = { partMin: 'Teilezahl von', partMax: 'bis', maxLengthStuds: 'max. Länge (Noppen)', maxWidthStuds: 'max. Breite (Noppen)', maxHeightBricks: 'max. Höhe (Steine)', keyFeatureIds: 'Wichtigste Merkmale', intendedUse: 'Nutzung' };
+
+/** Anforderungen: Eingabestand liegt bei DesignLab; Feldfehler kommen aus checkRequirements (Kern), nicht aus eigener Logik. */
+function RequirementsForm({ brief, draft, setDraft, problems, showErrors, dirty, onSave }: {
+  brief: DesignBrief; draft: RequirementsDraft; setDraft: (d: RequirementsDraft) => void; problems: FieldProblem[]; showErrors: boolean; dirty: boolean; onSave: () => void;
+}) {
   const interp = brief.interpretation!;
-  const init: Requirements = brief.requirements ?? { partMin: 100, partMax: 200, maxLengthStuds: null, maxWidthStuds: null, maxHeightBricks: null, preferredSize: null, keyFeatureIds: [], intendedUse: 'display', notes: '' };
-  const [r, setR] = useState<Requirements>(init);
-  useEffect(() => setR(brief.requirements ?? init), [brief.requirements]); // eslint-disable-line react-hooks/exhaustive-deps
+  const r = draft;
   const num = (v: string) => (v.trim() === '' ? null : Number(v));
-  const toggle = (id: string) => setR((x) => ({ ...x, keyFeatureIds: x.keyFeatureIds.includes(id) ? x.keyFeatureIds.filter((y) => y !== id) : [...x.keyFeatureIds, id] }));
-  const move = (id: string, d: -1 | 1) => setR((x) => {
-    const a = [...x.keyFeatureIds];
+  const toggle = (id: string) => setDraft({ ...r, keyFeatureIds: r.keyFeatureIds.includes(id) ? r.keyFeatureIds.filter((y) => y !== id) : [...r.keyFeatureIds, id] });
+  const move = (id: string, d: -1 | 1) => {
+    const a = [...r.keyFeatureIds];
     const i = a.indexOf(id);
     const j = i + d;
-    if (i < 0 || j < 0 || j >= a.length) return x;
+    if (i < 0 || j < 0 || j >= a.length) return;
     [a[i], a[j]] = [a[j], a[i]];
-    return { ...x, keyFeatureIds: a };
-  });
-  const dirty = JSON.stringify(r) !== JSON.stringify(brief.requirements);
+    setDraft({ ...r, keyFeatureIds: a });
+  };
+  const errOf = (f: RequirementsField) => (showErrors ? problems.filter((p) => p.field === f).map((p) => p.message) : []);
+  const errProps = (f: RequirementsField) => {
+    const e = errOf(f);
+    return e.length ? { 'aria-invalid': true as const, 'aria-describedby': `req-${f}-err` } : {};
+  };
+  const Err = ({ f }: { f: RequirementsField }) => {
+    const e = errOf(f);
+    return e.length ? <span id={`req-${f}-err`} className="ferr">{e.join(' ')}</span> : null;
+  };
+  const NumField = ({ f, min = 1 }: { f: 'partMin' | 'partMax' | 'maxLengthStuds' | 'maxWidthStuds' | 'maxHeightBricks'; min?: number }) => (
+    <label className="dfield">
+      <span>{FIELD_LABEL[f]}{f === 'partMin' || f === 'partMax' ? ' *' : ''}</span>
+      <input id={`req-${f}`} type="number" min={min} value={r[f] ?? ''} onChange={(e) => setDraft({ ...r, [f]: num(e.target.value) })} {...errProps(f)} />
+      <Err f={f} />
+    </label>
+  );
   return (
-    <section className="dsec" aria-label="Anforderungen">
+    <section className="dsec" aria-label="Anforderungen" id="d-requirements">
       <h3>3. Anforderungen</h3>
-      <p className="small muted">Wünsche an die spätere Konstruktion – keine Zusage, dass sie erfüllbar sind. Maße in Noppen (1 Noppe ≈ 8 mm) und Steinhöhen.</p>
+      <p className="small muted">Wünsche an die spätere Konstruktion – keine Zusage, dass sie erfüllbar sind. Maße in Noppen (1 Noppe ≈ 8 mm) und Steinhöhen. Pflichtangaben sind mit * markiert und nicht vorbelegt.</p>
       <div className="dgrid">
-        <label className="dfield"><span>Teilezahl von</span><input type="number" min={1} value={r.partMin} onChange={(e) => setR({ ...r, partMin: Number(e.target.value) })} /></label>
-        <label className="dfield"><span>bis</span><input type="number" min={1} value={r.partMax} onChange={(e) => setR({ ...r, partMax: Number(e.target.value) })} /></label>
-        <label className="dfield"><span>max. Länge (Noppen)</span><input type="number" min={1} value={r.maxLengthStuds ?? ''} onChange={(e) => setR({ ...r, maxLengthStuds: num(e.target.value) })} /></label>
-        <label className="dfield"><span>max. Breite (Noppen)</span><input type="number" min={1} value={r.maxWidthStuds ?? ''} onChange={(e) => setR({ ...r, maxWidthStuds: num(e.target.value) })} /></label>
-        <label className="dfield"><span>max. Höhe (Steine)</span><input type="number" min={1} value={r.maxHeightBricks ?? ''} onChange={(e) => setR({ ...r, maxHeightBricks: num(e.target.value) })} /></label>
-        <label className="dfield"><span>Bevorzugte Größe</span><select value={r.preferredSize ?? ''} onChange={(e) => setR({ ...r, preferredSize: (e.target.value || null) as Requirements['preferredSize'] })}><option value="">keine Vorgabe</option><option value="klein">klein</option><option value="mittel">mittel</option><option value="gross">groß</option></select></label>
-        <label className="dfield"><span>Nutzung</span><select value={r.intendedUse} onChange={(e) => setR({ ...r, intendedUse: e.target.value as Requirements['intendedUse'] })}><option value="display">Ausstellungsmodell</option><option value="careful-handling">vorsichtige Handhabung</option><option value="play-goal">Spielmodell (Ziel, nicht geprüft)</option></select></label>
+        {NumField({ f: 'partMin' })}
+        {NumField({ f: 'partMax' })}
+        {NumField({ f: 'maxLengthStuds' })}
+        {NumField({ f: 'maxWidthStuds' })}
+        {NumField({ f: 'maxHeightBricks' })}
+        <label className="dfield"><span>Bevorzugte Größe</span><select value={r.preferredSize ?? ''} onChange={(e) => setDraft({ ...r, preferredSize: (e.target.value || null) as Requirements['preferredSize'] })}><option value="">keine Vorgabe</option><option value="klein">klein</option><option value="mittel">mittel</option><option value="gross">groß</option></select></label>
+        <label className="dfield"><span>Nutzung *</span>
+          <select id="req-intendedUse" value={r.intendedUse ?? ''} onChange={(e) => setDraft({ ...r, intendedUse: (e.target.value || null) as RequirementsDraft['intendedUse'] })} {...errProps('intendedUse')}>
+            <option value="">bitte wählen</option><option value="display">Ausstellungsmodell</option><option value="careful-handling">vorsichtige Handhabung</option><option value="play-goal">Spielmodell (Ziel, nicht geprüft)</option>
+          </select>
+          <Err f="intendedUse" />
+        </label>
       </div>
-      <fieldset><legend>Wichtigste wiederzuerkennende Merkmale (Reihenfolge = Priorität)</legend>
-        {interp.features.length === 0 && <p className="small muted">Erst Merkmale in der Interpretation anlegen.</p>}
+      <fieldset id="req-keyFeatureIds" tabIndex={-1} {...errProps('keyFeatureIds')}><legend>Wichtigste wiederzuerkennende Merkmale * (Reihenfolge = Priorität)</legend>
+        <Err f="keyFeatureIds" />
+        {interp.features.length === 0 && <p className="small muted">Erst Merkmale in der Interpretation anlegen (Abschnitt 2, „Charakteristische Merkmale“).</p>}
         <ol className="dprio">
           {r.keyFeatureIds.filter((id) => interp.features.some((f) => f.id === id)).map((id) => (
             <li key={id}>{interp.features.find((f) => f.id === id)!.description} <button className="linklike" onClick={() => move(id, -1)} aria-label="höher">▲</button><button className="linklike" onClick={() => move(id, 1)} aria-label="niedriger">▼</button><button className="linklike" onClick={() => toggle(id)}>entfernen</button></li>
@@ -548,9 +656,11 @@ function RequirementsForm({ brief, onSave }: { brief: DesignBrief; onSave: (r: R
         </ol>
         {interp.features.filter((f) => !r.keyFeatureIds.includes(f.id)).map((f) => <button key={f.id} className="linklike" onClick={() => toggle(f.id)}>+ {f.description}</button>)}
       </fieldset>
-      <label className="dfield"><span>Weitere Hinweise</span><textarea rows={2} value={r.notes} onChange={(e) => setR({ ...r, notes: e.target.value })} /></label>
-      <button className="primary" disabled={!dirty} onClick={() => onSave(r)}>Anforderungen übernehmen</button>
-      {dirty && brief.requirements && <span className="small muted"> Ungespeicherte Änderungen.</span>}
+      <label className="dfield"><span>Weitere Hinweise</span><textarea rows={2} value={r.notes} onChange={(e) => setDraft({ ...r, notes: e.target.value })} /></label>
+      <div className="dbtns">
+        <button id="req-save" className="primary" onClick={onSave}>Anforderungen übernehmen</button>
+        {dirty && <span className="small muted">Eingaben noch nicht übernommen.</span>}
+      </div>
     </section>
   );
 }
