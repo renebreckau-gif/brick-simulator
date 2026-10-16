@@ -288,8 +288,8 @@ export function App() {
           <Viewer model={model} library={bundle.library} catalog={bundle.catalog} visible={visible} current={current} highlighted={new Set(highlight)} selected={selected} onSelect={setSelected} />
           <div className="provenance">Gerendert aus Modell {ref.modelId}, Version {ref.version}, Hash {ref.contentHash}</div>
           {selectedInst && (
-            <div className="inspector">
-              <div className="code">{selectedInst.instanceId}</div>
+            <div className="inspector" role="region" aria-label="Ausgewähltes Teil">
+              <div><span className="muted">Ausgewählt:</span> <span className="code">{selectedInst.instanceId}</span></div>
               <div>
                 Teil {selectedInst.part} – {bundle.catalog.part(selectedInst.part).name ?? bundle.catalog.part(selectedInst.part).ldrawTitle ?? 'unbekannt'}, Farbe {bundle.catalog.color(selectedInst.color)?.rebrickableName ?? bundle.catalog.color(selectedInst.color)?.ldrawName ?? `Code ${selectedInst.color} (keine Zuordnung)`}
               </div>
