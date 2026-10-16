@@ -1,0 +1,23 @@
+{
+  "fixture": "SYNTHETISCH – eigene Testdaten für automatisierte Tests. Keine Ausgabe eines Analysedienstes, keine Live-Analyse, kein reales Bild.",
+  "interpretation": {
+    "subject": "Testobjekt: Quader mit zwei seitlichen Kästen",
+    "summary": "Synthetische Beschreibung zur Prüfung von Struktur und Widerspruchsregeln.",
+    "silhouette": { "description": "breiter als hoch", "aspectWidthToHeight": 1.6, "basis": "observed" },
+    "groups": [
+      { "id": "g1", "name": "Hauptkörper", "role": "hauptkoerper", "description": "Quader", "basis": "observed", "boxes": [{ "imageIndex": 0, "x": 0.2, "y": 0.3, "w": 0.6, "h": 0.4 }], "relativeSize": { "length": 1, "width": 1, "height": 1 }, "colorIds": ["c1"], "confidence": "hoch" },
+      { "id": "g2", "name": "Kasten links", "role": "baugruppe", "description": "seitlicher Kasten", "basis": "observed", "boxes": [{ "imageIndex": 0, "x": 0.05, "y": 0.4, "w": 0.15, "h": 0.2 }], "relativeSize": { "length": 0.5, "width": 0.3, "height": 0.4 }, "colorIds": ["c2"], "confidence": "mittel" },
+      { "id": "g3", "name": "Kasten rechts", "role": "baugruppe", "description": "angenommen spiegelgleich", "basis": "assumed", "boxes": [], "relativeSize": { "length": 0.5, "width": 0.3, "height": 0.4 }, "colorIds": ["c2"], "confidence": "niedrig" }
+    ],
+    "colors": [
+      { "id": "c1", "name": "Grau", "hex": "#6B6E70", "areaShare": 0.6, "basis": "observed" },
+      { "id": "c2", "name": "Oliv", "hex": "#6E7046", "areaShare": 0.3, "basis": "observed" }
+    ],
+    "features": [{ "id": "f1", "description": "zwei seitliche Kästen", "basis": "observed", "groupIds": ["g2", "g3"] }],
+    "symmetry": { "kind": "links-rechts", "basis": "assumed", "note": "rechte Seite nicht sichtbar" },
+    "hiddenAreas": [{ "description": "Rückseite", "basis": "assumed" }],
+    "openQuestions": [{ "id": "q1", "question": "Ist die rechte Seite gleich?" }],
+    "simplifications": [{ "feature": "abgerundete Kanten", "reason": "keine Rundungen im Teileumfang" }],
+    "notInferable": ["reale Abmessungen", "Teilenummern"]
+  }
+}

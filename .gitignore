@@ -8,6 +8,7 @@ coverage/
 # Zugangsdaten und lokale Umgebung
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 
@@ -24,3 +25,7 @@ data/catalog/rebrickable-extract.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Lokale Bildvorlagen und Entwurfsaufträge (Auftrag 05A): nie versionieren
+local-designs/
+*.entwurfsauftrag.json

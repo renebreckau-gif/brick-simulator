@@ -3,7 +3,9 @@
 //  - unter dist/data/ eine Datei liegt, die nicht freigegeben ist,
 //  - eine freigegebene Datei fehlt oder inhaltlich vom Original abweicht,
 //  - irgendwo in dist/ ein verbotener Pfad (Rohdaten, Katalogauszug, CSV, .env) auftaucht,
-//  - irgendeine JSON-Datei in dist/ das Schema eines Katalogauszugs trägt.
+//  - irgendeine JSON-Datei in dist/ das Schema eines Katalogauszugs trägt,
+//  - Bilddateien (Uploads), Entwurfsaufträge oder Zugangsdaten (API-Schlüssel) im Build liegen,
+//  - das serverseitige Anthropic-SDK in das Browser-Bundle geraten ist.
 // Aufruf: node scripts/check-public-build.mjs [distDir]
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -27,8 +29,17 @@ const errors = [];
 const allowed = new Set(listPublicDataFiles(DATA).map((r) => `data/${r}`));
 const files = walk(DIST).map((p) => relative(DIST, p).replace(/\\/g, '/'));
 
+const SECRET = /sk-ant-[A-Za-z0-9_-]{8,}/;
 for (const f of files) {
   if (FORBIDDEN_PATTERNS.some((p) => p.test(f))) errors.push(`verbotener Pfad im Build: ${f}`);
+  if (/\.(png|jpe?g|webp|gif|heic)$/i.test(f)) errors.push(`Bilddatei im Build (Uploads bleiben lokal): ${f}`);
+  if (/entwurfsauftrag\.json$/i.test(f)) errors.push(`Entwurfsauftrag im Build: ${f}`);
+  if (/\.(js|css|html|json|txt|map)$/i.test(f)) {
+    const text = readFileSync(join(DIST, f), 'utf8');
+    if (SECRET.test(text)) errors.push(`möglicher API-Schlüssel im Build: ${f}`);
+    if (/ANTHROPIC_API_KEY\s*[=:]\s*["']?[A-Za-z0-9]/.test(text)) errors.push(`Zugangsdaten-Zuweisung im Build: ${f}`);
+    if (text.includes('anthropic-version') || text.includes('api.anthropic.com')) errors.push(`serverseitiges Anthropic-SDK im Browser-Bundle: ${f}`);
+  }
   if (f.startsWith('data/') && !allowed.has(f)) errors.push(`nicht freigegebene Datei unter dist/data: ${f}`);
   if (f.endsWith('.json')) {
     try {

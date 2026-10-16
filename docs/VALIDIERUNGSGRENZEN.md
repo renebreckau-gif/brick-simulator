@@ -82,6 +82,12 @@ BrickLink Studio beschreibt seine Kollisions- und Stabilitätsprüfung selbst al
 - Die Teilung großer Schritte wird erneut mit dem Montageprüfer geprüft. Verständlichkeit, Fingerzugang und Steckkraft sind nicht geprüft.
 - Eine gedruckte Anleitung ist kein Nachweis mechanischer Belastbarkeit.
 
+## Bildvorlagen und Entwurfsaufträge (seit Auftrag 05A)
+
+- Eine Interpretation ist eine Beschreibung, keine Prüfaussage. Der Validator bewertet erst ein daraus konstruiertes Modell.
+- Ein Bild belegt weder Rückseite noch Innenkonstruktion, reale Abmessungen, Teilenummern oder Stabilität. Solche Angaben sind Annahmen oder Nutzervorgaben.
+- Anforderungen (Teilezahl, Maße, Nutzung) sind Wünsche, keine Machbarkeitszusage. Es gibt keine Alters- oder Sicherheitsfreigabe.
+
 ## Sonderverbindung „Unterseitenstift in Hohlnoppe“ (R-UPIN-HOLLOWSTUD, connect-rules@1.1.0)
 
 **Technische Beschreibung (aus LDraw geprüft, trifft zu).** Der massive Unterseitenstift eines 1×2-Steins greift koaxial in das Loch einer Hohlnoppe. Die Noppenwand sitzt im Hohlraum zwischen Stift und Seitenwänden.

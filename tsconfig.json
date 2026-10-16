@@ -14,5 +14,5 @@
     "skipLibCheck": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "tests", "tests-rebrickable", "scripts/*.d.mts", "vite.config.ts", "vitest.rebrickable.config.ts"]
+  "include": ["src", "server", "tests", "tests-rebrickable", "scripts/*.d.mts", "vite.config.ts", "vitest.rebrickable.config.ts"]
 }

@@ -116,8 +116,8 @@ Produktziel: Nutzer laden ein Konzeptbild hoch und erhalten daraus eine Konstruk
 
 | Stufe | Eingabe → Ausgabe | Stand |
 | --- | --- | --- |
-| 1. Bildanalyse | Konzeptbild → Bildmerkmale (Umriss, Farbflächen, Proportionen) mit Prüfsumme der Quelle | offen |
-| 2. Räumliche Interpretation | Bildmerkmale → Volumen-/Formannahme mit ausdrücklich markierten Annahmen (z. B. verdeckte Rückseite) | offen |
+| 1. Bildanalyse | Konzeptbild → Bildmerkmale (Umriss, Farbflächen, Proportionen) mit Prüfsumme der Quelle | umgesetzt (05A): Upload mit Inhaltsprüfung und SHA-256; Analyse über Claude API (gekapselt, nur lokaler Server) oder manuell |
+| 2. Räumliche Interpretation | Bildmerkmale → Volumen-/Formannahme mit ausdrücklich markierten Annahmen (z. B. verdeckte Rückseite) | umgesetzt (05A): Interpretation mit Grundlage je Aussage, Nutzerkorrektur, bestätigter Entwurfsauftrag |
 | 3. Bausteinkonstruktion | Formannahme → `CanonicalModel` aus realen Teilen und implementierten Verbindungen, mit `design`-Herkunft und Baufolge | Generator-Schnittstelle vorhanden (Raumschiff als erster Erzeuger) |
 | 4. Validierung | Modell → Prüfbericht | vorhanden, unverändert für alle Erzeuger |
 | 5. Visueller Abgleich | Konzeptbild ↔ Rendering des Modells → Abweichungen, gespeichert in `design.visualComparison` und `design.deviations` | offen; Felder vorhanden |
@@ -129,3 +129,11 @@ Regeln für die künftigen Stufen 1–3:
 - Erzeugte Modelle tragen `origin.kind = 'generated'`, eine Generatorkennung und eine Entwurfsherkunft (`design`). Bilddaten selbst werden nicht im Modell gespeichert, nur Prüfsumme, Medientyp und Rechteangabe.
 - Eine Interpretation darf Annahmen treffen, muss sie aber als `assumptions` hinterlegen. Eine Abweichung vom Bild (Vereinfachung, fehlende Teileform) wird als `deviations` dokumentiert, nicht verschwiegen.
 - Konzeptbilder werden nie als Modellansicht gezeigt. Anleitung und Ansichten rendern nur Teilinstanzen.
+
+## A19 – Bildvorlage und Entwurfsauftrag (Auftrag 05A)
+
+- **Keine parallele Modellwelt:** Der Entwurfsauftrag (`src/core/design/brief.ts`) ist ein eigenes, versioniertes Artefakt *vor* dem Modell. Mit dem Modell verbunden wird er ausschließlich über `CanonicalModel.design` (`toDesignProvenance`, `design.brief`). Er enthält nie Teilinstanzen.
+- **Grundlage je Aussage:** `observed`, `assumed` oder `user`. Ein gemeinsames Schema (zod, `src/core/design/interpretation.ts`) und eine gemeinsame Widerspruchsprüfung gelten für Dienstantworten, Importe und manuelle Eingaben.
+- **Anbieter gekapselt:** `AnalysisProvider` mit Konfigurationsprüfung und typisierten Fehlern. Der Anthropic-Anbieter läuft nur im lokalen Node-Server; der Browser kennt weder Schlüssel noch SDK, und der Public-Build-Check prüft das.
+- **Veralten statt Überschreiben:** Bildwechsel und Korrekturen erzeugen neue Versionen, markieren Analyse und Bestätigung nachvollziehbar als veraltet und stehen im Verlauf. Bestätigt wird ein Inhalts-Hash (`substanceHash`), nicht ein Zeitpunkt.
+- **Bilder bleiben lokal:** IndexedDB im Browser. Im Auftrag stehen nur Prüfsumme, Typ, Maße und Anzeigename; der Dateiname wird nie analysiert.

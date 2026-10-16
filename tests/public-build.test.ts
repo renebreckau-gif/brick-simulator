@@ -56,6 +56,12 @@ describe('Prüfung öffentlicher Builds (scripts/check-public-build.mjs)', () =>
     ['Auszug unter anderem Namen', (d) => put(d, 'assets/katalog.json', FAKE_EXTRACT), /Katalogauszug \(Schema/],
     ['veränderte freigegebene Datei', (d) => put(d, 'data/catalog/id-map.json', '{"manipuliert":true}'), /weicht vom Original ab/],
     ['.env', (d) => put(d, '.env', 'TOKEN=x'), /verbotener Pfad/],
+    // Auftrag 05A: Bildvorlagen, Entwurfsaufträge und Zugangsdaten bleiben lokal
+    ['hochgeladenes Bild', (d) => put(d, 'assets/vorlage.png', 'x'), /Bilddatei im Build/],
+    ['Entwurfsauftrag', (d) => put(d, 'assets/entwurf.entwurfsauftrag.json', '{}'), /Entwurfsauftrag im Build/],
+    ['API-Schlüssel im Bundle', (d) => put(d, 'assets/index.js', 'const k="sk-ant-api03-abcdefghijkl";'), /API-Schlüssel/],
+    ['Schlüsselzuweisung im Bundle', (d) => put(d, 'assets/index.js', 'ANTHROPIC_API_KEY="abc123"'), /Zugangsdaten-Zuweisung/],
+    ['Anthropic-SDK im Browser-Bundle', (d) => put(d, 'assets/index.js', 'fetch("https://api.anthropic.com/v1/messages")'), /Anthropic-SDK im Browser-Bundle/],
   ];
   for (const [label, mutate, msg] of dirty)
     it(`schlägt fehl: ${label}`, () => {

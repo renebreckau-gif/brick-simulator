@@ -16,6 +16,7 @@ import { ShipLab } from './ShipLab';
 import { comparisonReferenceId, GENERATED_COMPARISON_NOTE } from './comparison';
 import { buildInstructionPlan, InstructionPlanError, type InstructionPlan } from '../core/instructions/plan';
 import { InstructionView } from './instructions/InstructionView';
+import { DesignLab } from './design/DesignLab';
 
 type Tab = 'report' | 'steps' | 'bom' | 'source';
 
@@ -44,7 +45,7 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>('report');
-  const [mode, setMode] = useState<'pruef' | 'schiff'>('pruef');
+  const [mode, setMode] = useState<'pruef' | 'schiff' | 'bild'>('pruef');
   const [shipParams, setShipParams] = useState<ShipParams>(VARIANTS.kompakt.params);
   const [shipPlan, setShipPlan] = useState<ShipPlan | null>(null);
   const [shipError, setShipError] = useState<{ message: string; hints: string[] } | null>(null);
@@ -174,6 +175,7 @@ export function App() {
         <div className="modes" role="tablist" aria-label="Bereich">
           <button role="tab" aria-selected={mode === 'pruef'} className={mode === 'pruef' ? 'tab active' : 'tab'} onClick={() => setMode('pruef')}>Prüflabor</button>
           <button role="tab" aria-selected={mode === 'schiff'} className={mode === 'schiff' ? 'tab active' : 'tab'} onClick={() => setMode('schiff')}>Raumschiff-Labor</button>
+          <button role="tab" aria-selected={mode === 'bild'} className={mode === 'bild' ? 'tab active' : 'tab'} onClick={() => setMode('bild')}>Aus Bild entwerfen</button>
         </div>
         {mode === 'schiff' && (
           <ShipLab params={shipParams} onChange={setShipParams} plan={shipPlan} error={shipError} actualParts={model.origin.kind === 'generated' ? model.instances.length : null} dims={dims} shownParams={shownShipParams} />
@@ -228,7 +230,11 @@ export function App() {
         </section>
       </aside>
 
-      {view === 'anleitung' ? (
+      {mode === 'bild' ? (
+        <main className="center instrwrap">
+          <DesignLab />
+        </main>
+      ) : view === 'anleitung' ? (
         <main className="center instrwrap">
           <ViewSwitch view={view} onChange={setView} />
           {instr ? (
