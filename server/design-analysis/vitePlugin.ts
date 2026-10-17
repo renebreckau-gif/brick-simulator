@@ -1,12 +1,13 @@
 // Lokale Endpunkte der Bildanalyse – nur im Entwicklungsserver (configureServer), nie im statischen Build:
 //   GET  /api/design/status   → Anbieter, Modell, ob konfiguriert (ohne Schlüssel preiszugeben)
 //   POST /api/design/analyze  → { images: [{ sha256, mediaType, data, view }], notes } → AnalyzeResponse
+//   POST /api/design/spatial  → { images, interpretation, notes, ticketId } → SpatialResponse (räumlicher Vorschlag)
 import type { IncomingMessage } from 'node:http';
 import type { Plugin } from 'vite';
 import { MAX_IMAGE_BYTES, MAX_IMAGES } from '../../src/core/design/images';
 import { anthropicProvider, type AnthropicEnv } from './anthropic';
-import { analyzeRequest, LIVE_UNVERIFIED, nextLiveCheck, SETUP_HINTS, type AnalysisProvider, type LiveCheck } from './handler';
-import { PROMPT_VERSION } from './prompt';
+import { analyzeRequest, LIVE_UNVERIFIED, nextLiveCheck, SETUP_HINTS, spatialRequest, type AnalysisProvider, type LiveCheck } from './handler';
+import { PROMPT_VERSION, SPATIAL_PROMPT_VERSION } from './prompt';
 
 const BODY_LIMIT = Math.ceil(MAX_IMAGES * MAX_IMAGE_BYTES * 1.4) + 64 * 1024;
 
@@ -55,7 +56,7 @@ export function designAnalysisApi(readEnv: () => Record<string, string>, provide
         };
         if (url === '/api/design/status' && req.method === 'GET') {
           const problem = provider.configurationProblem();
-          return send(200, { provider: provider.label, providerId: provider.id, model: provider.model, configured: !problem, problem, setup: problem ? SETUP_HINTS : [], liveCheck: live, promptVersion: PROMPT_VERSION, maxImages: MAX_IMAGES, maxImageBytes: MAX_IMAGE_BYTES });
+          return send(200, { provider: provider.label, providerId: provider.id, model: provider.model, configured: !problem, problem, setup: problem ? SETUP_HINTS : [], liveCheck: live, spatial: !!provider.proposeSpatial, promptVersion: PROMPT_VERSION, spatialPromptVersion: SPATIAL_PROMPT_VERSION, maxImages: MAX_IMAGES, maxImageBytes: MAX_IMAGE_BYTES });
         }
         if (url === '/api/design/analyze' && req.method === 'POST') {
           let body: unknown;
@@ -65,6 +66,17 @@ export function designAnalysisApi(readEnv: () => Record<string, string>, provide
             return send(400, { ok: false, code: 'invalid_request', message: String((e as Error).message) });
           }
           const r = await analyzeRequest(provider, body, PROMPT_VERSION);
+          live = nextLiveCheck(live, r.body);
+          return send(r.status, { ...r.body, liveCheck: live });
+        }
+        if (url === '/api/design/spatial' && req.method === 'POST') {
+          let body: unknown;
+          try {
+            body = await readJson(req);
+          } catch (e) {
+            return send(400, { ok: false, code: 'invalid_request', message: String((e as Error).message) });
+          }
+          const r = await spatialRequest(provider, body, SPATIAL_PROMPT_VERSION);
           live = nextLiveCheck(live, r.body);
           return send(r.status, { ...r.body, liveCheck: live });
         }

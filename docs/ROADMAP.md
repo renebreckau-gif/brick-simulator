@@ -26,10 +26,13 @@ Versionierter Anleitungsplan, Bereich „Bauanleitung“ mit Schrittnavigation, 
 
 Bereich „Aus Bild entwerfen“ mit Upload und Inhaltsprüfung, Analyse über die Claude API (eingerichtet, aber mangels Schlüssel noch nicht live ausgeführt) oder manuell. Dazu kommen Korrektur, Anforderungen und ein versionierter, bestätigbarer Entwurfsauftrag (siehe `BILDENTWURF.md`).
 
+## Auftrag 05B.0 – räumlicher Entwurf ✔
+
+Volumenmodell aus einfachen Körpern mit gemeinsamem Koordinatensystem. Dazu gehören eine 3D-Ansicht und sechs orthografische Ansichten aus derselben Geometrie, ein lokaler Vorschlag aus der Interpretation, ein optionaler Dienstvorschlag (nicht live geprüft) sowie Bearbeiten, Prüfen und Bestätigen der Form (siehe `RAUMENTWURF.md`).
+
 ## Auftrag 05B – bestätigten Entwurf in echte Bausteine konstruieren (nächster Schritt)
 
-0. **Zuerst: gemeinsames räumliches Volumenmodell** aus dem bestätigten Entwurfsauftrag (einfache Körper je Baugruppe in einem Koordinatensystem), daraus **sechs gerenderte Ansichten** zum Abgleich mit der Vorlage und zur Korrektur. Die bisherige Vorschau zeigt nur eingefärbte 2D-Bildbereiche, keine räumliche Rekonstruktion (siehe `BILDENTWURF.md`).
-1. Konstrukteur, der ein bestätigtes Volumenmodell (samt Entwurfsauftrag) liest: Baugruppen, relative Größen, Farben, Prioritäten, Teilebudget und Höchstmaße. Er erzeugt ein `CanonicalModel` mit `design` aus `toDesignProvenance` und einer Baufolge.
+1. Konstrukteur, der einen bestätigten räumlichen Entwurf (samt Entwurfsauftrag) liest: Baugruppen, relative Größen, Farben, Prioritäten, Teilebudget und Höchstmaße. Er erzeugt ein `CanonicalModel` mit `design` aus `toDesignProvenance` und einer Baufolge.
 2. Abbildung der Proportionen auf das Noppenraster innerhalb der Höchstmaße; Farbabbildung auf belegte LDraw-/Katalogfarben. Jede Abweichung kommt nach `design.deviations`.
 3. Prüfung mit dem unveränderten Validator; Bauanleitung und Stückliste über die vorhandene Kette.
 4. Visueller Abgleich: Rendering des Modells gegen die Bildbereiche der Vorlage.

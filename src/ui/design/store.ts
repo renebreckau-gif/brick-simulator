@@ -51,6 +51,11 @@ export async function loadImage(sha: string): Promise<Blob | null> {
   return ((await tx('images', 'readonly', (s) => s.get(sha))) as Blob | undefined) ?? null;
 }
 export const deleteImage = (sha: string) => tx('images', 'readwrite', (s) => s.delete(sha));
+/** Räumlicher Entwurf (05B.0) – eigener Schlüssel in derselben lokalen Ablage; der Entwurfsauftrag bleibt unverändert. */
+export const saveSpatial = (json: string) => tx('briefs', 'readwrite', (s) => s.put(json, 'spatial'));
+export async function loadSpatial(): Promise<string | null> {
+  return ((await tx('briefs', 'readonly', (s) => s.get('spatial'))) as string | undefined) ?? null;
+}
 export const clearAll = async () => {
   await tx('images', 'readwrite', (s) => s.clear());
   await tx('briefs', 'readwrite', (s) => s.clear());

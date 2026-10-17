@@ -7,8 +7,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { Interpretation } from '../../src/core/design/interpretation';
+import { SpatialProposal } from '../../src/core/design/spatial';
 import { ProviderError, type AnalysisImage, type AnalysisProvider, type ProviderResult } from './handler';
-import { SYSTEM_PROMPT, userText } from './prompt';
+import { SPATIAL_SYSTEM_PROMPT, spatialUserText, SYSTEM_PROMPT, userText } from './prompt';
 
 export const ANTHROPIC_MODEL = 'claude-opus-5-5';
 const DEFAULT_BASE_URL = 'https://api.anthropic.com';
@@ -33,12 +34,8 @@ export function apiKeyProblem(apiKey: string | undefined): string | null {
  */
 export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): AnalysisProvider {
   const read = typeof env === 'function' ? env : () => env;
-  return {
-    id: 'anthropic',
-    label: 'Anthropic Claude API',
-    model: ANTHROPIC_MODEL,
-    configurationProblem: () => apiKeyProblem(read().apiKey),
-    async analyze(images: AnalysisImage[], notes: string): Promise<ProviderResult> {
+  // Ein Aufruf: Bilder zuerst, dann Text; strukturierte Ausgabe nach dem übergebenen Schema
+  async function call(format: ReturnType<typeof betaZodOutputFormat>, system: string, images: AnalysisImage[], text: string): Promise<ProviderResult> {
       const { apiKey = '', baseURL } = read();
       const base = baseURL || DEFAULT_BASE_URL;
       // Eigener Client je Aufruf: aktueller Schlüssel, und die Anfragekennung des Dienstes (Header request-id)
@@ -62,14 +59,14 @@ export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): Ana
           // Bei einer Ablehnung durch Sicherheitsklassifikatoren übernimmt serverseitig ein Ersatzmodell.
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
-          output_config: { effort: 'high', format: betaZodOutputFormat(Interpretation) },
-          system: SYSTEM_PROMPT,
+          output_config: { effort: 'high', format },
+          system,
           messages: [
             {
               role: 'user',
               content: [
                 ...images.map((img) => ({ type: 'image' as const, source: { type: 'base64' as const, media_type: img.mediaType, data: img.data } })),
-                { type: 'text' as const, text: userText(images, notes) },
+                { type: 'text' as const, text },
               ],
             },
           ],
@@ -86,6 +83,13 @@ export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): Ana
         if (e instanceof Anthropic.APIError) throw new ProviderError('provider_error', `Analysedienst meldet Fehler ${e.status ?? ''}: ${e.message}`, e.status ?? null);
         throw new ProviderError('unparseable', `Antwort nicht verarbeitbar: ${String(e)}`);
       }
-    },
+  }
+  return {
+    id: 'anthropic',
+    label: 'Anthropic Claude API',
+    model: ANTHROPIC_MODEL,
+    configurationProblem: () => apiKeyProblem(read().apiKey),
+    analyze: (images, notes) => call(betaZodOutputFormat(Interpretation), SYSTEM_PROMPT, images, userText(images, notes)),
+    proposeSpatial: (images, interpretation, notes) => call(betaZodOutputFormat(SpatialProposal), SPATIAL_SYSTEM_PROMPT, images, spatialUserText(images, JSON.stringify(interpretation), notes)),
   };
 }

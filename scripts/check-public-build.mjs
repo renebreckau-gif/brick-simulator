@@ -34,6 +34,7 @@ for (const f of files) {
   if (FORBIDDEN_PATTERNS.some((p) => p.test(f))) errors.push(`verbotener Pfad im Build: ${f}`);
   if (/\.(png|jpe?g|webp|gif|heic)$/i.test(f)) errors.push(`Bilddatei im Build (Uploads bleiben lokal): ${f}`);
   if (/entwurfsauftrag\.json$/i.test(f)) errors.push(`Entwurfsauftrag im Build: ${f}`);
+  if (/raumentwurf\.json$/i.test(f)) errors.push(`Räumlicher Entwurf im Build: ${f}`);
   if (/\.(js|css|html|json|txt|map)$/i.test(f)) {
     const text = readFileSync(join(DIST, f), 'utf8');
     if (SECRET.test(text)) errors.push(`möglicher API-Schlüssel im Build: ${f}`);

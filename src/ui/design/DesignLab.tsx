@@ -7,6 +7,7 @@ import {
 } from '../../core/design/brief';
 import { checkImageBytes, MAX_IMAGES, sha256Hex } from '../../core/design/images';
 import { BASIS_LABEL, checkInterpretation, manualInterpretationTemplate, type Basis, type Interpretation } from '../../core/design/interpretation';
+import { SpatialLab } from './SpatialLab';
 import { clearAll, deleteImage, loadBrief, loadImage, saveBrief, saveImage } from './store';
 
 interface ServerStatus {
@@ -16,6 +17,8 @@ interface ServerStatus {
   problem: string | null;
   setup: string[];
   promptVersion: string;
+  spatial?: boolean;
+  spatialPromptVersion?: string;
   liveCheck?: { status: 'unverified' | 'ok' | 'failed'; at: string | null; code: string | null; model: string | null };
 }
 
@@ -603,6 +606,15 @@ export function DesignLab() {
           <ol className="small">{brief.history.slice(-30).map((h) => <li key={h.version} value={h.version}>{h.at.slice(0, 19).replace('T', ' ')} – {h.event}</li>)}</ol>
         </details>
       </section>
+
+      {/* 5. Räumlicher Entwurf (05B.0) – je Entwurfsauftrag neu geladen; eigener Speicherplatz */}
+      <SpatialLab
+        key={brief.briefId}
+        brief={brief}
+        urls={urls}
+        service={status && status !== 'none' ? { ready: status.configured, spatial: !!status.spatial, provider: status.provider, model: status.model, promptVersion: status.spatialPromptVersion ?? null } : null}
+        onLiveCheck={(lc) => setStatus((s) => (s && s !== 'none' ? { ...s, liveCheck: lc as ServerStatus['liveCheck'] } : s))}
+      />
     </section>
   );
 }

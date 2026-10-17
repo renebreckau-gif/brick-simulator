@@ -88,6 +88,12 @@ BrickLink Studio beschreibt seine Kollisions- und Stabilitätsprüfung selbst al
 - Ein Bild belegt weder Rückseite noch Innenkonstruktion, reale Abmessungen, Teilenummern oder Stabilität. Solche Angaben sind Annahmen oder Nutzervorgaben.
 - Anforderungen (Teilezahl, Maße, Nutzung) sind Wünsche, keine Machbarkeitszusage. Es gibt keine Alters- oder Sicherheitsfreigabe.
 
+## Räumlicher Entwurf (seit Auftrag 05B.0)
+
+- Ein räumlicher Entwurf beschreibt eine Form aus einfachen Körpern, keine Bausteine. Überlappungen sind keine Kollisionen, und Lücken sind kein Beleg für fehlende Verbindungen.
+- Lagen und Proportionen aus einem perspektivischen Bild sind Schätzungen. Tiefe, verdeckte Seiten und Innenkonstruktion sind Annahmen. Gekoppelte Spiegelbilder beruhen auf einer Symmetrieannahme.
+- Die Bestätigung gilt nur der Form, nicht Stabilität, Montage oder Verfügbarkeit. Reale Maße gibt es nur als Zielvorgabe über einen Maßstab.
+
 ## Sonderverbindung „Unterseitenstift in Hohlnoppe“ (R-UPIN-HOLLOWSTUD, connect-rules@1.1.0)
 
 **Technische Beschreibung (aus LDraw geprüft, trifft zu).** Der massive Unterseitenstift eines 1×2-Steins greift koaxial in das Loch einer Hohlnoppe. Die Noppenwand sitzt im Hohlraum zwischen Stift und Seitenwänden.

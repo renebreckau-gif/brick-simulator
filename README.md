@@ -121,7 +121,9 @@ Der dritte Bereich in der Seitenleiste nimmt eine oder mehrere Konzeptbilder (PN
 
 Nach Korrekturen und Anforderungen (Teilezahl, Höchstmaße, wichtigste Merkmale, Nutzung) wird ein versionierter Entwurfsauftrag bestätigt. Er enthält noch keine Steine; Bauanleitung und Stückliste gibt es erst mit einem echten Modell.
 
-Automatische Analyse einrichten: `.env.local` mit `ANTHROPIC_API_KEY=…` anlegen (Vorlage `.env.example`), dann den Entwicklungsserver neu starten. Details, Grenzen und Prüfstand: [docs/BILDENTWURF.md](docs/BILDENTWURF.md).
+Automatische Analyse einrichten: `.env.local` mit `ANTHROPIC_API_KEY=…` anlegen (Vorlage `.env.example`). Der Server liest die Datei bei jedem Aufruf neu. Details, Grenzen und Prüfstand: [docs/BILDENTWURF.md](docs/BILDENTWURF.md).
+
+Abschnitt 5 erzeugt aus einer gültigen Interpretation einen **räumlichen Entwurf**: einfache Körper in einem Koordinatensystem mit gleichem Maßstab auf allen Achsen. Er erscheint in einer frei drehbaren 3D-Ansicht und in sechs orthografischen Ansichten, alle aus derselben Geometrie. Der Entwurf ist bearbeitbar und bestätigbar, enthält aber noch keine Steine, und die Baubarkeit ist ungeprüft. Siehe [docs/RAUMENTWURF.md](docs/RAUMENTWURF.md).
 
 ## Bauanleitung
 
@@ -169,6 +171,7 @@ docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüf
 - [Raumschiff-Labor: Generator, Varianten, Grenzen, Probeaufbau-Protokoll](docs/RAUMSCHIFF.md)
 - [Bauanleitung: Anleitungsplan, Ansichten, PDF, Grenzen](docs/BAUANLEITUNG.md)
 - [Aus Bild entwerfen: Interpretation, Entwurfsauftrag, Analyse einrichten](docs/BILDENTWURF.md)
+- [Räumlicher Entwurf: Volumenmodell, sechs Ansichten, Prüfung](docs/RAUMENTWURF.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Namensnennung

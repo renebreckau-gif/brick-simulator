@@ -101,6 +101,8 @@ export interface DesignProvenance {
   schema: 'baustein-sim/design-provenance@1';
   /** Bestätigter Entwurfsauftrag, aus dem das Modell konstruiert wurde (src/core/design/brief.ts). */
   brief?: { briefId: string; version: number; contentHash: string; confirmedHash: string };
+  /** Bestätigter räumlicher Entwurf (Volumenmodell, src/core/design/spatial.ts) – Form, keine Teile. */
+  spatial?: { designId: string; version: number; contentHash: string; confirmedHash: string | null };
   /** Eingaben des Entwurfs (z. B. hochgeladenes Konzeptbild); Bilddaten selbst liegen nicht im Modell. */
   sources: {
     sourceId: string;
