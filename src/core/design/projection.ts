@@ -107,15 +107,16 @@ export const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[
 
 export interface Box2 { u0: number; u1: number; v0: number; v1: number }
 
+/**
+ * Projektion eines Körpers: nur Umriss und Ausdehnung (für Maßstab, Maße und Referenzabgleich).
+ * Verdeckung entscheidet NICHT diese Datei, sondern der Tiefenpuffer je Bildpunkt (raster.ts) –
+ * eine Reihenfolge ganzer Körper ist bei schrägen oder überlappenden Körpern falsch.
+ */
 export interface ProjectedBody {
   id: string;
   /** Konvexe Hülle der projizierten Ecken (u nach rechts, v nach oben). */
   hull: [number, number][];
-  /** Projizierte Seitenflächen, die zur Kamera zeigen (für Kanten und Schattierung). */
-  faces: { points: [number, number][]; shade: number }[];
   bbox: Box2;
-  /** Abstand zur Kamera (größer = näher); Zeichenreihenfolge von fern nach nah. */
-  depth: number;
 }
 
 function hull(pts: [number, number][]): [number, number][] {
@@ -138,24 +139,15 @@ function hull(pts: [number, number][]): [number, number][] {
 export const projectPoint = (p: V3, v: ViewDef): [number, number] => [dot(p, v.right), dot(p, v.up)];
 
 export function projectBody(b: SpatialBody, view: ViewDef): ProjectedBody {
-  const g = bodyGeometry(b);
-  const pts = g.vertices.map((p) => projectPoint(p, view));
+  const pts = bodyGeometry(b).vertices.map((p) => projectPoint(p, view));
   const us = pts.map((p) => p[0]);
   const vs = pts.map((p) => p[1]);
-  const faces: ProjectedBody['faces'] = [];
-  for (const f of g.faces) {
-    const [a, b2, c] = [g.vertices[f[0]], g.vertices[f[1]], g.vertices[f[2]]];
-    const n = cross([b2[0] - a[0], b2[1] - a[1], b2[2] - a[2]], [c[0] - a[0], c[1] - a[1], c[2] - a[2]]);
-    const len = Math.hypot(...n) || 1;
-    const facing = dot(n, view.toCamera) / len;
-    if (facing > 1e-6) faces.push({ points: f.map((i) => pts[i]), shade: facing });
-  }
-  return { id: b.id, hull: hull(pts), faces, bbox: { u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs) }, depth: Math.max(...g.vertices.map((p) => dot(p, view.toCamera))) };
+  return { id: b.id, hull: hull(pts), bbox: { u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs) } };
 }
 
-/** Projektion aller Körper in eine Ansicht, sortiert von fern nach nah. */
+/** Projektion aller Körper in eine Ansicht (Reihenfolge wie im Entwurf; keine Aussage zur Verdeckung). */
 export function projectDesign(d: Pick<SpatialDesign, 'bodies'>, view: ViewDef): ProjectedBody[] {
-  return d.bodies.map((b) => projectBody(b, view)).sort((a, b) => a.depth - b.depth);
+  return d.bodies.map((b) => projectBody(b, view));
 }
 
 /** Achsparallele Ausdehnung aller Körper im Objektsystem. */

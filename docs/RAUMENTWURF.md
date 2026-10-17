@@ -85,6 +85,19 @@ Die Antwort wird geprüft: Format, bekannte Baugruppen, genau ein Hauptkörper u
   - Unstimmige Dateien werden nur zur Korrektur geladen, die Bestätigung wird dabei aufgehoben.
   - Die Dateien sind von Git ausgeschlossen, und der öffentliche Build weist sie ab.
 
+## Verdeckung und 3D-Ressourcen (Korrekturauftrag 05B.0.1)
+
+- **Verdeckung je Bildpunkt:** Die orthografischen Ansichten nutzen einen Tiefenpuffer (`src/core/design/raster.ts`).
+  - Je Bildpunkt gewinnt die tatsächlich nächste Fläche.
+  - Die frühere Sortierung ganzer Körper nach ihrem größten Kameraabstand war falsch. Beispiel: Ein Quader vor der Schräge eines größeren Keils wurde übermalt, weil der Keil hinten weiter nach vorn reicht.
+  - Gemeinsamer Maßstab, Mittelpunkt, Achsen und Ansichtsrichtungen sind unverändert.
+  - Die Auswahl per Klick liest denselben Puffer, wählt also immer den sichtbaren Körper.
+  - Flächennormalen werden nach Newell über alle Ecken berechnet. Damit bleiben auch die Seitenflächen spitzer Keile (zusammenfallende Ecken) erhalten.
+- **3D-Ansicht:** Die 3D-Objekte werden je Körper verwaltet (`src/ui/design/spatialMeshes.ts`).
+  - Bei Farbe oder Auswahl werden sie wiederverwendet.
+  - Bei geänderter Form oder Lage werden sie ersetzt und freigegeben: Flächengeometrie, Kantengeometrie und beide Materialien.
+  - Beim Abbau werden auch OrbitControls, Zeiger-Listener, ResizeObserver, Achsen, Raster, Lichter, Renderer und WebGL-Kontext freigegeben.
+
 ## Nachweis
 
 - **Projektionstests (`tests/spatial-sollwerte.test.ts`):** Ein asymmetrischer Testkörper mit Rumpf, Bug, nur links angebrachter Gondel und Turm wird gegen **von Hand berechnete Sollwerte** geprüft:
@@ -93,6 +106,7 @@ Die Antwort wird geprüft: Format, bekannte Baugruppen, genau ein Hauptkörper u
   - Seite der Gondel in allen sechs Ansichten
   - Spiegelung, auch mit Gieren ±30°
   - Änderungen an Länge, Breite und Gondelposition, die genau in den betroffenen Ansichten erscheinen
+- **Verdeckung (`tests/spatial-raster.test.ts`):** sichtbare Flächen je Bildpunkt, verglichen mit einem unabhängigen Strahltest (Halbräume der konvexen Körper). Geprüft werden der Keil/Quader-Fall in allen sechs Ansichten, teilweise verdeckte und gedrehte Körper sowie die Auswahl des sichtbaren Körpers. Freigabe der 3D-Ressourcen: `tests/spatial-meshes.test.ts`.
 - **Geometrie (`tests/spatial-projection.test.ts`):** Jede Ansicht ist eine echte Drehung ohne Spiegelung, die Achsabbildung ist für alle Körper gleich, dazu gemeinsamer Maßstab, Tiefenreihenfolge und Körperformen.
 - **Fachlich (`tests/spatial-design.test.ts`, `tests/spatial-endpoint.test.ts`):** Ableitung, Einschübe, Symmetrie, Prüfregeln, Versionierung, Veraltung, Import, Erhalt älterer Entwurfsaufträge und verspätete Antworten.
 - **Korrigierte Erwartung „22 Noppen“:**

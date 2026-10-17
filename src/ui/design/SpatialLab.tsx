@@ -1,8 +1,10 @@
 // Abschnitt 5 „Räumlicher Entwurf“ (Auftrag 05B.0): Volumenmodell aus einfachen Körpern, frei drehbare
 // 3D-Ansicht und sechs orthografische Ansichten – alle aus derselben Geometrie und mit gemeinsamem Maßstab.
+// Verdeckung in den orthografischen Ansichten per Tiefenpuffer (05B.0.1).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DesignBrief } from '../../core/design/brief';
 import { modelBounds, sharedFrames, type ViewFrame, type ViewId } from '../../core/design/projection';
+import { bodyAt, rasterize, shadeRaster, visiblePixels } from '../../core/design/raster';
 import {
   addBody, addMirror, applySpatialResult, AXIS_TEXT, BRICK_HEIGHT_IN_STUDS, checkSpatial, compareWithReferences, confirmSpatial, createSpatialTicket, decouple, defaultReferenceViews, deriveSpatialProposal, isSpatialConfirmedCurrent,
   parseSpatial, rebaseSpatial, REF_DIRECTION_LABEL, REF_DIRECTIONS, removeBody, restoreContent, setReferenceViews, setScale, setSymmetry, SHAPE_LABEL, SHAPES, SPATIAL_BASIS_LABEL, SPATIAL_LABEL, spatialBlockers,
@@ -67,38 +69,40 @@ const VW = 240;
 const VH = 170;
 const MARGIN = 14;
 
-function shadeHex(hex: string, f: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const k = 0.55 + 0.45 * f;
-  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => Math.round(x * k));
-  return `rgb(${c.join(',')})`;
-}
+/** Auflösungsfaktor der Ansichtsbilder (Bildpunkte je CSS-Pixel); der Maßstab wird mitskaliert. */
+const RES = 2;
 
-/** Eine orthografische Ansicht; Maßstab und Mittelpunkt kommen von außen (für alle Ansichten gleich). */
+/**
+ * Eine orthografische Ansicht. Maßstab und Mittelpunkt kommen von außen (für alle Ansichten gleich).
+ * Verdeckung per Tiefenpuffer je Bildpunkt (raster.ts); die Auswahl per Klick liest denselben Puffer.
+ */
 function OrthoView({ frame, scale, design, selected, onSelect }: { frame: ViewFrame; scale: number; design: SpatialDesign; selected: string | null; onSelect: (id: string) => void }) {
-  const [cu, cv] = frame.center;
-  const px = (u: number) => VW / 2 + (u - cu) * scale;
-  const py = (v: number) => VH / 2 - (v - cv) * scale;
-  const pts = (p: [number, number][]) => p.map(([u, v]) => `${px(u).toFixed(2)},${py(v).toFixed(2)}`).join(' ');
-  const color = (id: string) => design.bodies.find((b) => b.id === id)?.color ?? '#999999';
-  const bar = 0.25 * scale;
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const raster = useMemo(() => rasterize(design, { view: frame.view, scale: scale * RES, center: frame.center, width: VW * RES, height: VH * RES }), [design, frame.view, frame.center, scale]);
+  const visible = useMemo(() => [...visiblePixels(raster)].map(([id, n]) => ({ id, n, name: design.bodies.find((b) => b.id === id)?.name ?? id })), [raster, design]);
+  useEffect(() => {
+    const c = canvas.current;
+    const ctx = c?.getContext('2d');
+    if (!c || !ctx) return;
+    const img = ctx.createImageData(raster.width, raster.height);
+    img.data.set(shadeRaster(raster, design.bodies.map((b) => b.color), design.bodies.findIndex((b) => b.id === selected)));
+    ctx.putImageData(img, 0, 0);
+    // Maßstabsbalken 0,25 Hauptkörperlängen (gleicher Maßstab in allen Ansichten)
+    const bar = 0.25 * scale * RES;
+    ctx.fillStyle = '#18212c';
+    ctx.fillRect(8 * RES, (VH - 9) * RES, bar, 2 * RES);
+    ctx.font = `${10 * RES}px sans-serif`;
+    ctx.fillText('0,25', 8 * RES + bar + 3 * RES, (VH - 5) * RES);
+  }, [raster, design, selected, scale]);
+  const pick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const id = bodyAt(raster, ((e.clientX - r.left) / r.width) * raster.width, ((e.clientY - r.top) / r.height) * raster.height);
+    if (id) onSelect(id);
+  };
   return (
-    <figure className="spview">
+    <figure className="spview" data-view={frame.view.id} data-visible={visible.map((v) => `${v.id}:${v.n}`).join(',')}>
       <figcaption><strong>{frame.view.label}</strong> <span className="small muted">→ {frame.view.axisRight} · ↑ {frame.view.axisUp}</span></figcaption>
-      <svg viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={`Orthografische Ansicht ${frame.view.label}: rechts ${frame.view.axisRight}, oben ${frame.view.axisUp}`}>
-        <rect x="0" y="0" width={VW} height={VH} className="spbg" />
-        {frame.bodies.map((b) => (
-          <g key={b.id} className={b.id === selected ? 'sel' : undefined} onClick={() => onSelect(b.id)} data-body={b.id}>
-            <title>{design.bodies.find((x) => x.id === b.id)?.name}</title>
-            {b.faces.map((f, k) => <polygon key={k} points={pts(f.points)} fill={shadeHex(color(b.id), f.shade)} />)}
-            <polygon points={pts(b.hull)} className="sphull" />
-          </g>
-        ))}
-        <g className="spbar" aria-hidden="true">
-          <line x1={8} y1={VH - 8} x2={8 + bar} y2={VH - 8} />
-          <text x={10 + bar} y={VH - 5}>0,25</text>
-        </g>
-      </svg>
+      <canvas ref={canvas} width={VW * RES} height={VH * RES} onClick={pick} role="img" aria-label={`Orthografische Ansicht ${frame.view.label}: rechts ${frame.view.axisRight}, oben ${frame.view.axisUp}. Sichtbar: ${visible.map((v) => v.name).join(', ') || 'nichts'}`} />
     </figure>
   );
 }

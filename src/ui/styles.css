@@ -360,14 +360,7 @@ button.danger { color: var(--block); }
 .spviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--s2); }
 .spview { margin: 0; display: grid; gap: 2px; min-width: 0; }
 .spview figcaption { font-size: 13px; overflow-wrap: anywhere; }
-.spview svg { width: 100%; height: auto; display: block; border: 1px solid var(--rule); border-radius: 6px; }
-.spview .spbg { fill: #f6f8fa; }
-.spview g[data-body] { cursor: pointer; }
-.spview polygon { stroke: #1d2733; stroke-width: 0.6; stroke-opacity: 0.5; stroke-linejoin: round; }
-.spview .sphull { fill: none; stroke-opacity: 0.9; stroke-width: 1; }
-.spview g.sel .sphull { stroke: var(--select); stroke-width: 3; stroke-opacity: 1; stroke-dasharray: 5 3; }
-.spbar line { stroke: var(--ink); stroke-width: 2; }
-.spbar text { font-size: 10px; fill: var(--ink); font-family: var(--font); }
+.spview canvas { width: 100%; height: auto; aspect-ratio: 240 / 170; display: block; border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; }
 .spbodies ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .spitem { width: 100%; text-align: left; display: flex; gap: var(--s2); align-items: center; background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 4px 6px; overflow-wrap: anywhere; }
 .spitem.sel { border: 2px solid var(--select); background: #eef3fb; font-weight: 700; }
