@@ -33,7 +33,6 @@ export function apiKeyProblem(apiKey: string | undefined): string | null {
  */
 export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): AnalysisProvider {
   const read = typeof env === 'function' ? env : () => env;
-  let client: { key: string; base: string; c: Anthropic } | null = null;
   return {
     id: 'anthropic',
     label: 'Anthropic Claude API',
@@ -42,8 +41,20 @@ export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): Ana
     async analyze(images: AnalysisImage[], notes: string): Promise<ProviderResult> {
       const { apiKey = '', baseURL } = read();
       const base = baseURL || DEFAULT_BASE_URL;
-      if (!client || client.key !== apiKey.trim() || client.base !== base) client = { key: apiKey.trim(), base, c: new Anthropic({ apiKey: apiKey.trim(), baseURL: base, maxRetries: 0, timeout: 180_000 }) };
-      const anthropic = client.c;
+      // Eigener Client je Aufruf: aktueller Schlüssel, und die Anfragekennung des Dienstes (Header request-id)
+      // lässt sich ohne Wettlauf zwischen parallelen Aufrufen festhalten. parse() liefert sie nicht mit.
+      let requestId: string | null = null;
+      const anthropic = new Anthropic({
+        apiKey: apiKey.trim(),
+        baseURL: base,
+        maxRetries: 0,
+        timeout: 180_000,
+        fetch: async (input: string | URL | Request, init?: RequestInit) => {
+          const res = await fetch(input, init);
+          requestId = res.headers.get('request-id');
+          return res;
+        },
+      });
       try {
         const response = await anthropic.beta.messages.parse({
           model: ANTHROPIC_MODEL,
@@ -66,7 +77,7 @@ export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): Ana
         if (response.stop_reason === 'refusal') throw new ProviderError('refusal', 'Der Analysedienst hat die Anfrage abgelehnt.');
         if (response.stop_reason === 'max_tokens') throw new ProviderError('truncated', 'Die Antwort wurde abgeschnitten (Ausgabelimit erreicht).');
         if (response.parsed_output == null) throw new ProviderError('unparseable', 'Die Antwort ließ sich nicht als strukturierte Interpretation lesen.');
-        return { raw: response.parsed_output, model: response.model, requestId: (response as { _request_id?: string | null })._request_id ?? null, stopReason: response.stop_reason };
+        return { raw: response.parsed_output, model: response.model, requestId, stopReason: response.stop_reason };
       } catch (e) {
         if (e instanceof ProviderError) throw e;
         if (e instanceof Anthropic.AuthenticationError) throw new ProviderError('auth_failed', 'Der API-Schlüssel wurde abgelehnt.', 401);

@@ -88,7 +88,12 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
 ## Stand der Prüfung
 
 - **Automatisierte Tests:** `tests/design.test.ts` deckt Uploads, Widersprüche, Versionen, Veralten, Bestätigung, Speichern/Wiederherstellen und die Endpunkt-Fehlerfälle ab. Die Tests nutzen nur die als synthetisch deklarierte Fixture `tests/fixtures/design/interpretation-synthetic.json` und einen ausdrücklich benannten Testanbieter. Eine Live-Analyse wird nicht vorgetäuscht. Der echte Anthropic-Anbieter wird nur gegen einen geschlossenen lokalen Port geprüft (Netzwerkfehler wird erkannt).
-- **Live-Analyse:** Sie wurde **noch nicht im echten Betrieb ausgeführt**, weil für das Projekt kein API-Schlüssel vorhanden war. Stand 2026-10-17 (Auftrag 05A.4): `.env.local` ist leer, `ANTHROPIC_API_KEY` ist weder in der Prozess-, Benutzer- noch Systemumgebung gesetzt.
+- **Live-Analyse (2026-10-17, ein einzelner autorisierter Aufruf):** Mit dem Konzeptbild „Atreides-Sandwächter“ (SHA-256 `0d7004fd…aef15`, Ansicht „unbekannt“) in einer getrennten Testablage (`?teststore=…`) über die Anthropic Claude API, Modell `claude-opus-5-5`. Ergebnis:
+  - Die Antwort wurde vom Schema angenommen, war widerspruchsfrei und wurde übernommen. Die Analysebindung trägt Prüfsumme, Ansicht und Anfragekennung.
+  - Die Inhalte passen zum Bild: Patrouillenschiff im Wüsten-Tarnschema, zwei Triebwerksgondeln, Geschützturm, Kanzel, Heckrampe, Adlerwappen, Begleitfigur sowie die Heckansicht im Einschub.
+  - Grundlagen: 25 Aussagen „beobachtet“, 6 „angenommen“. Alle verdeckten Bereiche und die Symmetrie sind als „angenommen“ markiert. Es gibt sechs offene Fragen, darunter Anzahl der Landebeine, Beweglichkeit und Zielgröße.
+  - Danach wurde ein vollständiger Test-Entwurf bestätigt. Die Anforderungen sind Testeingaben: 900–1100 Teile, Ausstellungsmodell, ein Merkmal.
+  - Dabei gefunden und behoben: Die Statuszeile übernahm den Live-Status erst nach dem Neuladen. Die Anfragekennung des Dienstes fehlte, weil `parse()` sie zur Laufzeit nicht mitliefert; sie wird jetzt aus dem Header `request-id` gelesen. Beide Korrekturen sind nach dem Live-Aufruf entstanden und nicht erneut live geprüft, um keinen zweiten kostenpflichtigen Aufruf auszulösen.
 - **Echter Bilddurchlauf (manueller Weg, 2026-10-16):** Mit dem Konzeptbild „Atreides-Sandwächter“ (PNG 1536 × 1024, SHA-256 `0d7004fd…aef15`) liefen im Browser:
   - Upload und Prüfung,
   - Abweisung einer als `.png` benannten GIF-Datei und eines abgeschnittenen PNG,

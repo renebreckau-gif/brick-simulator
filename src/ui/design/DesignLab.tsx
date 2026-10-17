@@ -213,6 +213,8 @@ export function DesignLab() {
       }
       const r = await fetch('/api/design/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: ticket.ticketId, images, notes: ticket.binding.notes }) });
       const body = await r.json().catch(() => null);
+      // Live-Status aus der tatsächlichen Dienstantwort übernehmen, damit die Statuszeile nicht veraltet
+      if (body?.liveCheck) setStatus((s) => (s && s !== 'none' ? { ...s, liveCheck: body.liveCheck } : s));
       // Antwort gegen den Stand zum Eintreffen prüfen, nicht gegen den Stand beim Absenden
       const current = briefRef.current!;
       if (!body) setMessage({ kind: 'error', text: `Analysedienst nicht erreichbar (HTTP ${r.status}). Im statischen Build gibt es keinen Analyse-Endpunkt.` });
