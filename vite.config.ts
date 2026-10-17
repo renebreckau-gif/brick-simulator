@@ -51,7 +51,7 @@ function dataFiles(): Plugin {
 export default defineConfig(({ mode }) => ({
   // loadEnv mit Präfix '' liest auch Nicht-VITE-Variablen (z. B. ANTHROPIC_API_KEY aus .env.local) –
   // nur für den Server-Endpunkt; an den Browser gehen weiterhin ausschließlich VITE_-Variablen.
-  plugins: [react(), dataFiles(), designAnalysisApi(loadEnv(mode, __dirname, ''))],
+  plugins: [react(), dataFiles(), designAnalysisApi(() => loadEnv(mode, __dirname, ''))],
   // Kein publicDir: data/ wird NICHT pauschal kopiert (enthält lokal ggf. private Dateien).
   publicDir: false,
   test: {

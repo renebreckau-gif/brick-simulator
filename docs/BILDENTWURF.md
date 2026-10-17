@@ -71,11 +71,13 @@ Einrichtung:
 
 1. Im Projektordner `.env.local` anlegen (nicht versioniert, Vorlage `.env.example`).
 2. `ANTHROPIC_API_KEY=…` eintragen; den Schlüssel gibt es in der Claude Console.
-3. Entwicklungsserver neu starten:
+3. Speichern. Ein Neustart ist nicht nötig: Der Server liest `.env.local` bei jedem Status- und Analyseaufruf neu. Läuft noch kein Server:
 
 ```bash
 npm.cmd run dev
 ```
+
+Der Wert steht ohne Anführungszeichen und ohne Leerzeichen hinter dem `=`. Leere Werte und Platzhalter wie `…`, `<dein-schluessel>` oder `xxx` meldet der Status als „nicht eingerichtet“.
 
 Der Schlüssel bleibt im lokalen Node-Server. Vite gibt nur `VITE_`-Variablen an den Browser, und der öffentliche Build wird auf Schlüssel und SDK-Spuren geprüft. `ANTHROPIC_BASE_URL` wird bewusst nicht übernommen; einen abweichenden Endpunkt nur über `BAUSTEIN_ANTHROPIC_BASE_URL` setzen.
 
@@ -86,7 +88,7 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
 ## Stand der Prüfung
 
 - **Automatisierte Tests:** `tests/design.test.ts` deckt Uploads, Widersprüche, Versionen, Veralten, Bestätigung, Speichern/Wiederherstellen und die Endpunkt-Fehlerfälle ab. Die Tests nutzen nur die als synthetisch deklarierte Fixture `tests/fixtures/design/interpretation-synthetic.json` und einen ausdrücklich benannten Testanbieter. Eine Live-Analyse wird nicht vorgetäuscht. Der echte Anthropic-Anbieter wird nur gegen einen geschlossenen lokalen Port geprüft (Netzwerkfehler wird erkannt).
-- **Live-Analyse:** Sie wurde **noch nicht im echten Betrieb ausgeführt**, weil für das Projekt kein API-Schlüssel vorhanden war.
+- **Live-Analyse:** Sie wurde **noch nicht im echten Betrieb ausgeführt**, weil für das Projekt kein API-Schlüssel vorhanden war. Stand 2026-10-17 (Auftrag 05A.4): `.env.local` ist leer, `ANTHROPIC_API_KEY` ist weder in der Prozess-, Benutzer- noch Systemumgebung gesetzt.
 - **Echter Bilddurchlauf (manueller Weg, 2026-10-16):** Mit dem Konzeptbild „Atreides-Sandwächter“ (PNG 1536 × 1024, SHA-256 `0d7004fd…aef15`) liefen im Browser:
   - Upload und Prüfung,
   - Abweisung einer als `.png` benannten GIF-Datei und eines abgeschnittenen PNG,
@@ -103,6 +105,13 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
 - **Feldfehler stehen am Feld:** `aria-invalid` mit `aria-describedby` auf die Meldung. Pflichtangaben (Teilezahl von/bis, wichtige Merkmale, Nutzung) sind mit * markiert und **nicht vorbelegt**.
 - **Bei Erfolg** erscheinen „Entwurfsauftrag bestätigt.“ und „Die Konstruktion eines Bausteinmodells ist noch nicht verfügbar. Es gibt daher noch keine Bauanleitung und keine Stückliste.“
 - **Prüfhilfe:** Im Entwicklungsserver wählt `?teststore=<name>` eine getrennte lokale Ablage. So berühren Browserprüfungen nie einen laufenden Nutzerentwurf. Im öffentlichen Build gibt es diesen Schalter nicht.
+
+## Konfiguriert ist nicht live geprüft (Auftrag 05A.4)
+
+- **Schlüsselform:** `apiKeyProblem` erkennt fehlende, leere und Platzhalter-Werte sowie Anführungszeichen und Leerzeichen. Eine plausible Form heißt nur „Schlüssel eingerichtet“.
+- **Live-Status:** `GET /api/design/status` liefert zusätzlich `liveCheck` (`unverified` / `ok` / `failed`, Zeitpunkt, Fehlercode, Modell). Den Status setzen nur tatsächliche Dienstantworten dieser Serversitzung (`nextLiveCheck`). Anfragen, die den Dienst nicht erreichen (nicht eingerichtet, ungültige Anfrage), ändern ihn nicht.
+- **Oberfläche:** Mit Schlüssel steht dort „Schlüssel eingerichtet; in dieser Serversitzung noch nicht live geprüft“, nach einem Aufruf „zuletzt erfolgreich live aufgerufen“ oder „letzter Live-Aufruf fehlgeschlagen (Code)“. Das frühere „einsatzbereit“ entfällt.
+- **Keine automatischen Wiederholungen:** Der Anbieter ruft die API mit `maxRetries: 0` auf. Ein fehlgeschlagener, möglicherweise kostenpflichtiger Aufruf wird nur auf ausdrückliche Nutzeraktion wiederholt.
 
 ## Import und Analysezuordnung (Korrekturauftrag 05A.1)
 

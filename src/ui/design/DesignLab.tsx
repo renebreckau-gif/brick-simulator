@@ -16,6 +16,17 @@ interface ServerStatus {
   problem: string | null;
   setup: string[];
   promptVersion: string;
+  liveCheck?: { status: 'unverified' | 'ok' | 'failed'; at: string | null; code: string | null; model: string | null };
+}
+
+/** „Konfiguriert“ und „live geprüft“ getrennt anzeigen – ein Schlüssel allein belegt keine funktionierende Analyse. */
+function liveText(s: ServerStatus): string {
+  const base = `Analysedienst: ${s.provider}, Modell ${s.model} – Schlüssel eingerichtet`;
+  const lc = s.liveCheck;
+  if (!lc || lc.status === 'unverified') return `${base}; in dieser Serversitzung noch nicht live geprüft (der erste Aufruf zeigt, ob er funktioniert).`;
+  const when = lc.at ? lc.at.slice(11, 16) : '';
+  if (lc.status === 'ok') return `${base}; zuletzt erfolgreich live aufgerufen (${when} UTC${lc.model ? `, ${lc.model}` : ''}).`;
+  return `${base}; letzter Live-Aufruf fehlgeschlagen (${lc.code ?? 'unbekannt'}, ${when} UTC).`;
 }
 
 const newId = () => `entwurf-${new Date().toISOString().slice(0, 10)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -369,7 +380,7 @@ export function DesignLab() {
           <button className="primary" disabled={!brief.images.length || busy || missing.length > 0} onClick={() => setConsent({ open: true, agreed: false, notes: consent.notes })}>Automatisch analysieren …</button>
           <button onClick={startManual} disabled={busy}>{interp ? 'Manuell neu beginnen' : 'Manuell beschreiben'}</button>
           <span className="small muted">
-            {status === null ? 'Prüfe Analysedienst …' : status === 'none' ? 'Kein lokaler Analyse-Endpunkt (z. B. statischer Build) – nur manueller Weg.' : status.configured ? `Analysedienst: ${status.provider}, Modell ${status.model} – einsatzbereit.` : `Analysedienst ${status.provider}: nicht eingerichtet (${status.problem}).`}
+            {status === null ? 'Prüfe Analysedienst …' : status === 'none' ? 'Kein lokaler Analyse-Endpunkt (z. B. statischer Build) – nur manueller Weg.' : !status.configured ? `Analysedienst ${status.provider}: nicht eingerichtet (${status.problem}).` : liveText(status)}
           </span>
         </div>
         {consent.open && (

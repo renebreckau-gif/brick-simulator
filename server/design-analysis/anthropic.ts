@@ -13,17 +13,39 @@ import { SYSTEM_PROMPT, userText } from './prompt';
 export const ANTHROPIC_MODEL = 'claude-opus-5-5';
 const DEFAULT_BASE_URL = 'https://api.anthropic.com';
 
-export function anthropicProvider(env: { apiKey?: string; baseURL?: string }): AnalysisProvider {
-  let client: Anthropic | null = null;
+export interface AnthropicEnv {
+  apiKey?: string;
+  baseURL?: string;
+}
+
+/** Prüft nur Vorhandensein und Form des Schlüssels – ob er funktioniert, zeigt erst ein echter Aufruf. */
+export function apiKeyProblem(apiKey: string | undefined): string | null {
+  const k = (apiKey ?? '').trim();
+  if (!k) return 'Kein API-Schlüssel konfiguriert (ANTHROPIC_API_KEY fehlt oder ist leer).';
+  if (/(…|\.\.\.|<|>|your|dein|xxx|placeholder|changeme|beispiel|example)/i.test(k)) return 'ANTHROPIC_API_KEY enthält einen Platzhalter statt eines echten Schlüssels.';
+  if (/\s|["']/.test(k)) return 'ANTHROPIC_API_KEY enthält Leerzeichen oder Anführungszeichen – bitte den Schlüssel ohne Zusätze eintragen.';
+  return null;
+}
+
+/**
+ * env wird bei jedem Aufruf neu gelesen: Ein in .env.local ergänzter Schlüssel gilt ohne Neustart.
+ * Automatische Wiederholungen sind abgeschaltet (maxRetries 0), damit kein Fehler unbemerkt kostenpflichtig wiederholt wird.
+ */
+export function anthropicProvider(env: AnthropicEnv | (() => AnthropicEnv)): AnalysisProvider {
+  const read = typeof env === 'function' ? env : () => env;
+  let client: { key: string; base: string; c: Anthropic } | null = null;
   return {
     id: 'anthropic',
     label: 'Anthropic Claude API',
     model: ANTHROPIC_MODEL,
-    configurationProblem: () => (env.apiKey ? null : 'Kein API-Schlüssel konfiguriert (ANTHROPIC_API_KEY fehlt auf dem lokalen Server).'),
+    configurationProblem: () => apiKeyProblem(read().apiKey),
     async analyze(images: AnalysisImage[], notes: string): Promise<ProviderResult> {
-      client ??= new Anthropic({ apiKey: env.apiKey, baseURL: env.baseURL || DEFAULT_BASE_URL, maxRetries: 2, timeout: 180_000 });
+      const { apiKey = '', baseURL } = read();
+      const base = baseURL || DEFAULT_BASE_URL;
+      if (!client || client.key !== apiKey.trim() || client.base !== base) client = { key: apiKey.trim(), base, c: new Anthropic({ apiKey: apiKey.trim(), baseURL: base, maxRetries: 0, timeout: 180_000 }) };
+      const anthropic = client.c;
       try {
-        const response = await client.beta.messages.parse({
+        const response = await anthropic.beta.messages.parse({
           model: ANTHROPIC_MODEL,
           max_tokens: 16000,
           // Bei einer Ablehnung durch Sicherheitsklassifikatoren übernimmt serverseitig ein Ersatzmodell.

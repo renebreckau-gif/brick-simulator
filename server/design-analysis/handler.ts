@@ -51,6 +51,27 @@ export const SETUP_HINTS = [
   'Ohne Schlüssel: „Manuell beschreiben“ verwenden.',
 ];
 
+/**
+ * „Konfiguriert“ heißt nur: ein Schlüssel ist eingetragen. Erst ein echter, erfolgreich beantworteter
+ * Aufruf belegt die Funktion. Dieser Status zählt nur tatsächliche Dienstaufrufe dieser Serversitzung.
+ */
+export interface LiveCheck {
+  status: 'unverified' | 'ok' | 'failed';
+  at: string | null;
+  code: string | null;
+  model: string | null;
+}
+export const LIVE_UNVERIFIED: LiveCheck = { status: 'unverified', at: null, code: null, model: null };
+
+export function nextLiveCheck(prev: LiveCheck, response: AnalyzeResponse, at = new Date().toISOString()): LiveCheck {
+  if (response.ok) return { status: 'ok', at, code: null, model: response.meta.model };
+  // Die Anfrage hat den Dienst nicht erreicht: kein Live-Beleg in die eine oder andere Richtung
+  if (response.code === 'not_configured' || response.code === 'invalid_request') return prev;
+  // Antwort kam an, war aber widersprüchlich: der Dienst funktioniert, die Antwort muss korrigiert werden
+  if (response.code === 'contradictory_response') return { status: 'ok', at, code: response.code, model: null };
+  return { status: 'failed', at, code: response.code, model: null };
+}
+
 export async function analyzeRequest(provider: AnalysisProvider, body: unknown, promptVersion: string): Promise<{ status: number; body: AnalyzeResponse }> {
   const raw = (body as { ticketId?: unknown } | null)?.ticketId;
   const ticketId = typeof raw === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(raw) ? raw : null;

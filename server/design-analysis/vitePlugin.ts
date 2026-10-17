@@ -4,8 +4,8 @@
 import type { IncomingMessage } from 'node:http';
 import type { Plugin } from 'vite';
 import { MAX_IMAGE_BYTES, MAX_IMAGES } from '../../src/core/design/images';
-import { anthropicProvider } from './anthropic';
-import { analyzeRequest, SETUP_HINTS, type AnalysisProvider } from './handler';
+import { anthropicProvider, type AnthropicEnv } from './anthropic';
+import { analyzeRequest, LIVE_UNVERIFIED, nextLiveCheck, SETUP_HINTS, type AnalysisProvider, type LiveCheck } from './handler';
 import { PROMPT_VERSION } from './prompt';
 
 const BODY_LIMIT = Math.ceil(MAX_IMAGES * MAX_IMAGE_BYTES * 1.4) + 64 * 1024;
@@ -32,8 +32,14 @@ function readJson(req: IncomingMessage): Promise<unknown> {
   });
 }
 
-export function designAnalysisApi(env: Record<string, string>, providerOverride?: AnalysisProvider): Plugin {
-  const provider = providerOverride ?? anthropicProvider({ apiKey: env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY, baseURL: env.BAUSTEIN_ANTHROPIC_BASE_URL });
+/** readEnv wird bei jedem Zugriff aufgerufen (z. B. loadEnv), damit Änderungen an .env.local ohne Neustart gelten. */
+export function designAnalysisApi(readEnv: () => Record<string, string>, providerOverride?: AnalysisProvider): Plugin {
+  const env = (): AnthropicEnv => {
+    const e = readEnv();
+    return { apiKey: e.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY, baseURL: e.BAUSTEIN_ANTHROPIC_BASE_URL };
+  };
+  const provider = providerOverride ?? anthropicProvider(env);
+  let live: LiveCheck = LIVE_UNVERIFIED;
   return {
     name: 'baustein-design-analysis',
     apply: 'serve',
@@ -49,7 +55,7 @@ export function designAnalysisApi(env: Record<string, string>, providerOverride?
         };
         if (url === '/api/design/status' && req.method === 'GET') {
           const problem = provider.configurationProblem();
-          return send(200, { provider: provider.label, providerId: provider.id, model: provider.model, configured: !problem, problem, setup: problem ? SETUP_HINTS : [], promptVersion: PROMPT_VERSION, maxImages: MAX_IMAGES, maxImageBytes: MAX_IMAGE_BYTES });
+          return send(200, { provider: provider.label, providerId: provider.id, model: provider.model, configured: !problem, problem, setup: problem ? SETUP_HINTS : [], liveCheck: live, promptVersion: PROMPT_VERSION, maxImages: MAX_IMAGES, maxImageBytes: MAX_IMAGE_BYTES });
         }
         if (url === '/api/design/analyze' && req.method === 'POST') {
           let body: unknown;
@@ -59,7 +65,8 @@ export function designAnalysisApi(env: Record<string, string>, providerOverride?
             return send(400, { ok: false, code: 'invalid_request', message: String((e as Error).message) });
           }
           const r = await analyzeRequest(provider, body, PROMPT_VERSION);
-          return send(r.status, r.body);
+          live = nextLiveCheck(live, r.body);
+          return send(r.status, { ...r.body, liveCheck: live });
         }
         send(404, { ok: false, code: 'invalid_request', message: 'Unbekannter Endpunkt' });
       });
