@@ -150,3 +150,14 @@ Regeln für die künftigen Stufen 1–3:
 - **Grundlage je Angabe:** aus Bild geschätzt, angenommen oder vom Nutzer. Es gibt kein „beobachtet“. Gekoppelte Spiegelbilder sind immer „angenommen“.
 - **Veralten statt Überschreiben, gebundene Antworten, Laden heißt prüfen:** wie A19, mit eigenem Ticket für räumliche Vorschläge.
 
+## A21 – Konstruktionsnachweis aus realen Teilen (Auftrag 05B.1)
+
+- **Formvorgabe als eigene Stufe** (`src/core/construct/shapeTarget.ts`, `baustein-sim/shape-target@1`): Breite und Oberkante je Reihe in Noppen bzw. Plattenhöhen, dazu die Kanzel. Jede Angabe trägt ihre Quelle (Ansicht, Verfahren). Widersprüche zwischen Ansichten werden festgehalten, nicht gemittelt.
+- **Vorlagenmessung als reine Funktion** (`templateTarget.ts`, `silhouette.ts`): Sie arbeitet auf RGBA-Pixeln und ist mit synthetischen Bildern testbar. Im Browser kommen die Pixel aus dem lokalen Entwurfsspeicher, der nur gelesen wird. Die Herkunft der Ansichtszuordnung wird mitgeführt (`viewAssignmentOrigin`).
+- **Bautechnik statt fester Modelle** (`bowTechnique.ts`): Varianten A und B bauen aus einer beliebigen Formvorgabe ein gewöhnliches `CanonicalModel` mit Baugruppen, Baufolge und `design`-Herkunft (Entscheidungen, Abweichungen). Validator, Stückliste und Anleitung bleiben unverändert.
+- **Belegung je Lage über eine Strategiesuche:**
+  - Verband per Union-Find über Noppenverbindungen aus den Teilemetadaten.
+  - Für die Grundplatte gibt es eine Vorschau auf die nächste Lage.
+  - Ob das Ergebnis trägt, entscheidet unabhängig der Validator.
+- **Exakte Formkörper** (`src/core/validation/solids.ts`): konvexe Prismen in den Teilemetadaten, Trennachsentest für Kollisionen und gefegte Körper für Steckwege. Für Quader bleibt der bisherige Weg.
+- **Vergleich aus derselben Geometrie** (`compare.ts`): Die Umrissprofile des Modells werden aus den LDraw-Dreiecken der verbauten Teile gerastert. Die sechs Renderings sind orthografische Ansichten derselben Instanzen, ausgerichtet wie die Vorlage (`ldrawScreenAxes`). Volumenkörper des räumlichen Entwurfs sind nur interne Planungshilfe und erscheinen nie als Modellansicht.

@@ -2,11 +2,11 @@
 import type { Catalog } from '../catalog/catalog';
 import { PART_META_VERSION } from '../connectivity/partMeta';
 import { CONNECTION_RULES, counterpartKinds, isImplementedKind, ruleFor, RULES_VERSION, type ConnectorKind } from '../connectivity/rules';
-import { boxesTouch, det, dist, orthonormalityError } from '../math';
+import { det, dist, orthonormalityError } from '../math';
 import type { CanonicalModel } from '../model/types';
 import { TOLERANCE } from '../units';
 import { affected, finding, type Finding } from './findings';
-import { allBoxes, pairKey, type World } from './world';
+import { instancesTouch, pairKey, type World } from './world';
 
 export function checkCatalog(model: CanonicalModel, catalog: Catalog): Finding[] {
   if (!catalog.available) return [catalogSourceFinding(model, catalog), ...checkSimulationSupport(model, catalog)];
@@ -201,7 +201,7 @@ export function checkUnsupportedConnectors(world: World): Finding[] {
     if (!used.length && !isUnsupportedPart) continue;
     const unsupportedConnectors = used.map((u) => u.c);
     const neighbors = isUnsupportedPart
-      ? list.filter((o) => o !== w && allBoxes(o).some((ob) => allBoxes(w).some((wb) => boxesTouch(wb.box, ob.box, TOLERANCE.contact)))).map((o) => o.inst.instanceId)
+      ? list.filter((o) => o !== w && instancesTouch(o, w, TOLERANCE.contact)).map((o) => o.inst.instanceId)
       : [...new Set(used.flatMap((u) => u.hits.map((h) => h.inst.instanceId)))].sort();
     out.push(finding({
       code: 'CON_UNSUPPORTED_FEATURE', layer: 'connection', dimension: 'assembly', status: 'unsupported', severity: 'warning', evidenceLevel: 'unchecked',

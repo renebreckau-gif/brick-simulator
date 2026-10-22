@@ -30,7 +30,15 @@ Bereich „Aus Bild entwerfen“ mit Upload und Inhaltsprüfung, Analyse über d
 
 Volumenmodell aus einfachen Körpern mit gemeinsamem Koordinatensystem. Dazu gehören eine 3D-Ansicht und sechs orthografische Ansichten aus derselben Geometrie, ein lokaler Vorschlag aus der Interpretation, ein optionaler Dienstvorschlag (nicht live geprüft) sowie Bearbeiten, Prüfen und Bestätigen der Form (siehe `RAUMENTWURF.md`).
 
-## Auftrag 05B – bestätigten Entwurf in echte Bausteine konstruieren (nächster Schritt)
+## Auftrag 05B.1 – erster Konstruktionsnachweis aus realen Steinen ✔
+
+Bug und Kanzel aus einer gemessenen Formvorgabe, zwei Bautechniken (Keilplatten, Schrägsteine) bei 6 und 8 Noppen Breite. Neue Formteile mit exakten Prismenkörpern, sechs Ansichten derselben Instanzen neben der Vorlage, Umrissvergleich, Anleitung und Stückliste über die vorhandene Kette (siehe `KONSTRUKTIONSNACHWEIS.md`). Nächste Schritte:
+
+- Mischtechnik: Keilplattenkontur als Rumpf, Schrägsteine als Deckprofil.
+- Weitere Abschnitte (Rumpf, Gondeln) und deren Verbindung.
+- Live-Ansichtserkennung im erweiterten Format; sie ist kostenpflichtig und braucht eine Freigabe.
+
+## Auftrag 05B – bestätigten Entwurf in echte Bausteine konstruieren (Fortsetzung)
 
 1. Konstrukteur, der einen bestätigten räumlichen Entwurf (samt Entwurfsauftrag) liest: Baugruppen, relative Größen, Farben, Prioritäten, Teilebudget und Höchstmaße. Er erzeugt ein `CanonicalModel` mit `design` aus `toDesignProvenance` und einer Baufolge.
 2. Abbildung der Proportionen auf das Noppenraster innerhalb der Höchstmaße; Farbabbildung auf belegte LDraw-/Katalogfarben. Jede Abweichung kommt nach `design.deviations`.

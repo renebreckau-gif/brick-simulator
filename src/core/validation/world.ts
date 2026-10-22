@@ -7,6 +7,7 @@ import { checkUpinGeometry } from '../connectivity/upin';
 import { apply, applyTransform, boxesPenetrate, det, dist, dot, isAxisAligned, orthonormalityError, transformBox, type Box, type Transform, type Vec3 } from '../math';
 import type { CanonicalModel, PartInstance } from '../model/types';
 import { STUD_HEIGHT, TOLERANCE } from '../units';
+import { penetrationDepth, solidFromBox, solidFromPrism, solidsTouch, type Solid } from './solids';
 
 export interface WorldConnector {
   instanceId: string;
@@ -26,6 +27,8 @@ export interface WorldInstance {
   meta: PartMeta | null;
   transform: Transform;
   bodyBoxes: Box[];
+  /** Alle Teilkörper als konvexe Körper (Quader und exakte Prismen, 05B.1). */
+  bodySolids: Solid[];
   studs: WorldStud[];
   connectors: WorldConnector[];
   /** Weltrichtung der Noppenachse (lokal −Y). */
@@ -86,6 +89,7 @@ export function buildWorldInstance(inst: PartInstance, catalog: Catalog): WorldI
     meta,
     transform,
     bodyBoxes: (meta?.bodyBoxes ?? []).map((b) => transformBox(transform, b)),
+    bodySolids: [...(meta?.bodyBoxes ?? []).map((b) => solidFromBox(transformBox(transform, b))), ...(meta?.bodyPrisms ?? []).map((p) => solidFromPrism(p, transform))],
     studs,
     connectors,
     upAxis: apply(inst.rotation, [0, -1, 0]),
@@ -235,11 +239,22 @@ export function computeOverlaps(world: World): Overlap[] {
         const d = [Math.min(x.max[0], y.max[0]) - Math.max(x.min[0], y.min[0]), Math.min(x.max[1], y.max[1]) - Math.max(x.min[1], y.min[1]), Math.min(x.max[2], y.max[2]) - Math.max(x.min[2], y.min[2])];
         depth = Math.max(depth, Math.min(...d));
       };
-      for (const ab of a.bodyBoxes) for (const bb of b.bodyBoxes) if (boxesPenetrate(ab, bb, TOLERANCE.penetration)) { rec('Körper↔Körper', ab, bb); partialAll = false; }
+      // Körper↔Körper: Quaderpaare wie bisher, sonst exakter Trennachsentest (Schrägen, Keilplatten)
+      const recDepth = (k: string, d: number) => { kinds.push(k); depth = Math.max(depth, d); };
+      for (const sa of a.bodySolids)
+        for (const sb of b.bodySolids) {
+          if (sa.isBox && sb.isBox) {
+            if (boxesPenetrate(sa.aabb, sb.aabb, TOLERANCE.penetration)) { rec('Körper↔Körper', sa.aabb, sb.aabb); partialAll = false; }
+            continue;
+          }
+          const d = penetrationDepth(sa, sb);
+          if (d > TOLERANCE.penetration) { recDepth('Körper↔Körper', d); partialAll = false; }
+        }
       for (const [x, y] of [[a, b], [b, a]] as const)
         for (const s of x.studs)
-          for (const yb of y.bodyBoxes) {
-            if (!boxesPenetrate(s.box, yb, TOLERANCE.penetration)) continue;
+          for (const ys of y.bodySolids) {
+            const yb = ys.aabb;
+            if (ys.isBox ? !boxesPenetrate(s.box, yb, TOLERANCE.penetration) : penetrationDepth(solidFromBox(s.box), ys) <= TOLERANCE.penetration) continue;
             if (world.studTarget.get(studKey(x.inst.instanceId, s.connector.def.id)) === y.inst.instanceId) continue;
             const pd = partialInsertionDepth(x, s, y);
             if (pd === null) partialAll = false;
@@ -271,7 +286,17 @@ export function computeOverlaps(world: World): Overlap[] {
   return out;
 }
 
-/** Alle Volumen einer Instanz (Körper + Noppen) mit Kennzeichnung. */
+/** Alle Volumen einer Instanz (Körper + Noppen) mit Kennzeichnung (Körper als umhüllende Quader). */
 export function allBoxes(w: WorldInstance): { box: Box; studId: string | null }[] {
-  return [...w.bodyBoxes.map((box) => ({ box, studId: null })), ...w.studs.map((s) => ({ box: s.box, studId: s.connector.def.id }))];
+  return [...w.bodySolids.map((s) => ({ box: s.aabb, studId: null })), ...w.studs.map((s) => ({ box: s.box, studId: s.connector.def.id }))];
+}
+
+/** Alle Volumen als konvexe Körper (exakt für Schrägen/Keilplatten). */
+export function allSolids(w: WorldInstance): { solid: Solid; studId: string | null }[] {
+  return [...w.bodySolids.map((solid) => ({ solid, studId: null })), ...w.studs.map((s) => ({ solid: solidFromBox(s.box), studId: s.connector.def.id }))];
+}
+
+/** Berühren sich zwei Instanzen (exakt für konvexe Körper)? */
+export function instancesTouch(a: WorldInstance, b: WorldInstance, tol: number): boolean {
+  return allSolids(a).some((x) => allSolids(b).some((y) => solidsTouch(x.solid, y.solid, tol)));
 }

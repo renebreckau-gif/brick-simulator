@@ -190,6 +190,46 @@ export class InstructionRenderer {
     return url;
   }
 
+  /**
+   * Ganzes Modell orthografisch entlang vorgegebener Bildschirmachsen (LDraw-System: rechts, unten, zum
+   * Betrachter), ohne Hervorhebung – für den Vergleich mit Ansichten einer Vorlage in deren Ausrichtung.
+   */
+  axisShot(axes: { right: Vec3; down: Vec3; toCamera: Vec3 }, width: number, height: number): string {
+    const box = new THREE.Box3();
+    for (const obj of this.objs.values()) {
+      obj.group.visible = true;
+      box.union(obj.box);
+      if (!obj.mat || !obj.lines) continue;
+      obj.mat.emissive.set('#000000');
+      obj.mat.emissiveIntensity = 0;
+      obj.lines.opacity = 0.45;
+    }
+    const center = box.getCenter(new THREE.Vector3());
+    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 20000);
+    cam.up.copy(toThree(axes.down).multiplyScalar(-1));
+    cam.position.copy(center).add(toThree(axes.toCamera).normalize().multiplyScalar(4000));
+    cam.lookAt(center);
+    cam.updateMatrixWorld(true);
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+      const v = new THREE.Vector3(x, y, z).applyMatrix4(cam.matrixWorldInverse);
+      minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+    }
+    let w = (maxX - minX) * 1.1;
+    let h = (maxY - minY) * 1.1;
+    if (w / h < width / height) w = (h * width) / height;
+    else h = (w * height) / width;
+    cam.left = (minX + maxX) / 2 - w / 2;
+    cam.right = (minX + maxX) / 2 + w / 2;
+    cam.top = (minY + maxY) / 2 + h / 2;
+    cam.bottom = (minY + maxY) / 2 - h / 2;
+    cam.updateProjectionMatrix();
+    const gl = this.renderer();
+    gl.setSize(width, height, false);
+    gl.render(this.scene, cam);
+    return gl.domElement.toDataURL('image/png');
+  }
+
   /** Orthografische Kamera, eingepasst auf den Bildausschnitt (alle Ecken der Rahmenbox sichtbar). */
   private camera(id: CameraId, frame: Box, aspect: number, fitIds?: string[]): THREE.OrthographicCamera {
     const fc: THREE.Vector3[] = [];

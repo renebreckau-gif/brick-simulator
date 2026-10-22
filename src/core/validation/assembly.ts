@@ -17,9 +17,11 @@ import { TOLERANCE } from '../units';
 import { components } from './checkGraphCollision';
 import { affected, finding, type Finding } from './findings';
 import { analyzeStability } from './stability';
+import { penetrationDepth, solidFromBox, sweepSolid, type Solid } from './solids';
 import { pairKey, studKey, type Connection, type World } from './world';
 
-export const ASSEMBLY_RULES_VERSION = 'assembly-rules@1.0.0';
+// 1.1.0: Steckwege mit gefegten Prismenkörpern (exakt für Schrägen und Keile, Auftrag 05B.1)
+export const ASSEMBLY_RULES_VERSION = 'assembly-rules@1.1.0';
 const AXES: Vec3[] = [[0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]];
 
 export interface UnitResult {
@@ -63,6 +65,9 @@ function sweep(box: Box, d: Vec3): Box {
   }
   return { min, max };
 }
+
+/** Länge des gedachten Montagewegs für exakte Körper (LDU; „aus großer Entfernung“). */
+const SWEEP_LENGTH = 100000;
 
 function sameDir(a: Vec3, b: Vec3) {
   return dot(a, b) > 0.999;
@@ -111,12 +116,12 @@ export function analyzeAssembly(model: CanonicalModel, world: World): AssemblyAn
     world.connections.filter((c) => (unit.has(c.male.instanceId) && existing.has(c.female.instanceId)) || (unit.has(c.female.instanceId) && existing.has(c.male.instanceId)));
 
   const boxesOf = (ids: Iterable<string>) => {
-    const out: { id: string; box: Box; studId: string | null }[] = [];
+    const out: { id: string; box: Box; solid: Solid; studId: string | null }[] = [];
     for (const id of ids) {
       const w = world.instances.get(id);
       if (!w) continue;
-      for (const b of w.bodyBoxes) out.push({ id, box: b, studId: null });
-      for (const s of w.studs) out.push({ id, box: s.box, studId: s.connector.def.id });
+      for (const s of w.bodySolids) out.push({ id, box: s.aabb, solid: s, studId: null });
+      for (const s of w.studs) out.push({ id, box: s.box, solid: solidFromBox(s.box), studId: s.connector.def.id });
     }
     return out;
   };
@@ -132,9 +137,15 @@ export function analyzeAssembly(model: CanonicalModel, world: World): AssemblyAn
     const eb = boxesOf(existing);
     for (const u of ub) {
       const swept = sweep(u.box, d);
+      // exakter Montageweg nur, wenn ein Schräg-/Keilkörper beteiligt ist (sonst gilt der Quadertest exakt)
+      let sweptSolid: Solid | null = null;
       for (const e of eb) {
         if (uncheckedPairs.has(pairKey(u.id, e.id))) continue; // eigener Befund „ungeprüft“
         if (!boxesPenetrate(swept, e.box, TOLERANCE.penetration)) continue;
+        if (!(u.solid.isBox && e.solid.isBox)) {
+          sweptSolid ??= sweepSolid(u.solid, d, SWEEP_LENGTH);
+          if (penetrationDepth(sweptSolid, e.solid) <= TOLERANCE.penetration) continue;
+        }
         // Erlaubt: Noppe des Bestands, die regulär in die Einheit greift (und umgekehrt)
         if (e.studId && unit.has(world.studTarget.get(studKey(e.id, e.studId)) ?? '')) continue;
         if (u.studId && existing.has(world.studTarget.get(studKey(u.id, u.studId)) ?? '')) continue;
@@ -203,7 +214,7 @@ export function analyzeAssembly(model: CanonicalModel, world: World): AssemblyAn
 
   const placeUnit = (step: StepDef, unitId: string, kind: 'part' | 'module', ids: string[], existing: Set<string>): UnitResult => {
     const r = placeUnitRaw(step, unitId, kind, ids, existing);
-    const noVolume = ids.some((id) => !world.instances.get(id)?.bodyBoxes.length);
+    const noVolume = ids.some((id) => !world.instances.get(id)?.bodySolids.length);
     if (r.status === 'ok' && (r.uncheckedWith.length || noVolume)) r.status = 'unchecked';
     return r;
   };

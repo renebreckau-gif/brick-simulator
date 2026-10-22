@@ -276,12 +276,13 @@ export function SpatialLab({ brief, urls, service, onLiveCheck }: Props) {
   const stale = design && design.status.state === 'stale';
   const counts = design ? design.bodies.reduce((a, b) => { for (const v of Object.values(b.basis)) a[v] = (a[v] ?? 0) + 1; return a; }, {} as Record<SpatialBasis, number>) : null;
 
-  if (!loaded) return <section className="dsec"><h3>5. Räumlicher Entwurf</h3><p>Lade räumlichen Entwurf …</p></section>;
+  if (!loaded) return <section className="dsec"><h3>5. Räumlicher Entwurf – Planungshilfe (intern)</h3><p>Lade räumlichen Entwurf …</p></section>;
 
   return (
     <section className="dsec spatial" aria-label="Räumlicher Entwurf" id="d-spatial" tabIndex={-1} onKeyDown={onKey}>
-      <h3>5. Räumlicher Entwurf</h3>
+      <h3>5. Räumlicher Entwurf – Planungshilfe (intern)</h3>
       <p className="splabel" role="note"><strong>{SPATIAL_LABEL}</strong></p>
+      <p className="small">Die Volumenkörper sind nur eine interne Planungshilfe, kein Baumodell. Modelle aus realen Teilen zeigt der Bereich „Konstruktionsnachweis“.</p>
 
       {pre ? (
         <div className="dnext"><p><strong>Noch nicht möglich.</strong> {pre}</p><p className="small">Der räumliche Entwurf beruht auf einer gültigen, an die aktuellen Bilder gebundenen Interpretation (Abschnitt 2).</p></div>

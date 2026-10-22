@@ -123,7 +123,18 @@ Nach Korrekturen und Anforderungen (Teilezahl, Höchstmaße, wichtigste Merkmale
 
 Automatische Analyse einrichten: `.env.local` mit `ANTHROPIC_API_KEY=…` anlegen (Vorlage `.env.example`). Der Server liest die Datei bei jedem Aufruf neu. Details, Grenzen und Prüfstand: [docs/BILDENTWURF.md](docs/BILDENTWURF.md).
 
-Abschnitt 5 erzeugt aus einer gültigen Interpretation einen **räumlichen Entwurf**: einfache Körper in einem Koordinatensystem mit gleichem Maßstab auf allen Achsen. Er erscheint in einer frei drehbaren 3D-Ansicht und in sechs orthografischen Ansichten, alle aus derselben Geometrie. Der Entwurf ist bearbeitbar und bestätigbar, enthält aber noch keine Steine, und die Baubarkeit ist ungeprüft. Siehe [docs/RAUMENTWURF.md](docs/RAUMENTWURF.md).
+Abschnitt 5 erzeugt aus einer gültigen Interpretation einen **räumlichen Entwurf**: einfache Körper in einem Koordinatensystem mit gleichem Maßstab auf allen Achsen. Er erscheint in einer frei drehbaren 3D-Ansicht und in sechs orthografischen Ansichten, alle aus derselben Geometrie. Der Entwurf ist bearbeitbar und bestätigbar, enthält aber keine Steine, und die Baubarkeit ist ungeprüft. Er ist nur eine interne Planungshilfe; Modelle aus realen Teilen zeigt der Bereich „Konstruktionsnachweis“. Siehe [docs/RAUMENTWURF.md](docs/RAUMENTWURF.md).
+
+## Konstruktionsnachweis
+
+Der vierte Bereich baut **Bug und Kanzel aus realen Teilen**. Die Formvorgabe stammt entweder aus der Vorlage im lokalen Entwurf (nur gelesen; die Kanzel-Baugruppe wählen Sie) oder aus einer ausdrücklich synthetischen Testform.
+
+- **Varianten:** A – Platten mit Keilplattenkontur, B – Steinlagen mit Schrägsteinprofil; jeweils 6 oder 8 Noppen breit.
+- **Hauptansicht:** ausschließlich das Teilemodell aus LDraw-Geometrie, geprüft mit dem regulären Validator.
+- **„Sechs Ansichten & Vorlage“:** dieselben Instanzen in der Ausrichtung der Vorlage neben dem passenden Ausschnitt, mit Umrissvergleich.
+- **Weiter:** Bauanleitung und Stückliste wie bei jedem Modell; Katalogexistenz, Teil-Farb-Beleg und Kaufverfügbarkeit getrennt ausgewiesen.
+
+Details, Variantenvergleich und Grenzen: [docs/KONSTRUKTIONSNACHWEIS.md](docs/KONSTRUKTIONSNACHWEIS.md).
 
 ## Bauanleitung
 
@@ -148,6 +159,7 @@ src/core/          UI-unabhängiger Kern
   data/            Laden aller Daten über eine austauschbare Lesefunktion
 src/fixtures/      Grenzfälle und Fehlervarianten (synthetisch, gekennzeichnet)
 src/core/design/   Bildvorlage, Interpretation, Entwurfsauftrag (versioniert, ohne Teilinstanzen)
+src/core/construct/ Formvorgabe, Vorlagenmessung, Bautechniken, Vergleich mit der Vorlage (05B.1)
 src/core/instructions/ Anleitungsplan (abgeleitet, versioniert, mit Modellbezug)
 src/generator/     Raumschiff-Generator (deterministisch, versioniert)
 src/ui/instructions/ Bauanleitung: Rendering, Bildschirm-/Druckansicht, PDF (jsPDF)
@@ -172,6 +184,7 @@ docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüf
 - [Bauanleitung: Anleitungsplan, Ansichten, PDF, Grenzen](docs/BAUANLEITUNG.md)
 - [Aus Bild entwerfen: Interpretation, Entwurfsauftrag, Analyse einrichten](docs/BILDENTWURF.md)
 - [Räumlicher Entwurf: Volumenmodell, sechs Ansichten, Prüfung](docs/RAUMENTWURF.md)
+- [Konstruktionsnachweis: Bug und Kanzel aus realen Teilen, Variantenvergleich](docs/KONSTRUKTIONSNACHWEIS.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Namensnennung

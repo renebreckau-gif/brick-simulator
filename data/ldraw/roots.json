@@ -1,11 +1,44 @@
 {
-  "comment": "Wurzelteile, deren Geometrie benötigt wird (unterstützte, teilunterstützte und in Referenzen vorkommende nicht unterstützte Teile).",
+  "comment": "Wurzelteile, deren Geometrie benötigt wird (unterstützte, teilunterstützte, in Referenzen vorkommende nicht unterstützte Teile und die im Konstruktionsnachweis 05B.1 verbauten Teile).",
   "parts": [
-    "3001.dat", "3002.dat", "3003.dat", "3004.dat", "3005.dat", "3009.dat", "3010.dat", "2456.dat",
-    "3023.dat", "3024.dat", "3032.dat", "3030.dat",
-    "3069b.dat", "3070b.dat", "6636.dat", "4162.dat", "4162p0b.dat",
+    "3001.dat",
+    "3002.dat",
+    "3003.dat",
+    "3004.dat",
+    "3005.dat",
+    "3009.dat",
+    "3010.dat",
+    "2456.dat",
+    "3023.dat",
+    "3024.dat",
+    "3032.dat",
+    "3030.dat",
+    "3069b.dat",
+    "3070b.dat",
+    "6636.dat",
+    "4162.dat",
+    "4162p0b.dat",
     "3794a.dat",
-    "6541.dat", "2458.dat", "59900.dat", "30374.dat"
+    "6541.dat",
+    "2458.dat",
+    "59900.dat",
+    "30374.dat",
+    "3039.dat",
+    "3298.dat",
+    "4286.dat",
+    "41769a.dat",
+    "41770a.dat",
+    "43722a.dat",
+    "43723a.dat",
+    "3020.dat",
+    "3021.dat",
+    "3022.dat",
+    "3710.dat",
+    "3666.dat",
+    "3795.dat"
   ],
-  "extra": ["LDConfig.ldr", "CAreadme.txt"]
+  "extra": [
+    "LDConfig.ldr",
+    "CAreadme.txt"
+  ]
 }

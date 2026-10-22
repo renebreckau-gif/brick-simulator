@@ -3,7 +3,8 @@
 // bzw. „nicht unterstützt“ – niemals „bestanden“ und nie automatisch „nicht baubar“.
 import type { ModelRef } from '../model/types';
 
-export const VALIDATOR_VERSION = 'validator@0.2.0';
+// 0.3.0: Kollision mit exakten konvexen Prismen (Schrägen, Keile) per Trennachsentest (Auftrag 05B.1)
+export const VALIDATOR_VERSION = 'validator@0.3.0';
 
 export type Layer =
   | 'catalog'

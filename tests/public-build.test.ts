@@ -36,7 +36,7 @@ describe('Positivliste veröffentlichbarer Daten', () => {
   it('enthält LDraw-Geometrie mit Lizenz/Herkunft, Referenzen und eigene Daten – aber keine privaten Dateien', () => {
     const list = listPublicDataFiles(DATA);
     expect(list).toEqual(expect.arrayContaining(['ldraw/CAreadme.txt', 'ldraw/manifest.json', 'ldraw/LDConfig.ldr', 'catalog/id-map.json', 'references/references.json', 'references/omr/40013-1.mpd']));
-    expect(list.filter((f) => f.endsWith('.dat'))).toHaveLength(79);
+    expect(list.filter((f) => f.endsWith('.dat'))).toHaveLength(149);
     for (const p of PRIVATE_DEV_FILES) expect(list).not.toContain(p);
     expect(list.some((f) => /rebrickable-extract|data-raw|\.csv/.test(f))).toBe(false);
   });

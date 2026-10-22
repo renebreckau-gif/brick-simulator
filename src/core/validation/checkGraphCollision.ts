@@ -1,10 +1,10 @@
 // Schichten „Verbindungsgraph“ und „Kollision“.
 import { RULES_VERSION } from '../connectivity/rules';
-import { boxesTouch, dot } from '../math';
+import { dot } from '../math';
 import type { CanonicalModel } from '../model/types';
 import { STUD_HEIGHT, TOLERANCE } from '../units';
 import { affected, finding, type Finding } from './findings';
-import { allBoxes, pairKey, type World, type WorldInstance } from './world';
+import { instancesTouch, pairKey, type World, type WorldInstance } from './world';
 
 export class UnionFind {
   private parent = new Map<string, string>();
@@ -45,7 +45,7 @@ export function components(world: World, subset?: Set<string>): string[][] {
 }
 
 function touching(a: WorldInstance, b: WorldInstance): boolean {
-  return allBoxes(a).some((x) => allBoxes(b).some((y) => boxesTouch(x.box, y.box, TOLERANCE.contact)));
+  return instancesTouch(a, b, TOLERANCE.contact);
 }
 
 function isUnsupportedish(w: WorldInstance): boolean {
@@ -104,7 +104,7 @@ export function checkGraph(model: CanonicalModel, world: World): Finding[] {
       for (const b of others) if (touching(a, b)) contacts.push({ a, b });
     }
     // Teile ohne Volumen/Regeln (außerhalb des Umfangs) können keinen Kontakt zeigen → ungeprüft statt lose
-    const unknownGeometry = comp.filter((id) => !world.instances.get(id)!.meta || world.instances.get(id)!.bodyBoxes.length === 0);
+    const unknownGeometry = comp.filter((id) => !world.instances.get(id)!.meta || world.instances.get(id)!.bodySolids.length === 0);
     if (unknownGeometry.length) {
       out.push(finding({
         code: 'GRAPH_UNKNOWN_LINK', layer: 'graph', dimension: 'assembly', status: 'unchecked', severity: 'warning', evidenceLevel: 'unchecked',

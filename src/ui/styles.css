@@ -392,3 +392,26 @@ button.danger { color: var(--block); }
 .vcontra ul { margin: 0; padding-left: 1.2em; }
 .vcontra .err { color: var(--block); }
 .doverlay rect.viewframe { stroke: var(--select); stroke-width: 3; stroke-dasharray: 8 4; fill: none; }
+
+/* Konstruktionsnachweis (05B.1) */
+.construct details { margin: var(--s2) 0; font-size: 13px; }
+.construct details summary { cursor: pointer; color: var(--ink-2); }
+.construct details ul { margin: var(--s1) 0 0; padding-left: var(--s4); }
+.sixviews { padding: var(--s3) var(--s4); }
+.sixgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: var(--s4); }
+.sixcell { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: var(--s3); }
+.sixcell figcaption { font-size: 13px; margin-bottom: var(--s2); }
+.sixpair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); align-items: start; }
+.sixpair img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); background: #fff; }
+.sixpair img.dim { opacity: 0.55; }
+.sixtag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); margin-bottom: 2px; }
+.sixcmp { display: grid; grid-template-columns: 300px 1fr; gap: var(--s3); align-items: center; margin-top: var(--s2); }
+.profileplot { width: 100%; max-width: 300px; height: auto; background: #f6f8fa; border: 1px solid var(--rule); }
+.profileplot .pm { fill: #8a96a6; fill-opacity: 0.55; stroke: none; }
+.profileplot .pt { fill: none; stroke: var(--block); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.profileplot .pl { font-size: 10px; fill: var(--ink-2); }
+@media (max-width: 700px) { .sixgrid { grid-template-columns: 1fr; } .sixcmp { grid-template-columns: 1fr; } }.construct .shipfacts { grid-template-columns: 1fr; gap: 0; }
+.construct .shipfacts dt { margin-top: var(--s2); font-weight: 600; color: var(--ink-2); }
+.construct .shipfacts dd { overflow-wrap: anywhere; }
+.construct .navitem { white-space: normal; text-align: left; }
+.construct label.wide select { max-width: 100%; }.viewer.placeholder { display: grid; place-items: center; padding: var(--s5); text-align: center; }

@@ -63,7 +63,8 @@ export function signedMargin(p: [number, number], hull: [number, number][]): num
 export function analyzeStability(instances: WorldInstance[]): StabilityResult | null {
   const boxes: { box: Box; id: string; body: boolean }[] = [];
   for (const w of instances) {
-    for (const b of w.bodyBoxes) boxes.push({ box: b, id: w.inst.instanceId, body: true });
+    // Massenersatz: umhüllender Quader je Körper (bei Schräg-/Keilteilen etwas zu groß – heuristisch, s. Einschränkungen)
+    for (const s of w.bodySolids) boxes.push({ box: s.aabb, id: w.inst.instanceId, body: true });
     for (const s of w.studs) boxes.push({ box: s.box, id: w.inst.instanceId, body: false });
   }
   if (!boxes.length) return null;

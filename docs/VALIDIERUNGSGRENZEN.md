@@ -4,7 +4,7 @@ Was der Prüfkern in Phase 1 kann, was er vereinfacht und wo er irren kann.
 
 ## Unterstützter Umfang
 
-- **Teile**: 18 voll unterstützt (3001, 3002, 3003, 3004, 3005, 3009, 3010, 2456, 3023, 3024, 3030, 3032, 3069b, 3070b, 4162, 4162p0b, 6636, 3794a), 2 teilweise (6541, 2458), 2 nur mit grober Hülle (59900, 30374). Alles andere hat Simulation „none“.
+- **Teile**: 18 voll unterstützt (3001, 3002, 3003, 3004, 3005, 3009, 3010, 2456, 3023, 3024, 3030, 3032, 3069b, 3070b, 4162, 4162p0b, 6636, 3794a), 2 teilweise (6541, 2458), 2 nur mit grober Hülle (59900, 30374). Seit 05B.1 zusätzlich Platten 3020, 3021, 3022, 3710, 3666, 3795 sowie Schrägsteine 3039, 3298, 4286 und Keilplatten 41769a, 41770a, 43722a, 43723a mit exaktem Prismenkörper. Alles andere hat Simulation „none“.
 - **Verbindungen**: Noppe ↔ Aufnahme und Noppe ↔ Röhre, gerade und achsparallel. Teile müssen in 90°-Schritten ausgerichtet sein.
 - **Sonderverbindung (seit 02B)**: Unterseitenstift in Hohlnoppe, **nur 3004 auf 6541** (Regel R-UPIN-HOLLOWSTUD, siehe unten).
 - **Erfasst, aber nicht implementiert** (ergibt „ungeprüft“ bzw. „nicht unterstützt“):
@@ -18,7 +18,7 @@ Was der Prüfkern in Phase 1 kann, was er vereinfacht und wo er irren kann.
 
 ## Vereinfachungen (konservativ)
 
-- **Kollision**: Körper als achsparallele Quader, Noppen als Quader 12 × 12 × 4 LDU. Der Quader ist etwas größer als der Zylinder, die Prüfung also eher strenger. Hohlräume sind nur als Noppenaufnahmen modelliert: Ein Teil, das in den Hohlraum eines anderen ragt (außer über Noppen), gilt als Durchdringung. Seitlich überstehende Pins (2458) sind nicht im Volumen enthalten.
+- **Kollision**: Körper als achsparallele Quader (Schrägsteine und Keilplatten seit 05B.1 als exakte konvexe Prismen, Trennachsentest), Noppen als Quader 12 × 12 × 4 LDU. Der Quader ist etwas größer als der Zylinder, die Prüfung also eher strenger. Hohlräume sind nur als Noppenaufnahmen modelliert: Ein Teil, das in den Hohlraum eines anderen ragt (außer über Noppen), gilt als Durchdringung. Seitlich überstehende Pins (2458) sind nicht im Volumen enthalten.
 - **Montage**:
   - nur gerade Bewegung entlang der Noppenachse
   - kein Fingerzugang, keine Steckkraft, keine Toleranzen
@@ -132,3 +132,19 @@ Die Werte stehen versioniert in `part-meta@1.1.0` und werden in `tests/upin-geom
 **Falsche Einstecktiefe.** Steht eine Noppe koaxial unter ihrer Aufnahme, ist aber nur teilweise eingesteckt, meldet der Prüfkern seit 02B „falsche Einstecktiefe“ (`COL_PARTIAL_INSERTION`, Blocker) statt einer allgemeinen Durchdringung. Das gilt auch für reguläre Noppen. Zu tiefe Teile bleiben Durchdringungen.
 
 **Nicht durchgeführt.** Kein physischer Probebau, keine Kraftmessung. Ein Probebau bleibt offener Validierungsschritt (Protokolle in `PHYSISCHE-PRUEFPROTOKOLLE.md`).
+
+## Konstruktionsnachweis (seit Auftrag 05B.1)
+
+- **Formvorgabe aus einer Vorlage:**
+  - Sie ist eine Messung der Zeichnung (Umriss gegen hellen Hintergrund) und beschreibt nur einen Abschnitt (Bug und Kanzel).
+  - Verdeckte Flächen sind Annahmen, etwa die Rumpfoberkante unter der Kanzel.
+  - Andere Vorlagen können falsch gemessen werden; geprüft wurde die Messung an einer Vorlage.
+- **„Umrissüberdeckung“:** ein grober Hinweis (normierte Profile, 60 Stützstellen), kein Gültigkeitsnachweis.
+- **Formteile, konservativ modelliert:**
+  - Unter einer teilweise überdeckten Keilplattenzelle wird keine Aufnahme gezählt.
+  - Die Röhren der Schrägsteine sind kein Anschluss.
+  - Schräg aufgesetzte Teile, gekrümmte Teile und seitliche Noppen sind nicht unterstützt.
+- **Ohne Katalogauszug:** Neue Teile sind ohne Katalogauszug „ungeprüft“; auch mit Auszug fehlen sie darin, also „nicht belegt“. Keine Farbe eines neuen Teils gilt als real bestätigt, insbesondere nicht 3039 in Trans Brown (LDraw 40).
+- **Nicht physisch erprobt:**
+  - Halt der Plattenstapel, Klemmung der Schrägsteine, Steifigkeit der Spitze.
+  - Strukturbefunde (z. B. durchgehende Fugen) sind Heuristiken.

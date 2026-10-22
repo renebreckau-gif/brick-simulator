@@ -5,13 +5,14 @@
 // (tests/part-meta-crosscheck.test.ts: Körper ↔ Begrenzungsbox, Noppen ↔ stud*.dat,
 // Röhren ↔ stud4.dat). LDraw selbst enthält KEINE Anschlussdaten.
 import type { Box, Vec3 } from '../math';
+import { prismContains, type Prism } from '../validation/solids';
 import { BRICK_HEIGHT, LDU_PER_STUD, PLATE_HEIGHT, STUD_DIAMETER, STUD_HEIGHT } from '../units';
 import type { ConnectorKind } from './rules';
 
-export const PART_META_VERSION = 'part-meta@1.1.0';
+export const PART_META_VERSION = 'part-meta@1.2.0';
 
 export type SupportLevel = 'supported' | 'partial' | 'unsupported';
-export type PartFamily = 'brick' | 'plate' | 'tile' | 'jumper' | 'technic_brick' | 'special_brick' | 'cone' | 'bar';
+export type PartFamily = 'brick' | 'plate' | 'tile' | 'jumper' | 'technic_brick' | 'special_brick' | 'cone' | 'bar' | 'slope' | 'wedge_plate';
 
 export interface ConnectorDef {
   id: string;
@@ -49,8 +50,15 @@ export interface PartMeta {
   family: PartFamily;
   support: SupportLevel;
   size?: { studsX: number; studsZ: number; height: number };
-  /** Massive Körpervolumen (ohne Noppen). */
+  /** Massive Körpervolumen (ohne Noppen), achsparallel. */
   bodyBoxes: Box[];
+  /**
+   * Exakte konvexe Körper (05B.1) für Teile, die keine Quader sind (Schrägsteine, Keilplatten). Sind sie
+   * gesetzt, prüft die Kollision mit ihnen statt mit Quadern; bodyBoxes bleibt dann leer.
+   */
+  bodyPrisms?: Prism[];
+  /** Formangaben für die Teileauswahl der Konstruktion (05B.1); aus der LDraw-Geometrie abgelesen. */
+  shape?: ShapeInfo;
   connectors: ConnectorDef[];
   /** Merkmale, deren Regeln nicht implementiert sind (sichtbar als „nicht unterstützt“). */
   unsupportedFeatures: string[];
@@ -62,6 +70,15 @@ export interface PartMeta {
     note: string;
   };
 }
+
+/**
+ * Formangaben für die Konstruktion. Lokales LDraw-System: Noppen oben (−y), Schräge fällt nach −z ab.
+ * slope: flatRows Noppenreihen oben flach (mit Noppen), dann Gefälle über slopeRows Reihen bis zur Kante (lipLDU).
+ * wedge: Plattenkeil, eine Längskante gerade, die andere läuft zur −z-Spitze hin zu (Breite an der Spitze tipLDU).
+ */
+export type ShapeInfo =
+  | { kind: 'slope'; angleDeg: number; flatRows: number; slopeRows: number; lipLDU: number; descendsTo: '-z' }
+  | { kind: 'wedge'; taperSide: '-x' | '+x'; narrowEnd: '-z'; wideLDU: number; tipLDU: number; lengthLDU: number };
 
 const UP: Vec3 = [0, -1, 0];
 const DOWN: Vec3 = [0, 1, 0];
@@ -133,6 +150,60 @@ function withGeometry(meta: PartMeta, kind: ConnectorKind, geometry: ConnectorGe
 const B = BRICK_HEIGHT;
 const P = PLATE_HEIGHT;
 
+/** Unterseiten-Aufnahmen: Rasterpunkte, an denen ein Noppenkreis (r = 6 LDU) vollständig unter dem Körper liegt. */
+function antistudsInside(prisms: Prism[], points: [number, number][], height: number): [number, number][] {
+  const r = STUD_DIAMETER / 2;
+  const inside = (x: number, z: number) => prisms.some((pr) => prismContains(pr, [x, height - 0.01, z], 1e-6));
+  return points.filter(([x, z]) => [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r], [r * 0.7071, r * 0.7071], [-r * 0.7071, r * 0.7071], [r * 0.7071, -r * 0.7071], [-r * 0.7071, -r * 0.7071]].every(([dx, dz]) => inside(x + dx, z + dz)));
+}
+
+interface ShapedSpec {
+  id: string;
+  family: 'slope' | 'wedge_plate';
+  studsX: number;
+  studsZ: number;
+  height: number;
+  prisms: Prism[];
+  studs: [number, number][];
+  /** Kandidaten für Unterseiten-Aufnahmen (werden gegen die Körperkontur geprüft). */
+  gridUnder: [number, number][];
+  upins?: [number, number][];
+  shape: ShapeInfo;
+  note: string;
+}
+
+function shaped(spec: ShapedSpec): PartMeta {
+  const connectors: ConnectorDef[] = [];
+  for (const [x, z] of spec.studs) connectors.push({ id: `stud@${x},${z}`, kind: 'stud', position: [x, 0, z], axis: UP });
+  for (const [x, z] of antistudsInside(spec.prisms, spec.gridUnder, spec.height)) connectors.push({ id: `antistud@${x},${z}`, kind: 'antistud', position: [x, spec.height, z], axis: DOWN });
+  for (const [x, z] of spec.upins ?? []) connectors.push({ id: `upin@${x},${z}`, kind: 'underside_pin', position: [x, spec.height, z], axis: DOWN });
+  return {
+    ldrawId: spec.id, family: spec.family, support: 'supported',
+    size: { studsX: spec.studsX, studsZ: spec.studsZ, height: spec.height },
+    bodyBoxes: [], bodyPrisms: spec.prisms, shape: spec.shape, connectors, unsupportedFeatures: [], approximateVolume: false,
+    provenance: { method: 'parametric', verification: 'ldraw-primitive-crosscheck', note: spec.note },
+  };
+}
+
+/** Rasterpunkte (Mitte je Noppenfeld) für ein Teil mit sx × sz Feldern um den Ursprung, verschoben um (ox, oz). */
+const cells = (sx: number, sz: number, ox = 0, oz = 0): [number, number][] => grid(sx).flatMap((x) => grid(sz).map((z) => [x + ox, z + oz] as [number, number]));
+
+/**
+ * Schrägstein: Querschnitt in der y-z-Ebene (y nach unten): oben flach von z = +10 bis zur Schrägkante,
+ * Schräge bis zur Lippe (4 LDU) an der Vorderkante −z. Werte aus der LDraw-Geometrie (Ebenen der Schrägflächen).
+ */
+function slopePrism(widthStuds: number, frontZ: number, slopeStartZ: number, height = B, lip = 4): Prism {
+  const hx = (widthStuds * LDU_PER_STUD) / 2;
+  return { axis: 0, polygon: [[0, 10], [0, slopeStartZ], [height - lip, frontZ], [height, frontZ], [height, 10]], lo: -hx, hi: hx };
+}
+
+/** Keilplatte: Grundriss in der z-x-Ebene, Spitze bei −z; taper '-x' = schräge Kante auf der −x-Seite. */
+function wedgePrism(lengthStuds: number, taperSide: '-x' | '+x', tipX: number): Prism {
+  const hz = (lengthStuds * LDU_PER_STUD) / 2;
+  const s = taperSide === '-x' ? 1 : -1; // Spiegelung für die linke Variante
+  return { axis: 1, polygon: [[hz, 20 * s], [-hz, 20 * s], [-hz, tipX * s], [hz, -20 * s]], lo: 0, hi: P };
+}
+
 /** Unterstützte und teilunterstützte Teile (Phase 1). Maße: studsX entlang lokaler X-Achse. */
 const DEFINED: PartMeta[] = [
   rect({ id: '3001', family: 'brick', sx: 4, sz: 2, height: B, top: 'grid' }),
@@ -190,6 +261,50 @@ const DEFINED: PartMeta[] = [
     extraConnectors: [{ id: 'pin-z', kind: 'technic_pin', position: [0, 10, -10], axis: [0, 0, -1] }],
     unsupportedFeatures: ['Technic-Pin seitlich (lokale −Z-Richtung); Pinvolumen nicht im Kollisionsmodell'],
     note: 'Körper wie 3004; Pin nur deklariert (Regel R-PIN-HOLE nicht implementiert).',
+  }),
+  // ---- Konstruktionsnachweis 05B.1: Platten im Rechteckraster
+  rect({ id: '3020', family: 'plate', sx: 4, sz: 2, height: P, top: 'grid' }),
+  rect({ id: '3021', family: 'plate', sx: 3, sz: 2, height: P, top: 'grid' }),
+  rect({ id: '3022', family: 'plate', sx: 2, sz: 2, height: P, top: 'grid' }),
+  rect({ id: '3710', family: 'plate', sx: 4, sz: 1, height: P, top: 'grid' }),
+  rect({ id: '3666', family: 'plate', sx: 6, sz: 1, height: P, top: 'grid' }),
+  rect({ id: '3795', family: 'plate', sx: 6, sz: 2, height: P, top: 'grid' }),
+  // ---- Schrägsteine (Geometrie s. tests/part-meta-shaped.test.ts); Röhren der Schrägen (stud4a, verkürzt) nicht als Anschluss gewertet
+  shaped({
+    id: '3039', family: 'slope', studsX: 2, studsZ: 2, height: B, prisms: [slopePrism(2, -30, -10)], studs: [[-10, 0], [10, 0]], gridUnder: cells(2, 2, 0, -10),
+    shape: { kind: 'slope', angleDeg: 45, flatRows: 1, slopeRows: 1, lipLDU: 4, descendsTo: '-z' },
+    note: 'Schrägstein 45° 2×2: Schrägfläche y = −10 − z (LDraw-Ebene n = (0, 0,71, 0,71)), Lippe 4 LDU; Noppen nur in der hinteren Reihe.',
+  }),
+  shaped({
+    id: '3298', family: 'slope', studsX: 2, studsZ: 3, height: B, prisms: [slopePrism(2, -50, -10)], studs: [[-10, 0], [10, 0]], gridUnder: cells(2, 3, 0, -20),
+    shape: { kind: 'slope', angleDeg: 33, flatRows: 1, slopeRows: 2, lipLDU: 4, descendsTo: '-z' },
+    note: 'Schrägstein 33° 3×2: Schrägfläche y = −5 − z/2 (LDraw-Ebene n = (0, 0,89, 0,45)), Lippe 4 LDU.',
+  }),
+  shaped({
+    id: '4286', family: 'slope', studsX: 1, studsZ: 3, height: B, prisms: [slopePrism(1, -50, -10)], studs: [[0, 0]], gridUnder: cells(1, 3, 0, -20), upins: [[0, -30]],
+    shape: { kind: 'slope', angleDeg: 33, flatRows: 1, slopeRows: 2, lipLDU: 4, descendsTo: '-z' },
+    note: 'Schrägstein 33° 3×1: Schräge wie 3298; ein Unterseitenstift (stud3a) bei z = −30.',
+  }),
+  // ---- Keilplatten (Ausgabe „a“ der LDraw-Bibliothek; 41769/41770/43722/43723 sind Weiterleitungen)
+  shaped({
+    id: '41769a', family: 'wedge_plate', studsX: 2, studsZ: 4, height: P, prisms: [wedgePrism(4, '-x', 0)], studs: [[10, -30], [10, -10], [10, 10], [10, 30]], gridUnder: cells(2, 4),
+    shape: { kind: 'wedge', taperSide: '-x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 80 },
+    note: 'Keilplatte 4×2 rechts: gerade Kante +x, schräge Kante von (x −20, z 40) bis (x 0, z −40) (LDraw-Ebene n = (0,97, 0, 0,24)); Noppen nur in der vollen Reihe.',
+  }),
+  shaped({
+    id: '41770a', family: 'wedge_plate', studsX: 2, studsZ: 4, height: P, prisms: [wedgePrism(4, '+x', 0)], studs: [[-10, -30], [-10, -10], [-10, 10], [-10, 30]], gridUnder: cells(2, 4),
+    shape: { kind: 'wedge', taperSide: '+x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 80 },
+    note: 'Keilplatte 4×2 links: Spiegelbild von 41769a.',
+  }),
+  shaped({
+    id: '43722a', family: 'wedge_plate', studsX: 2, studsZ: 3, height: P, prisms: [wedgePrism(3, '-x', 0)], studs: [[10, -20], [10, 0], [10, 20]], gridUnder: cells(2, 3),
+    shape: { kind: 'wedge', taperSide: '-x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 60 },
+    note: 'Keilplatte 3×2 rechts: schräge Kante von (x −20, z 30) bis (x 0, z −30) (LDraw-Ebene n = (0,95, 0, 0,32)).',
+  }),
+  shaped({
+    id: '43723a', family: 'wedge_plate', studsX: 2, studsZ: 3, height: P, prisms: [wedgePrism(3, '+x', 0)], studs: [[-10, -20], [-10, 0], [-10, 20]], gridUnder: cells(2, 3),
+    shape: { kind: 'wedge', taperSide: '+x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 60 },
+    note: 'Keilplatte 3×2 links: Spiegelbild von 43722a.',
   }),
 ];
 

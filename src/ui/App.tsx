@@ -17,8 +17,12 @@ import { comparisonReferenceId, GENERATED_COMPARISON_NOTE } from './comparison';
 import { buildInstructionPlan, InstructionPlanError, type InstructionPlan } from '../core/instructions/plan';
 import { InstructionView } from './instructions/InstructionView';
 import { DesignLab } from './design/DesignLab';
+import { buildBow, type BowPlan } from '../core/construct/bowTechnique';
+import { ConstructionLab, DEFAULT_CONSTRUCT, useConstructionTarget, type ConstructParams } from './construct/ConstructionLab';
+import { SixViews } from './construct/SixViews';
 
 type Tab = 'report' | 'steps' | 'bom' | 'source';
+type CenterView = 'labor' | 'anleitung' | 'ansichten';
 
 interface Validated {
   result: ValidationResult;
@@ -45,12 +49,16 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>('report');
-  const [mode, setMode] = useState<'pruef' | 'schiff' | 'bild'>('pruef');
+  const [mode, setMode] = useState<'pruef' | 'schiff' | 'bild' | 'konstrukt'>('pruef');
   const [shipParams, setShipParams] = useState<ShipParams>(VARIANTS.kompakt.params);
   const [shipPlan, setShipPlan] = useState<ShipPlan | null>(null);
   const [shipError, setShipError] = useState<{ message: string; hints: string[] } | null>(null);
   const [shownShipParams, setShownShipParams] = useState<ShipParams | null>(null);
-  const [view, setView] = useState<'labor' | 'anleitung'>('labor');
+  const [view, setView] = useState<CenterView>('labor');
+  const [cParams, setCParams] = useState<ConstructParams>(DEFAULT_CONSTRUCT);
+  const construct = useConstructionTarget(cParams, mode === 'konstrukt');
+  const [bowPlan, setBowPlan] = useState<BowPlan | null>(null);
+  const [bowError, setBowError] = useState<string | null>(null);
   const [instr, setInstr] = useState<{ plan: InstructionPlan; model: CanonicalModel } | null>(null);
   const [instrError, setInstrError] = useState<string | null>(null);
 
@@ -99,6 +107,25 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, mode, shipParams]);
 
+  // Konstruktionsnachweis: Formvorgabe + Variante + Breite → Modell aus realen Teilen, sofort geprüft
+  useEffect(() => {
+    if (!bundle || mode !== 'konstrukt' || !construct.target) return;
+    try {
+      const { model: m, plan } = buildBow(construct.target, { variant: cParams.variant, widthStuds: cParams.width });
+      runValidation(m);
+      setModel(m);
+      setBowPlan(plan);
+      setBowError(null);
+      resetView();
+    } catch (e) {
+      setBowError(e instanceof Error ? e.message : String(e));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundle, mode, construct.target, cParams.variant, cParams.width]);
+  useEffect(() => {
+    if (mode !== 'konstrukt' && view === 'ansichten') setView('labor');
+  }, [mode, view]);
+
   // Modell laden und prüfen; beim Fall „veralteter Bericht“ anschließend die Änderung anwenden
   useEffect(() => {
     if (!bundle || !item || mode !== 'pruef') return;
@@ -141,6 +168,9 @@ export function App() {
   const stale = reportState?.state === 'stale';
   // Raumschiff-Labor: Eingaben nicht erfüllbar → angezeigter Stand gehört nicht zu den aktuellen Eingaben
   const shipStale = mode === 'schiff' && !!shipError;
+  // Konstruktionsnachweis: ohne gültige Formvorgabe bzw. bei nicht baubarer Vorgabe gehört der Stand nicht zu den Eingaben
+  const constructStale = mode === 'konstrukt' && (!construct.target || !!bowError || model?.generator?.name !== 'bow-technique');
+  const blockedExport = shipStale || constructStale;
 
   const steps = model?.steps ?? [];
   const { visible, current } = useMemo(() => {
@@ -176,7 +206,11 @@ export function App() {
           <button role="tab" aria-selected={mode === 'pruef'} className={mode === 'pruef' ? 'tab active' : 'tab'} onClick={() => setMode('pruef')}>Prüflabor</button>
           <button role="tab" aria-selected={mode === 'schiff'} className={mode === 'schiff' ? 'tab active' : 'tab'} onClick={() => setMode('schiff')}>Raumschiff-Labor</button>
           <button role="tab" aria-selected={mode === 'bild'} className={mode === 'bild' ? 'tab active' : 'tab'} onClick={() => setMode('bild')}>Aus Bild entwerfen</button>
+          <button role="tab" aria-selected={mode === 'konstrukt'} className={mode === 'konstrukt' ? 'tab active' : 'tab'} onClick={() => setMode('konstrukt')}>Konstruktionsnachweis</button>
         </div>
+        {mode === 'konstrukt' && (
+          <ConstructionLab params={cParams} onChange={setCParams} template={construct.template} target={construct.target} plan={constructStale ? null : bowPlan} error={bowError} parts={constructStale ? null : model.instances.length} dims={constructStale ? null : dims} bom={constructStale ? null : validated.bom} catalogLoaded={bundle.catalog.available} />
+        )}
         {mode === 'schiff' && (
           <ShipLab params={shipParams} onChange={setShipParams} plan={shipPlan} error={shipError} actualParts={model.origin.kind === 'generated' ? model.instances.length : null} dims={dims} shownParams={shownShipParams} />
         )}
@@ -234,11 +268,20 @@ export function App() {
         <main className="center instrwrap">
           <DesignLab />
         </main>
+      ) : view === 'ansichten' && mode === 'konstrukt' ? (
+        <main className="center instrwrap">
+          <ViewSwitch view={view} onChange={setView} withViews />
+          {constructStale || !bowPlan ? (
+            <p className="stalebar" role="alert"><span>Kein Teilemodell zu den aktuellen Eingaben{bowError ? `: ${bowError}` : construct.template.error ? `: ${construct.template.error}` : cParams.source === 'vorlage' && !cParams.canopyGroupId ? ' – zuerst die Kanzel-Baugruppe wählen.' : '.'}</span></p>
+          ) : (
+            <SixViews model={model} library={bundle.library} catalog={bundle.catalog} rows={bowPlan.rows} views={cParams.source === 'vorlage' ? construct.template.measurement?.views ?? null : null} imageUrls={construct.template.imageUrls} />
+          )}
+        </main>
       ) : view === 'anleitung' ? (
         <main className="center instrwrap">
-          <ViewSwitch view={view} onChange={setView} />
+          <ViewSwitch view={view} onChange={setView} withViews={mode === 'konstrukt'} />
           {instr ? (
-            <InstructionView plan={instr.plan} planModel={instr.model} currentRef={ref} blockedReason={shipStale ? `Die aktuellen Eingaben sind nicht erfüllbar. Gezeigt wird die Anleitung des letzten gültigen Stands (${ref.modelId}); Druck und PDF-Export sind gesperrt.` : null} library={bundle.library} catalog={bundle.catalog} onRebuild={() => buildPlan(model)} rebuildError={instrError} />
+            <InstructionView plan={instr.plan} planModel={instr.model} currentRef={ref} blockedReason={blockedExport ? `Die aktuellen Eingaben sind nicht erfüllbar. Gezeigt wird die Anleitung des letzten gültigen Stands (${ref.modelId}); Druck und PDF-Export sind gesperrt.` : null} library={bundle.library} catalog={bundle.catalog} onRebuild={() => buildPlan(model)} rebuildError={instrError} />
           ) : (
             <div className="instructions">
               <p className="stalebar" role="alert">
@@ -250,7 +293,7 @@ export function App() {
         </main>
       ) : (<>
       <main className="center">
-        <ViewSwitch view={view} onChange={setView} />
+        <ViewSwitch view={view} onChange={setView} withViews={mode === 'konstrukt'} />
         <header className="modelbar">
           <div className="modeltitle">
             <h2>{model.name}</h2>
@@ -284,8 +327,17 @@ export function App() {
             <span>Die aktuellen Eingaben sind nicht erfüllbar. Angezeigt werden Modell, Prüfbericht und Stückliste des letzten gültigen Stands ({ref.modelId}); Exporte sind gesperrt, bis die Eingaben wieder erfüllbar sind.</span>
           </div>
         )}
+        {constructStale && (
+          <div className="stalebar" role="alert">
+            <span>{mode === 'konstrukt' && model.generator?.name !== 'bow-technique' ? 'Noch kein Teilemodell zu den aktuellen Eingaben' : 'Die aktuellen Eingaben ergeben kein Teilemodell'}{bowError ? `: ${bowError}` : construct.template.error ? `: ${construct.template.error}` : cParams.source === 'vorlage' && !cParams.canopyGroupId ? ' – zuerst die Kanzel-Baugruppe wählen.' : '.'} Angezeigt wird ein anderer Stand ({ref.modelId}); Exporte sind gesperrt.</span>
+          </div>
+        )}
         <div className="viewwrap">
-          <Viewer model={model} library={bundle.library} catalog={bundle.catalog} visible={visible} current={current} highlighted={new Set(highlight)} selected={selected} onSelect={setSelected} />
+          {mode === 'konstrukt' && model.generator?.name !== 'bow-technique' ? (
+            <div className="viewer placeholder muted">Noch kein Teilemodell aus dem Konstruktionsnachweis.</div>
+          ) : (
+            <Viewer model={model} library={bundle.library} catalog={bundle.catalog} visible={visible} current={current} highlighted={new Set(highlight)} selected={selected} onSelect={setSelected} />
+          )}
           <div className="provenance">Gerendert aus Modell {ref.modelId}, Version {ref.version}, Hash {ref.contentHash}</div>
           {selectedInst && (
             <div className="inspector" role="region" aria-label="Ausgewähltes Teil">
@@ -317,14 +369,14 @@ export function App() {
         </div>
         <div className="exports">
           <span>Export</span>
-          <button disabled={shipStale} onClick={() => download(`${ref.modelId}-v${ref.version}.model.json`, exportModelJson(model), 'application/json')}>Modell (JSON)</button>
-          <button disabled={shipStale} onClick={() => download(`${report.modelRef.modelId}-v${report.modelRef.version}.report.json`, exportReportJson(report), 'application/json')}>
+          <button disabled={blockedExport} onClick={() => download(`${ref.modelId}-v${ref.version}.model.json`, exportModelJson(model), 'application/json')}>Modell (JSON)</button>
+          <button disabled={blockedExport} onClick={() => download(`${report.modelRef.modelId}-v${report.modelRef.version}.report.json`, exportReportJson(report), 'application/json')}>
             Prüfbericht v{report.modelRef.version} (JSON){stale ? ' – veraltet' : ''}
           </button>
-          <button disabled={shipStale} onClick={() => download(`${validated.bom.modelRef.modelId}-v${validated.bom.modelRef.version}.stueckliste.csv`, exportBomCsv(validated.bom), 'text/csv')}>
+          <button disabled={blockedExport} onClick={() => download(`${validated.bom.modelRef.modelId}-v${validated.bom.modelRef.version}.stueckliste.csv`, exportBomCsv(validated.bom), 'text/csv')}>
             Stückliste v{validated.bom.modelRef.version} (CSV){stale ? ' – veraltet' : ''}
           </button>
-          <button disabled={shipStale} onClick={() => download(`${ref.modelId}-v${ref.version}.ldr`, exportLdraw(model), 'text/plain')}>LDraw</button>
+          <button disabled={blockedExport} onClick={() => download(`${ref.modelId}-v${ref.version}.ldr`, exportLdraw(model), 'text/plain')}>LDraw</button>
         </div>
       </main>
 
@@ -336,10 +388,10 @@ export function App() {
             </button>
           ))}
         </div>
-        <div className={stale || shipStale ? 'tabbody is-stale' : 'tabbody'}>
+        <div className={stale || blockedExport ? 'tabbody is-stale' : 'tabbody'}>
           {tab === 'report' && <ReportPanel report={report} onHighlight={(ids) => { setHighlight(ids); }} highlighted={highlight} />}
           {tab === 'steps' && <StepsPanel model={model} analysis={validated.result.assembly} stepIndex={stepIndex} onStep={setStepIndex} catalog={bundle.catalog} stale={stale} />}
-          {tab === 'bom' && <BomPanel bom={validated.bom} bundle={bundle} referenceId={comparisonReferenceId(model, item, mode)} comparisonNote={model.origin.kind === 'generated' ? GENERATED_COMPARISON_NOTE : undefined} procurement={initialProcurementState(validated.bom)} onHighlight={setHighlight} />}
+          {tab === 'bom' && <BomPanel bom={validated.bom} bundle={bundle} referenceId={comparisonReferenceId(model, item, mode === 'pruef' ? 'pruef' : 'schiff')} comparisonNote={model.origin.kind === 'generated' ? GENERATED_COMPARISON_NOTE : undefined} procurement={initialProcurementState(validated.bom)} onHighlight={setHighlight} />}
           {tab === 'source' && <SourcePanel model={model} bundle={bundle} item={mode === 'pruef' ? item : undefined} expectations={expectations} report={report} />}
         </div>
       </section>
@@ -348,10 +400,11 @@ export function App() {
   );
 }
 
-function ViewSwitch({ view, onChange }: { view: 'labor' | 'anleitung'; onChange: (v: 'labor' | 'anleitung') => void }) {
+function ViewSwitch({ view, onChange, withViews = false }: { view: CenterView; onChange: (v: CenterView) => void; withViews?: boolean }) {
   return (
     <div className="viewswitch" role="tablist" aria-label="Ansicht">
       <button role="tab" aria-selected={view === 'labor'} className={view === 'labor' ? 'tab active' : 'tab'} onClick={() => onChange('labor')}>Modell &amp; Prüfung</button>
+      {withViews && <button role="tab" aria-selected={view === 'ansichten'} className={view === 'ansichten' ? 'tab active' : 'tab'} onClick={() => onChange('ansichten')}>Sechs Ansichten &amp; Vorlage</button>}
       <button role="tab" aria-selected={view === 'anleitung'} className={view === 'anleitung' ? 'tab active' : 'tab'} onClick={() => onChange('anleitung')}>Bauanleitung</button>
     </div>
   );

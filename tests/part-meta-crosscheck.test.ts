@@ -13,7 +13,8 @@ const BBOX_EXCEPTIONS: Record<string, string> = {
 };
 
 describe('Teil-Metadaten ↔ LDraw-Geometrie', () => {
-  for (const id of definedPartIds()) {
+  // Teile mit exakten Prismenkörpern (Schrägen, Keilplatten) prüft tests/part-meta-shaped.test.ts
+  for (const id of definedPartIds().filter((i) => !partMeta(i)!.bodyPrisms)) {
     it(id, async () => {
       const b = await bundle();
       const meta = partMeta(id)!;
