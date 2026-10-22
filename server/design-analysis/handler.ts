@@ -133,6 +133,56 @@ async function spatialInner(provider: AnalysisProvider, body: unknown, promptVer
   return { status: 200, body: { ok: true, proposal: check.value, meta: { provider: provider.label, model: result.model, requestId: result.requestId, promptVersion } } };
 }
 
+// ---- Anfrageprotokoll (05A.5): Was ist mit einer Anfrage passiert, wenn die Verbindung abbricht?
+// Nur Kennung, Zeitpunkte, HTTP-Status und die (bildfreie) Antwort – keine Bilddaten, keine Schlüssel.
+
+export interface RequestRecord {
+  ticketId: string;
+  kind: 'analyze' | 'spatial';
+  receivedAt: string;
+  /** Zeitpunkt, zu dem der Dienst tatsächlich aufgerufen wurde (dann ist der Aufruf ggf. kostenpflichtig). */
+  providerStartedAt: string | null;
+  finishedAt: string | null;
+  httpStatus: number | null;
+  /** Antwort an den Browser (Interpretation bzw. Vorschlag, ohne Bilddaten) – zum Abholen nach einem Abbruch. */
+  response: unknown | null;
+}
+
+export class RequestLog {
+  private readonly records = new Map<string, RequestRecord>();
+  constructor(private readonly max = 30, private readonly now = () => new Date().toISOString()) {}
+  received(ticketId: string, kind: RequestRecord['kind']): void {
+    this.records.set(ticketId, { ticketId, kind, receivedAt: this.now(), providerStartedAt: null, finishedAt: null, httpStatus: null, response: null });
+    while (this.records.size > this.max) this.records.delete(this.records.keys().next().value!);
+  }
+  providerStarted(ticketId: string): void {
+    const r = this.records.get(ticketId);
+    if (r) r.providerStartedAt = this.now();
+  }
+  finished(ticketId: string, httpStatus: number, response: unknown): void {
+    const r = this.records.get(ticketId);
+    if (r) Object.assign(r, { finishedAt: this.now(), httpStatus, response });
+  }
+  get(ticketId: string): RequestRecord | null {
+    return this.records.get(ticketId) ?? null;
+  }
+}
+
+/** Anbieter, der den tatsächlichen Dienstaufruf meldet (für das Anfrageprotokoll). */
+export function withCallHook(p: AnalysisProvider, onCall: () => void): AnalysisProvider {
+  return {
+    ...p,
+    configurationProblem: () => p.configurationProblem(),
+    analyze: (images, notes) => { onCall(); return p.analyze(images, notes); },
+    proposeSpatial: p.proposeSpatial ? (images, interp, notes) => { onCall(); return p.proposeSpatial!(images, interp, notes); } : undefined,
+  };
+}
+
+export const ticketIdOf = (body: unknown): string | null => {
+  const raw = (body as { ticketId?: unknown } | null)?.ticketId;
+  return typeof raw === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(raw) ? raw : null;
+};
+
 export async function analyzeRequest(provider: AnalysisProvider, body: unknown, promptVersion: string): Promise<{ status: number; body: AnalyzeResponse }> {
   const raw = (body as { ticketId?: unknown } | null)?.ticketId;
   const ticketId = typeof raw === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(raw) ? raw : null;

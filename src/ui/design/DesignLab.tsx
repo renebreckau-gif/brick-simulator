@@ -2,12 +2,14 @@
 // Noch keine Steine: Konstruktion, Bauanleitung und Stückliste entstehen erst aus einem echten Modell (05B).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  addImage, adoptHeldAnalysis, applyAnalysisResult, checkRequirements, confirm, confirmationBlockers, correct, createTicket, EMPTY_REQUIREMENTS, isConfirmedCurrent, newBrief, parseBrief, readiness, rebaseInterpretation, removeImage, replaceImage, setInterpretation, setRequirements, setTitle, setView, toRequirements,
-  substanceHash, toDesignProvenance, VIEW_LABELS, type AnalysisMeta, type Blocker, type DesignBrief, type FieldProblem, type HeldAnalysis, type ImageRef, type Requirements, type RequirementsDraft, type RequirementsField, type ViewLabel,
+  addImage, adoptHeldAnalysis, mergeGroups, applyAnalysisResult, checkRequirements, confirm, confirmationBlockers, correct, createTicket, EMPTY_REQUIREMENTS, isConfirmedCurrent, newBrief, parseBrief, readiness, rebaseInterpretation, removeImage, replaceImage, setInterpretation, setRequirements, setTitle, setView, toRequirements,
+  substanceHash, toDesignProvenance, VIEW_LABELS, type AnalysisMeta, type AnalysisTicket, type Blocker, type DesignBrief, type FieldProblem, type HeldAnalysis, type ImageRef, type Requirements, type RequirementsDraft, type RequirementsField, type ViewLabel,
 } from '../../core/design/brief';
 import { checkImageBytes, MAX_IMAGES, sha256Hex } from '../../core/design/images';
 import { BASIS_LABEL, checkInterpretation, manualInterpretationTemplate, type Basis, type Interpretation } from '../../core/design/interpretation';
+import { describeFailure, fetchStoredResult, postOnce, type PostOutcome } from './serverRequest';
 import { SpatialLab } from './SpatialLab';
+import { ViewsPanel } from './ViewsPanel';
 import { clearAll, deleteImage, loadBrief, loadImage, saveBrief, saveImage } from './store';
 
 interface ServerStatus {
@@ -87,7 +89,9 @@ export function DesignLab() {
   const [status, setStatus] = useState<ServerStatus | null | 'none'>(null);
   const [consent, setConsent] = useState<{ open: boolean; agreed: boolean; notes: string }>({ open: false, agreed: false, notes: '' });
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string; errors?: string[]; setup?: string[] } | null>(null);
+  const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string; errors?: string[]; setup?: string[]; next?: string; poll?: { ticket: AnalysisTicket; startedAt: string } } | null>(null);
+  /** Lokaler Server nach einem Verbindungsfehler nicht erreichbar (Statuszeile ehrlich halten). */
+  const [serverDown, setServerDown] = useState<string | null>(null);
   /** Zurückgehaltene Analyseantwort (Eingaben inzwischen geändert oder Antwort widersprüchlich) – mit ursprünglichem Bildbezug. */
   const [held, setHeld] = useState<HeldAnalysis | null>(null);
   // Anforderungen: Eingabestand (nie vorbelegt), Fehleranzeige nach Übernahme-/Bestätigungsversuch
@@ -136,7 +140,7 @@ export function DesignLab() {
     if (brief) saveBrief(brief).catch(() => setMessage({ kind: 'error', text: 'Lokales Speichern fehlgeschlagen (Browser-Speicher nicht verfügbar).' }));
   }, [brief]);
 
-  const check = useMemo(() => (brief?.interpretation ? checkInterpretation(brief.interpretation, brief.images.length) : null), [brief]);
+  const check = useMemo(() => (brief?.interpretation ? checkInterpretation(brief.interpretation, brief.images.length, brief.images.map((i) => i.sha256)) : null), [brief]);
   const savedReqKey = JSON.stringify(brief?.requirements ?? null);
   useEffect(() => {
     setReqDraft(brief?.requirements ? { ...brief.requirements } : EMPTY_REQUIREMENTS);
@@ -206,7 +210,6 @@ export function DesignLab() {
     // Anfrage unveränderlich an Entwurf, Eingabestand, Bilder, Ansichten, Hinweise und Kennung binden
     const ticket = createTicket(brief, consent.notes, crypto.randomUUID());
     const sent = brief.images.map((i) => ({ ...i }));
-    const meta = (m: { provider: string; model: string | null; promptVersion: string | null; requestId: string | null }): AnalysisMeta => ({ method: 'anthropic-vision', provider: m.provider, model: m.model, promptVersion: m.promptVersion, at: new Date().toISOString(), requestId: m.requestId });
     try {
       const images = [];
       for (const img of sent) {
@@ -214,14 +217,36 @@ export function DesignLab() {
         if (!blob) throw new Error(`Bild ${img.fileName} fehlt lokal`);
         images.push({ sha256: img.sha256, mediaType: img.mediaType, view: img.view, data: toBase64(new Uint8Array(await blob.arrayBuffer())) });
       }
-      const r = await fetch('/api/design/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: ticket.ticketId, images, notes: ticket.binding.notes }) });
-      const body = await r.json().catch(() => null);
-      // Live-Status aus der tatsächlichen Dienstantwort übernehmen, damit die Statuszeile nicht veraltet
-      if (body?.liveCheck) setStatus((s) => (s && s !== 'none' ? { ...s, liveCheck: body.liveCheck } : s));
+      const startedAt = new Date().toISOString();
+      // Genau ein Versand; bei Verbindungsfehlern nur Nachfrage beim Server (keine Wiederholung des Aufrufs)
+      const out = await postOnce('/api/design/analyze', { ticketId: ticket.ticketId, images, notes: ticket.binding.notes }, ticket.ticketId);
+      handleAnalysisOutcome(out, ticket, startedAt);
+    } catch (e) {
+      setMessage({ kind: 'error', text: `Analyse nicht gestartet: ${(e as Error).message}` });
+    } finally {
+      setBusy(false);
+      setConsent((c) => ({ ...c, open: false, agreed: false }));
+    }
+  };
+
+  const handleAnalysisOutcome = (out: PostOutcome, ticket: AnalysisTicket, startedAt: string) => {
+    const meta = (m: { provider: string; model: string | null; promptVersion: string | null; requestId: string | null }): AnalysisMeta => ({ method: 'anthropic-vision', provider: m.provider, model: m.model, promptVersion: m.promptVersion, at: new Date().toISOString(), requestId: m.requestId });
+    if (out.kind !== 'response') {
+      const f = describeFailure(out, startedAt);
+      if (out.kind === 'network' && out.probe.server === 'down') setServerDown(new Date().toISOString());
+      setMessage({ kind: 'error', text: f.text, next: f.next, poll: f.canPoll ? { ticket, startedAt } : undefined });
+      return;
+    }
+    setServerDown(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = out.body as any;
+    // Live-Status aus der tatsächlichen Dienstantwort übernehmen, damit die Statuszeile nicht veraltet
+    if (body?.liveCheck) setStatus((s) => (s && s !== 'none' ? { ...s, liveCheck: body.liveCheck } : s));
+    const recovered = out.recovered ? ' (nach Verbindungsabbruch vom lokalen Server abgeholt – kein zweiter Dienstaufruf)' : '';
+    {
       // Antwort gegen den Stand zum Eintreffen prüfen, nicht gegen den Stand beim Absenden
       const current = briefRef.current!;
-      if (!body) setMessage({ kind: 'error', text: `Analysedienst nicht erreichbar (HTTP ${r.status}). Im statischen Build gibt es keinen Analyse-Endpunkt.` });
-      else if (body.ticketId !== ticket.ticketId) setMessage({ kind: 'error', text: 'Antwort gehört nicht zu dieser Anfrage (Anfragekennung abweichend) und wurde verworfen.' });
+      if (body.ticketId !== ticket.ticketId) setMessage({ kind: 'error', text: 'Antwort gehört nicht zu dieser Anfrage (Anfragekennung abweichend) und wurde verworfen.' });
       else if (body.ok || body.code === 'contradictory_response') {
         const interpretation = body.ok ? body.interpretation : body.candidate;
         const svc = status && status !== 'none' ? status : null;
@@ -229,17 +254,22 @@ export function DesignLab() {
         const outcome = applyAnalysisResult(current, ticket, interpretation, m, body.ok ? [] : body.errors ?? []);
         if (outcome.kind === 'applied') {
           setBrief(outcome.brief);
-          setMessage({ kind: 'info', text: `Interpretation von ${m.provider}${m.model ? ` (${m.model})` : ''} übernommen. Bitte prüfen und korrigieren.`, errors: body.warnings });
+          setMessage({ kind: 'info', text: `Interpretation von ${m.provider}${m.model ? ` (${m.model})` : ''} übernommen${recovered}. Bitte prüfen und korrigieren.`, errors: body.warnings });
         } else if (outcome.kind === 'held') setHeld(outcome.held);
         else setMessage({ kind: 'error', text: outcome.reason });
-      } else setMessage({ kind: 'error', text: body.message, errors: body.errors, setup: body.setup });
-    } catch (e) {
-      setMessage({ kind: 'error', text: `Analyse fehlgeschlagen: ${(e as Error).message}` });
-    } finally {
-      setBusy(false);
-      setConsent((c) => ({ ...c, open: false, agreed: false }));
+      } else setMessage({ kind: 'error', text: `Der lokale Server meldet einen Fehler (HTTP ${out.status}): ${body.message ?? 'ohne Beschreibung'}`, errors: body.errors, setup: body.setup });
     }
   };
+
+  /** Ergebnis einer abgebrochenen Anfrage beim Server abholen – kein neuer Dienstaufruf. */
+  const pollResult = async (p: { ticket: AnalysisTicket; startedAt: string }) => {
+    const out = await fetchStoredResult(p.ticket.ticketId).catch(() => null);
+    if (out) handleAnalysisOutcome(out, p.ticket, p.startedAt);
+  };
+  const recheckServer = () =>
+    fetch('/api/design/status', { cache: 'no-store' }).then(async (r) => {
+      if (r.ok && (r.headers.get('content-type') ?? '').includes('json')) { setStatus(await r.json()); setServerDown(null); }
+    }).catch(() => setServerDown(new Date().toISOString()));
 
   const startManual = () => update((b) => setInterpretation(b, manualInterpretationTemplate(), { method: 'manual', provider: 'Nutzer (manuelle Beschreibung)', model: null, promptVersion: null, at: new Date().toISOString(), requestId: null }));
 
@@ -307,6 +337,8 @@ export function DesignLab() {
             {message.text}
             {message.errors && message.errors.length > 0 && <ul>{message.errors.map((e) => <li key={e}>{e}</li>)}</ul>}
             {message.setup && <ol>{message.setup.map((s) => <li key={s}>{s}</li>)}</ol>}
+            {message.next && <><br /><strong>Nächster Schritt:</strong> {message.next}</>}
+            {message.poll && <> <button className="linklike" onClick={() => pollResult(message.poll!)}>Ergebnis abholen</button></>}
           </span>
         </div>
       )}
@@ -385,7 +417,7 @@ export function DesignLab() {
           <button className="primary" disabled={!brief.images.length || busy || missing.length > 0} onClick={() => setConsent({ open: true, agreed: false, notes: consent.notes })}>Automatisch analysieren …</button>
           <button onClick={startManual} disabled={busy}>{interp ? 'Manuell neu beginnen' : 'Manuell beschreiben'}</button>
           <span className="small muted">
-            {status === null ? 'Prüfe Analysedienst …' : status === 'none' ? 'Kein lokaler Analyse-Endpunkt (z. B. statischer Build) – nur manueller Weg.' : !status.configured ? `Analysedienst ${status.provider}: nicht eingerichtet (${status.problem}).` : liveText(status)}
+            {serverDown ? <>Lokaler Analyse-Server nicht erreichbar (seit {serverDown.slice(11, 19)} UTC) – Entwicklungsserver starten und Seite neu laden. <button className="linklike" onClick={recheckServer}>Erneut prüfen</button></> : status === null ? 'Prüfe Analysedienst …' : status === 'none' ? 'Kein lokaler Analyse-Endpunkt (z. B. statischer Build) – nur manueller Weg.' : !status.configured ? `Analysedienst ${status.provider}: nicht eingerichtet (${status.problem}).` : liveText(status)}
           </span>
         </div>
         {consent.open && (
@@ -408,6 +440,7 @@ export function DesignLab() {
           </div>
         )}
 
+        {interp && <ViewsPanel brief={brief} urls={urls} update={update} onError={(t) => setMessage({ kind: 'error', text: t })} />}
         {interp && (
           <div className="dsplit">
             <div className="dimagepane">
@@ -416,12 +449,13 @@ export function DesignLab() {
                   <div className="dimgwrap">
                   <img src={urls[img.sha256]} alt={`Vorlage ${sel + 1}`} />
                   <svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-label="Bildbereiche der Baugruppen">
+                    {(interp.imageViews?.views ?? []).filter((v) => v.imageIndex === sel).map((v) => <rect key={`view-${v.viewId}`} x={v.box.x} y={v.box.y} width={v.box.w} height={v.box.h} className="viewframe" vectorEffect="non-scaling-stroke"><title>{v.label}</title></rect>)}
                     {interp.groups.flatMap((g) => g.boxes.filter((b) => b.imageIndex === sel).map((b, k) => (
                       <rect key={`${g.id}-${k}`} x={b.x} y={b.y} width={b.w} height={b.h} className={focusGroup === g.id ? 'focus' : ''} vectorEffect="non-scaling-stroke" strokeDasharray={g.basis === 'observed' ? undefined : '4 3'} />
                     )))}
                   </svg>
                   </div>
-                  <figcaption className="small">Bild {sel + 1}: Rahmen = Bildbereiche der Baugruppen (durchgezogen beobachtet, gestrichelt angenommen/vorgegeben)</figcaption>
+                  <figcaption className="small">Bild {sel + 1}: Rahmen = Bildbereiche der Baugruppen (durchgezogen beobachtet, gestrichelt angenommen/vorgegeben); breite blaue Rahmen = Ansichten im Bild</figcaption>
                 </figure>
               ) : <p className="muted">Kein Bild ausgewählt.</p>}
               <figure className="dschema">
@@ -451,7 +485,16 @@ export function DesignLab() {
               <fieldset><legend>Baugruppen und Proportionen (relativ zum Hauptkörper)</legend>
                 {interp.groups.map((g, gi) => (
                   <div key={g.id} className={`ditem${focusGroup === g.id ? ' focus' : ''}`} onFocus={() => setFocusGroup(g.id)}>
-                    <div className="ditemhead"><strong>{g.name || g.id}</strong> <BasisTag b={g.basis} /> <span className="small muted">{g.role === 'hauptkoerper' ? 'Hauptkörper' : g.role}</span></div>
+                    <div className="ditemhead"><strong>{g.name || g.id}</strong> <BasisTag b={g.basis} /> <span className="small muted">{g.role === 'hauptkoerper' ? 'Hauptkörper' : g.role}</span>
+                      {interp.groups.length > 1 && (
+                        <label className="small">Dasselbe Teil wie{' '}
+                          <select value="" aria-label={`${g.name} mit anderer Baugruppe zusammenführen`} onChange={(e) => { const keep = e.target.value; if (!keep) return; try { const n = mergeGroups(brief, keep, g.id); update(() => n); } catch (er) { setMessage({ kind: 'error', text: (er as Error).message }); } }}>
+                            <option value="">– zusammenführen mit … –</option>
+                            {interp.groups.filter((o) => o.id !== g.id && !(g.role === 'hauptkoerper' && o.role !== 'hauptkoerper')).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                          </select>
+                        </label>
+                      )}
+                    </div>
                     <div className="dgrid">
                       <Field label="Name" value={g.name} onCommit={(v) => fix(`groups.${gi}.name`, v)} />
                       <label className="dfield"><span>Rolle</span><select value={g.role} onChange={(e) => fix(`groups.${gi}.role`, e.target.value)}><option value="hauptkoerper">Hauptkörper</option><option value="baugruppe">Baugruppe</option><option value="detail">Detail</option></select></label>
@@ -464,6 +507,12 @@ export function DesignLab() {
                     ))}</div>
                     <div className="small">Bildbereiche: {g.boxes.length === 0 ? 'keine' : g.boxes.map((b, bi) => (
                       <span key={bi} className="dbox">Bild {b.imageIndex + 1}
+                        {(interp.imageViews?.views ?? []).some((v) => v.imageIndex === b.imageIndex) && (
+                          <select aria-label={`Ansicht für Bildbereich ${bi + 1}`} value={b.viewId ?? ''} onChange={(e) => fix(`groups.${gi}.boxes.${bi}.viewId`, e.target.value || null)}>
+                            <option value="">Ansicht: automatisch</option>
+                            {(interp.imageViews?.views ?? []).filter((v) => v.imageIndex === b.imageIndex).map((v) => <option key={v.viewId} value={v.viewId}>{v.label}</option>)}
+                          </select>
+                        )}
                         {(['x', 'y', 'w', 'h'] as const).map((k) => <input key={k} aria-label={`${k} Bildbereich ${bi + 1}`} type="number" step="0.01" min={0} max={1} defaultValue={b[k]} onBlur={(e) => Number(e.target.value) !== b[k] && fix(`groups.${gi}.boxes.${bi}.${k}`, Number(e.target.value))} />)}
                         <button className="linklike" onClick={() => fix(`groups.${gi}.boxes`, g.boxes.filter((_, x) => x !== bi))}>entfernen</button>
                       </span>

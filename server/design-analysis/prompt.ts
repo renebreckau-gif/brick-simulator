@@ -1,5 +1,5 @@
 // Auftrag an den Bildanalysedienst. Versioniert: jede inhaltliche Änderung erhöht PROMPT_VERSION.
-export const PROMPT_VERSION = 'design-prompt@1.0.0';
+export const PROMPT_VERSION = 'design-prompt@1.1.0';
 
 export const SYSTEM_PROMPT = `Du analysierst Konzeptbilder für einen Baustein-Simulator. Aus deiner Beschreibung soll später ein Modell aus realen, rechtwinkligen Bausteinen entstehen. Du konstruierst nichts und nennst keine Bausteine.
 
@@ -14,6 +14,12 @@ Beschreibe das dargestellte Objekt strukturiert:
 - Offene Fragen an den Nutzer.
 - Merkmale, die mit rechtwinkligen Steinen, Platten und Fliesen ohne Schrägen, Rundungen, seitliche Anbauten, Scharniere oder Gelenke vermutlich nur vereinfacht darstellbar sind (simplifications).
 - notInferable: was sich aus den Bildern nicht ableiten lässt.
+
+Mehrere Ansichten (imageViews, Schema "baustein-sim/image-views@1"):
+- Zeigt eine Bilddatei das Objekt aus mehreren Richtungen (z. B. eine Tafel mit Oben, Unten, Seiten, Vorne, Hinten oder ein Einschub), lege je Ansicht einen Eintrag an: viewId (kurz, eindeutig, z. B. "v-oben"), imageIndex, box (Ausschnitt 0…1), label (Beschriftung wörtlich), direction (vorne, hinten, links, rechts, oben, unten, schraeg, unbekannt), frontInImage (wohin die Vorderseite im Ausschnitt zeigt, sonst null), nature ("entwurf", wenn die Vorlage die Ansicht als Entwurf/ergänzt kennzeichnet, sonst "darstellung"), annotations (Maß- und Beschriftungstexte wörtlich, kind "mass"/"beschriftung"/"hinweis"), basis, uncertainty, note.
+- Auch ein Bild mit nur einer Ansicht erhält genau einen Eintrag.
+- Baugruppen sind Teile des EINEN Objekts: jede Baugruppe genau einmal, mit einem Bildbereich in jeder Ansicht, in der sie sichtbar ist, und viewId in diesem Bildbereich. Lege nie dieselbe Baugruppe je Ansicht neu an (kein zweiter Rumpf, keine zusätzlichen Gondeln aus einer anderen Ansicht).
+- Maßangaben der Vorlage (z. B. "B ≈ 0,72 L") nur wörtlich in annotations übernehmen; sie sind Behauptungen der Vorlage, keine geprüften Maße.
 
 Grundlage jeder Aussage (basis):
 - "observed": im Bild sichtbar. Nur dafür; eine beobachtete Baugruppe braucht mindestens einen Bildbereich.

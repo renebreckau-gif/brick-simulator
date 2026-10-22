@@ -10,6 +10,7 @@ import {
   parseSpatial, rebaseSpatial, REF_DIRECTION_LABEL, REF_DIRECTIONS, removeBody, restoreContent, setReferenceViews, setScale, setSymmetry, SHAPE_LABEL, SHAPES, SPATIAL_BASIS_LABEL, SPATIAL_LABEL, spatialBlockers,
   spatialPrerequisite, SpatialError, syncWithBrief, toSpatialLink, unmodelledGroups, updateBody, type BodyPatch, type ReferenceView, type SpatialBasis, type SpatialBody, type SpatialDesign,
 } from '../../core/design/spatial';
+import { describeFailure, postOnce } from './serverRequest';
 import { loadImage, loadSpatial, saveSpatial } from './store';
 import { SpatialViewer } from './SpatialViewer';
 
@@ -222,11 +223,18 @@ export function SpatialLab({ brief, urls, service, onLiveCheck }: Props) {
         if (!blob) throw new Error(`Bild ${img.fileName} fehlt lokal`);
         images.push({ sha256: img.sha256, mediaType: img.mediaType, view: img.view, data: toBase64(new Uint8Array(await blob.arrayBuffer())) });
       }
-      const r = await fetch('/api/design/spatial', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: ticket.ticketId, images, interpretation: brief.interpretation, notes: consent.notes }) });
-      const body = await r.json().catch(() => null);
+      const startedAt = new Date().toISOString();
+      // Genau ein Versand; bei Verbindungsfehlern nur Nachfrage beim Server, keine Wiederholung
+      const res = await postOnce('/api/design/spatial', { ticketId: ticket.ticketId, images, interpretation: brief.interpretation, notes: consent.notes }, ticket.ticketId);
+      if (res.kind !== 'response') {
+        const f = describeFailure(res, startedAt, 'Vorschlags');
+        setMessage({ kind: 'error', text: `${f.text} Nächster Schritt: ${f.next}` });
+        return;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body = res.body as any;
       if (body?.liveCheck) onLiveCheck?.(body.liveCheck);
-      if (!body) setMessage({ kind: 'error', text: `Analysedienst nicht erreichbar (HTTP ${r.status}).` });
-      else if (body.ticketId !== ticket.ticketId) setMessage({ kind: 'error', text: 'Antwort gehört nicht zu dieser Anfrage (Anfragekennung abweichend) und wurde verworfen.' });
+      if (body.ticketId !== ticket.ticketId) setMessage({ kind: 'error', text: 'Antwort gehört nicht zu dieser Anfrage (Anfragekennung abweichend) und wurde verworfen.' });
       else if (body.ok || body.code === 'contradictory_response') {
         const proposal = body.ok ? body.proposal : body.candidate;
         const meta = { provider: body.meta?.provider ?? service?.provider ?? 'Analysedienst', model: body.meta?.model ?? service?.model ?? null, promptVersion: body.meta?.promptVersion ?? service?.promptVersion ?? null, requestId: body.meta?.requestId ?? null, at: new Date().toISOString() };
@@ -235,9 +243,9 @@ export function SpatialLab({ brief, urls, service, onLiveCheck }: Props) {
         if (out.kind === 'applied') replaceWith(out.design, `Räumlicher Vorschlag von ${meta.provider}${meta.model ? ` (${meta.model})` : ''} übernommen. Eine KI-Schätzung ist kein Geometriebeleg – bitte prüfen und korrigieren.`);
         else if (out.kind === 'held') setHeld({ candidate: out.candidate, reasons: [...out.reasons, ...(body.ok ? [] : body.errors ?? [])] });
         else setMessage({ kind: 'error', text: out.reason });
-      } else setMessage({ kind: 'error', text: body.message, errors: body.errors });
+      } else setMessage({ kind: 'error', text: `Der lokale Server meldet einen Fehler (HTTP ${res.status}): ${body.message ?? 'ohne Beschreibung'}`, errors: body.errors });
     } catch (e) {
-      setMessage({ kind: 'error', text: `Räumlicher Vorschlag fehlgeschlagen: ${(e as Error).message}` });
+      setMessage({ kind: 'error', text: `Räumlicher Vorschlag nicht gestartet: ${(e as Error).message}` });
     } finally {
       setBusy(false);
       setConsent((c) => ({ ...c, open: false, agreed: false }));

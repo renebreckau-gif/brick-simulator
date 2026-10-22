@@ -7,6 +7,7 @@ import { cyrb53, stableStringify } from '../model/hash';
 import type { DesignProvenance } from '../model/types';
 import { MAX_EDGE_PX, MAX_IMAGE_BYTES, MAX_IMAGES, MIN_EDGE_PX } from './images';
 import { checkInterpretation, Interpretation } from './interpretation';
+import { bindViews, type ImageView } from './views';
 
 export const BRIEF_SCHEMA = 'baustein-sim/design-brief@1';
 export const ANALYSIS_METHOD_VERSION = 'design-analysis@1.0.0';
@@ -216,8 +217,9 @@ export function setInterpretation(b: DesignBrief, interpretation: Interpretation
   const reason = analysis.method === 'manual' ? 'Interpretation manuell begonnen' : `Interpretation durch ${analysis.provider}${analysis.model ? ` (${analysis.model})` : ''}`;
   const mismatch = bindingMismatch(b, binding.imageHashes, binding.views);
   const matches = mismatch === null;
+  // Ansichten an die tatsächlich analysierten Bilder binden (Prüfsumme je Ausschnitt)
   return next(b, reason, {
-    interpretation,
+    interpretation: bindViews(interpretation, binding.imageHashes),
     analysis: {
       ...analysis, methodVersion: ANALYSIS_METHOD_VERSION, imageHashes: [...binding.imageHashes], inputViews: [...binding.views], notes: binding.notes, ticketId: binding.ticketId,
       status: matches ? 'current' : 'stale', staleReason: matches ? null : `Interpretation bezieht sich auf ${mismatch}`,
@@ -351,6 +353,62 @@ export function correctList(b: DesignBrief, key: 'groups' | 'colors' | 'features
   return correct(b, key, list, at);
 }
 
+// ---- Ansichten innerhalb der Bilder (05A.5): ändern, ergänzen, entfernen – jeweils als Korrektur protokolliert.
+// Jede Änderung macht die Bestätigung veraltet (über correct) und – über den Interpretations-Hash – auch
+// einen darauf beruhenden räumlichen Entwurf.
+
+const VIEWS_SCHEMA = 'baustein-sim/image-views@1' as const;
+
+function viewsOf(b: DesignBrief): ImageView[] {
+  return b.interpretation?.imageViews?.views ?? [];
+}
+
+/** Ansicht ändern (Ausschnitt, Richtung, Orientierung, Art, Beschriftung); Grundlage wird „vom Nutzer“. */
+export function updateView(b: DesignBrief, viewId: string, patch: Partial<Omit<ImageView, 'viewId' | 'basis'>>, at = now()): DesignBrief {
+  const views = viewsOf(b);
+  const i = views.findIndex((v) => v.viewId === viewId);
+  if (i < 0) throw new BriefError(`Ansicht „${viewId}“ fehlt`);
+  const merged: ImageView = { ...views[i], ...patch, basis: 'user' };
+  // Bildbezug folgt dem Bildindex: neue Prüfsumme nur aus dem aktuellen Bild an dieser Stelle
+  if (patch.imageIndex !== undefined) merged.imageSha256 = b.images[patch.imageIndex]?.sha256;
+  return correct(b, `imageViews.views.${i}`, merged, at);
+}
+
+export function addView(b: DesignBrief, view: Omit<ImageView, 'basis' | 'imageSha256'>, at = now()): DesignBrief {
+  if (!b.interpretation) throw new BriefError('Keine Interpretation vorhanden');
+  if (viewsOf(b).some((v) => v.viewId === view.viewId)) throw new BriefError(`Ansicht „${view.viewId}“ existiert bereits`);
+  const full: ImageView = { ...view, imageSha256: b.images[view.imageIndex]?.sha256, basis: 'user' };
+  return correct(b, 'imageViews', { schema: VIEWS_SCHEMA, views: [...viewsOf(b), full] }, at);
+}
+
+/** Ansicht entfernen; Bildbereiche, die ausdrücklich auf sie verweisen, verlieren nur diesen Verweis. */
+export function removeView(b: DesignBrief, viewId: string, at = now()): DesignBrief {
+  if (!b.interpretation) throw new BriefError('Keine Interpretation vorhanden');
+  const views = viewsOf(b).filter((v) => v.viewId !== viewId);
+  let n = correct(b, 'imageViews', { schema: VIEWS_SCHEMA, views }, at);
+  const groups = n.interpretation!.groups.map((g) => ({ ...g, boxes: g.boxes.map((bx) => (bx.viewId === viewId ? { ...bx, viewId: null } : bx)) }));
+  if (stableStringify(groups) !== stableStringify(n.interpretation!.groups)) n = correct(n, 'groups', groups, at);
+  return n;
+}
+
+/**
+ * Zwei Baugruppen als dasselbe Teil zusammenführen (z. B. je Ansicht doppelt erfasster Rumpf): Bildbereiche,
+ * Farben und Merkmalsbezüge gehen auf die behaltene Baugruppe über; die andere entfällt.
+ */
+export function mergeGroups(b: DesignBrief, keepId: string, dropId: string, at = now()): DesignBrief {
+  const it = b.interpretation;
+  if (!it) throw new BriefError('Keine Interpretation vorhanden');
+  const keep = it.groups.find((g) => g.id === keepId);
+  const drop = it.groups.find((g) => g.id === dropId);
+  if (!keep || !drop || keepId === dropId) throw new BriefError('Zum Zusammenführen zwei verschiedene, vorhandene Baugruppen wählen');
+  if (drop.role === 'hauptkoerper' && keep.role !== 'hauptkoerper') throw new BriefError('Den Hauptkörper in eine andere Baugruppe zusammenführen, nicht umgekehrt');
+  const groups = it.groups.filter((g) => g.id !== dropId).map((g) => (g.id === keepId ? { ...g, boxes: [...g.boxes, ...drop.boxes], colorIds: [...new Set([...g.colorIds, ...drop.colorIds])], basis: 'user' as const } : g));
+  const features = it.features.map((f) => ({ ...f, groupIds: [...new Set(f.groupIds.map((x) => (x === dropId ? keepId : x)))] }));
+  let n = correct(b, 'groups', groups, at);
+  if (stableStringify(features) !== stableStringify(it.features)) n = correct(n, 'features', features, at);
+  return n;
+}
+
 export function setRequirements(b: DesignBrief, r: Requirements): DesignBrief {
   if (stableStringify(r) === stableStringify(b.requirements)) return b;
   return next(b, 'Anforderungen geändert', { requirements: r, confirmation: staleConfirmation(b, 'Anforderungen geändert') });
@@ -433,7 +491,7 @@ export function confirmationBlockers(b: DesignBrief): Blocker[] {
   else {
     if (!analysisBound(b))
       out.push({ group: 'bound', target: 'interpretation', message: `Interpretation nach Bild- oder Ansichtsänderung erneut prüfen${b.analysis?.staleReason ? ` (${b.analysis.staleReason})` : ''}: neu analysieren, manuell neu beginnen oder ausdrücklich für die aktuellen Bilder und Ansichten neu bewerten.` });
-    for (const e of checkInterpretation(b.interpretation, b.analysis?.imageHashes.length ?? b.images.length).errors) out.push({ group: 'interpretation', target: 'interpretation', message: `Interpretation: ${e}` });
+    for (const e of checkInterpretation(b.interpretation, b.analysis?.imageHashes.length ?? b.images.length, b.analysis?.imageHashes ?? b.images.map((i) => i.sha256)).errors) out.push({ group: 'interpretation', target: 'interpretation', message: `Interpretation: ${e}` });
   }
   const featureIds = b.interpretation?.features.map((f) => f.id) ?? [];
   for (const p of checkRequirements(b.requirements, featureIds)) out.push({ group: FIELD_GROUP[p.field], target: `req-${p.field}`, message: p.message });
@@ -493,7 +551,7 @@ export function briefIssues(b: DesignBrief): string[] {
     if (b.analysis.status === 'stale' && !b.analysis.staleReason) out.push('Veraltete Analyse ohne Begründung');
   }
   if (b.interpretation) {
-    const c = checkInterpretation(b.interpretation, b.analysis?.imageHashes.length ?? b.images.length);
+    const c = checkInterpretation(b.interpretation, b.analysis?.imageHashes.length ?? b.images.length, b.analysis?.imageHashes ?? b.images.map((i) => i.sha256));
     out.push(...c.errors.map((e) => `Interpretation: ${e}`));
   }
   if (b.requirements) {

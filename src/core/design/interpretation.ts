@@ -5,6 +5,7 @@
 // Ein Bild belegt weder Rückseite noch Innenkonstruktion, reale Abmessungen, Teilenummern oder
 // Stabilität. Die Prüfung unten weist Widersprüche zurück, statt sie stillschweigend zu glätten.
 import { z } from 'zod';
+import { checkViews, ImageViewsSchema } from './views';
 
 export const INTERPRETATION_SCHEMA = 'baustein-sim/image-interpretation@1';
 
@@ -12,8 +13,11 @@ export const Basis = z.enum(['observed', 'assumed', 'user']);
 export type Basis = z.infer<typeof Basis>;
 export const BASIS_LABEL: Record<Basis, string> = { observed: 'im Bild beobachtet', assumed: 'konstruktiv angenommen', user: 'vom Nutzer vorgegeben' };
 
-/** Bildbereich, normiert auf 0…1 (x nach rechts, y nach unten) im Bild mit Index imageIndex. */
-export const ImageBox = z.object({ imageIndex: z.number().int(), x: z.number(), y: z.number(), w: z.number(), h: z.number() });
+/**
+ * Bildbereich, normiert auf 0…1 (x nach rechts, y nach unten) im Bild mit Index imageIndex.
+ * viewId (optional, 05A.5): Ansicht innerhalb der Bilddatei, in der dieser Bereich liegt.
+ */
+export const ImageBox = z.object({ imageIndex: z.number().int(), x: z.number(), y: z.number(), w: z.number(), h: z.number(), viewId: z.string().nullable().optional() });
 
 export const Group = z.object({
   id: z.string(),
@@ -43,6 +47,11 @@ export const Interpretation = z.object({
   simplifications: z.array(z.object({ feature: z.string(), reason: z.string() })),
   /** Was sich aus dem Bild ausdrücklich nicht ableiten lässt. */
   notInferable: z.array(z.string()),
+  /**
+   * Ansichten innerhalb der Bilddateien (05A.5, baustein-sim/image-views@1). Fehlt bei älteren Interpretationen:
+   * dann ist nichts über Ansichten belegt – es wird keine erfunden.
+   */
+  imageViews: ImageViewsSchema.optional(),
 });
 export type Interpretation = z.infer<typeof Interpretation>;
 
@@ -58,7 +67,7 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
  * Prüft Struktur und Widerspruchsfreiheit einer Interpretation – unabhängig davon, ob sie vom
  * Analysedienst, aus einer importierten Datei oder aus manueller Eingabe stammt.
  */
-export function checkInterpretation(raw: unknown, imageCount: number): InterpretationCheck & { value: Interpretation | null } {
+export function checkInterpretation(raw: unknown, imageCount: number, imageShas?: readonly string[]): InterpretationCheck & { value: Interpretation | null } {
   const parsed = Interpretation.safeParse(raw);
   if (!parsed.success)
     return { ok: false, value: null, warnings: [], errors: parsed.error.issues.slice(0, 20).map((i) => `Struktur: ${i.path.join('.') || '(Wurzel)'} – ${i.message}`) };
@@ -110,7 +119,10 @@ export function checkInterpretation(raw: unknown, imageCount: number): Interpret
   const texts = [v.summary, v.silhouette.description, ...v.groups.map((g) => g.description), ...v.features.map((f) => f.description)];
   if (texts.some((t) => /\b\d+([.,]\d+)?\s?(mm|cm|m)\b/.test(t))) warnings.push('Die Beschreibung nennt reale Maße – ein Bild belegt keine realen Abmessungen. Bitte als Annahme behandeln oder entfernen.');
   if (texts.some((t) => /\b(teil(e)?nummer|part\s?(no|number)|element\s?id)\b/i.test(t))) warnings.push('Die Beschreibung nennt Teilenummern – ein Bild belegt keine konkreten Teile.');
-  if (imageCount === 1 && v.hiddenAreas.length === 0) warnings.push('Bei einem einzelnen Bild sind Rückseite und Innenkonstruktion verdeckt – es ist kein verdeckter Bereich eingetragen.');
+  const vc = checkViews(v, imageCount, imageShas);
+  errors.push(...vc.errors);
+  warnings.push(...vc.warnings);
+  if (imageCount === 1 && v.hiddenAreas.length === 0 && (v.imageViews?.views.length ?? 0) < 2) warnings.push('Bei einem einzelnen Bild sind Rückseite und Innenkonstruktion verdeckt – es ist kein verdeckter Bereich eingetragen.');
   return { ok: errors.length === 0, value: v, errors, warnings };
 }
 

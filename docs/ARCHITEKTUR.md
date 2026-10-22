@@ -139,6 +139,7 @@ Regeln für die künftigen Stufen 1–3:
 - **Laden heißt prüfen:** Struktur (zod) → Hash → fachliche Prüfung. Widersprüchliche Aufträge werden nur unbestätigt geladen; `isConfirmedCurrent` verlangt fachliche Gültigkeit und aktuelle Bildzuordnung (05A.1).
 - **Analyseanfragen gebunden:** Ticket mit Projekt-ID, Eingabe-Hash, Interpretationsstand, Bildern, Ansichten, Hinweisen und Kennung. Antworten werden nur bei unverändertem Stand übernommen, sonst zurückgehalten oder verworfen; der Bildbezug kommt immer aus der Anfrage (05A.1).
 - **Vorschau ehrlich benannt:** Sie zeigt eingefärbte 2D-Bildbereiche. Räumlich wird es erst im räumlichen Entwurf (A20).
+- **Ansichten innerhalb einer Datei (05A.5):** `imageViews` (`baustein-sim/image-views@1`) bindet Ausschnitte an Bildindex und Prüfsumme. Baugruppen bleiben objektbezogen (`viewId` je Bildbereich). Anfragen an den Server laufen über `postOnce` mit Anfrageprotokoll statt blindem `fetch`.
 - **Bilder bleiben lokal:** IndexedDB im Browser. Im Auftrag stehen nur Prüfsumme, Typ, Maße und Anzeigename; der Dateiname wird nie analysiert.
 
 ## A20 – Räumlicher Entwurf als eigene Stufe (Auftrag 05B.0)

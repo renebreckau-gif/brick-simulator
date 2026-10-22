@@ -88,6 +88,12 @@ BrickLink Studio beschreibt seine Kollisions- und Stabilitätsprüfung selbst al
 - Ein Bild belegt weder Rückseite noch Innenkonstruktion, reale Abmessungen, Teilenummern oder Stabilität. Solche Angaben sind Annahmen oder Nutzervorgaben.
 - Anforderungen (Teilezahl, Maße, Nutzung) sind Wünsche, keine Machbarkeitszusage. Es gibt keine Alters- oder Sicherheitsfreigabe.
 
+## Mehrere Ansichten (seit Auftrag 05A.5)
+
+- Beschriftete Maße einer Vorlage sind Behauptungen der Vorlage, keine Messung. Gezeichnete Ansichten können unterschiedlich skaliert sein. Abweichungen werden benannt und gemittelt, nicht aufgelöst.
+- Entworfene Ansichten (z. B. eine ergänzte Unterseite) sind kein Beleg für die tatsächliche Form.
+- Mehrteilige Baugruppen (z. B. mehrere Landebeine) erscheinen im räumlichen Entwurf als ein umhüllender Körper.
+
 ## Räumlicher Entwurf (seit Auftrag 05B.0)
 
 - Ein räumlicher Entwurf beschreibt eine Form aus einfachen Körpern, keine Bausteine. Überlappungen sind keine Kollisionen, und Lücken sind kein Beleg für fehlende Verbindungen.

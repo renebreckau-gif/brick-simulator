@@ -1,6 +1,6 @@
-﻿// Auftrag 05B.0: Geometrische Konsistenz der sechs Ansichten. Alle Projektionen stammen aus derselben
-// Geometrie (bodyGeometry); geprÃ¼ft werden Lage, Ausdehnung, Achsabbildung, HÃ¤ndigkeit und gemeinsamer MaÃŸstab.
-// Synthetische EntwÃ¼rfe â€“ kein Bild, keine Analyse.
+// Auftrag 05B.0: Geometrische Konsistenz der sechs Ansichten. Alle Projektionen stammen aus derselben
+// Geometrie (bodyGeometry); geprüft werden Lage, Ausdehnung, Achsabbildung, Händigkeit und gemeinsamer Maßstab.
+// Synthetische Entwürfe – kein Bild, keine Analyse.
 import { describe, expect, it } from 'vitest';
 import { bodyGeometry, cross, modelBounds, projectBody, sharedFrames, VIEW_BY_ID, VIEWS, type V3, type ViewId } from '../src/core/design/projection';
 import type { SpatialBody, SpatialDesign } from '../src/core/design/spatial';
@@ -12,7 +12,7 @@ const body = (id: string, p: Partial<SpatialBody>): SpatialBody => ({
 });
 
 /**
- * Bewusst asymmetrischer Entwurf: HauptkÃ¶rper und eine Markierung vorn-links-oben, ein Ausleger hinten-rechts-unten.
+ * Bewusst asymmetrischer Entwurf: Hauptkörper und eine Markierung vorn-links-oben, ein Ausleger hinten-rechts-unten.
  * Damit fallen vertauschte Seiten, falsche Kamerarichtungen und Spiegelungen sofort auf.
  */
 const ASYM: Pick<SpatialDesign, 'bodies'> = {
@@ -32,7 +32,7 @@ const worldBox = (b: SpatialBody) => {
 const close = (a: number, b: number) => expect(a).toBeCloseTo(b, 9);
 
 describe('Ansichten: echte Drehungen, keine Spiegelung', () => {
-  it('jede Ansicht ist rechtshÃ¤ndig (rechts Ã— oben = zur Kamera)', () => {
+  it('jede Ansicht ist rechtshändig (rechts × oben = zur Kamera)', () => {
     for (const v of VIEWS) expect(cross(v.right, v.up).map((x) => x + 0)).toEqual(v.toCamera);
   });
   it('Gegenansichten sind entgegengesetzt (vorne/hinten, links/rechts, oben/unten)', () => {
@@ -42,12 +42,12 @@ describe('Ansichten: echte Drehungen, keine Spiegelung', () => {
 });
 
 describe('gleiche Lage und Ausdehnung in allen Projektionen', () => {
-  it('jede Projektion bildet genau die Weltausdehnung des KÃ¶rpers auf ihre Achsen ab', () => {
+  it('jede Projektion bildet genau die Weltausdehnung des Körpers auf ihre Achsen ab', () => {
     for (const b of ASYM.bodies) {
       const { lo, hi } = worldBox(b);
       for (const v of VIEWS) {
         const p = projectBody(b, v);
-        // u = right Â· p, v = up Â· p; fÃ¼r Achsvektoren mit Vorzeichen Â±1 ergibt sich die Ausdehnung direkt
+        // u = right · p, v = up · p; für Achsvektoren mit Vorzeichen ±1 ergibt sich die Ausdehnung direkt
         const range = (dir: V3) => { const k = dir.findIndex((x) => x !== 0); const s = dir[k]; return s > 0 ? [lo[k], hi[k]] : [-hi[k], -lo[k]]; };
         const [u0, u1] = range(v.right);
         const [v0, v1] = range(v.up);
@@ -55,7 +55,7 @@ describe('gleiche Lage und Ausdehnung in allen Projektionen', () => {
       }
     }
   });
-  it('LÃ¤nge (x) ist in Oben, Unten, Links und Rechts gleich; Breite (y) in Vorne, Hinten, Oben, Unten; HÃ¶he (z) in Vorne, Hinten, Links, Rechts', () => {
+  it('Länge (x) ist in Oben, Unten, Links und Rechts gleich; Breite (y) in Vorne, Hinten, Oben, Unten; Höhe (z) in Vorne, Hinten, Links, Rechts', () => {
     for (const b of ASYM.bodies) {
       const p = Object.fromEntries(VIEWS.map((v) => [v.id, projectBody(b, v).bbox])) as Record<ViewId, { u0: number; u1: number; v0: number; v1: number }>;
       const w = (x: { u0: number; u1: number }) => x.u1 - x.u0;
@@ -83,7 +83,7 @@ describe('asymmetrischer Entwurf: Seiten und Kamerarichtungen erkennbar', () => 
     ['rechts', 'rechts', 'oben'], // Blick auf die rechte Seite: vorn ist rechts im Bild
     ['oben', 'links', 'oben'], // Draufsicht, vorn oben im Bild: die linke Seite liegt links
     ['unten', 'rechts', 'oben'], // Untersicht, vorn oben im Bild: die linke Seite erscheint rechts
-  ] as [ViewId, 'links' | 'rechts', 'oben' | 'unten'][])('Markierung in Ansicht â€ž%sâ€œ: %s, %s', (view, h, v) => {
+  ] as [ViewId, 'links' | 'rechts', 'oben' | 'unten'][])('Markierung in Ansicht „%s“: %s, %s', (view, h, v) => {
     const m = at(view, 'marker');
     expect(m.u > 0 ? 'rechts' : 'links').toBe(h);
     expect(m.v > 0 ? 'oben' : 'unten').toBe(v);
@@ -96,7 +96,7 @@ describe('asymmetrischer Entwurf: Seiten und Kamerarichtungen erkennbar', () => 
       expect(Math.sign(a.v) * Math.sign(b.v)).toBe(-1);
     }
   });
-  it('eine versehentliche Spiegelung (y â†’ âˆ’y) verÃ¤ndert die Ansichten erkennbar', () => {
+  it('eine versehentliche Spiegelung (y → −y) verändert die Ansichten erkennbar', () => {
     const mirrored = { bodies: ASYM.bodies.map((b) => ({ ...b, center: { ...b.center, y: -b.center.y } })) };
     const before = projectBody(ASYM.bodies[1], VIEW_BY_ID.vorne).bbox;
     const after = projectBody(mirrored.bodies[1], VIEW_BY_ID.vorne).bbox;
@@ -104,8 +104,8 @@ describe('asymmetrischer Entwurf: Seiten und Kamerarichtungen erkennbar', () => 
   });
 });
 
-describe('gemeinsamer MaÃŸstab', () => {
-  it('ein MaÃŸstab fÃ¼r alle sechs Ansichten; das Modell passt in jedes Fenster; gleiche MaÃŸe erscheinen gleich lang', () => {
+describe('gemeinsamer Maßstab', () => {
+  it('ein Maßstab für alle sechs Ansichten; das Modell passt in jedes Fenster; gleiche Maße erscheinen gleich lang', () => {
     const vp = { width: 300, height: 200, margin: 10 };
     const { scale, frames } = sharedFrames(ASYM, vp);
     const size = modelBounds(ASYM).size;
@@ -116,29 +116,29 @@ describe('gemeinsamer MaÃŸstab', () => {
       expect((Math.max(...us) - Math.min(...us)) * scale).toBeLessThanOrEqual(vp.width - 2 * vp.margin + 1e-9);
       expect((Math.max(...vs) - Math.min(...vs)) * scale).toBeLessThanOrEqual(vp.height - 2 * vp.margin + 1e-9);
     }
-    // LÃ¤nge im Fenster â€žObenâ€œ (senkrecht) = LÃ¤nge im Fenster â€žLinksâ€œ (waagerecht), beide mit demselben MaÃŸstab
+    // Länge im Fenster „Oben“ (senkrecht) = Länge im Fenster „Links“ (waagerecht), beide mit demselben Maßstab
     const oben = frames.find((f) => f.view.id === 'oben')!;
     const links = frames.find((f) => f.view.id === 'links')!;
     const ext = (f: typeof oben, k: 'u' | 'v') => (k === 'u' ? Math.max(...f.bodies.map((b) => b.bbox.u1)) - Math.min(...f.bodies.map((b) => b.bbox.u0)) : Math.max(...f.bodies.map((b) => b.bbox.v1)) - Math.min(...f.bodies.map((b) => b.bbox.v0)));
     close(ext(oben, 'v') * scale, ext(links, 'u') * scale);
     close(ext(oben, 'v'), size[0]);
   });
-  it('MaÃŸstab hÃ¤ngt nicht von einer einzelnen Ansicht ab: ein langer flacher KÃ¶rper wird nicht in der HÃ¶he gestreckt', () => {
+  it('Maßstab hängt nicht von einer einzelnen Ansicht ab: ein langer flacher Körper wird nicht in der Höhe gestreckt', () => {
     const flat = { bodies: [body('m', { isMain: true, size: { length: 1, width: 0.2, height: 0.05 } })] };
     const { scale } = sharedFrames(flat, { width: 300, height: 300, margin: 0 });
-    expect(scale).toBeCloseTo(300, 9); // durch die LÃ¤nge bestimmt, nicht durch die kleine HÃ¶he
+    expect(scale).toBeCloseTo(300, 9); // durch die Länge bestimmt, nicht durch die kleine Höhe
   });
 });
 
-describe('KÃ¶rperformen', () => {
-  it('Keil: hinten volle HÃ¶he, vorn nur taper Â· HÃ¶he', () => {
+describe('Körperformen', () => {
+  it('Keil: hinten volle Höhe, vorn nur taper · Höhe', () => {
     const g = bodyGeometry(body('w', { shape: 'wedge', taper: 0, size: { length: 1, width: 1, height: 1 } }));
     const frontTop = Math.max(...g.vertices.filter((v) => v[0] > 0).map((v) => v[2]));
     const rearTop = Math.max(...g.vertices.filter((v) => v[0] < 0).map((v) => v[2]));
     close(frontTop, -0.5);
     close(rearTop, 0.5);
   });
-  it('Drehung: 90Â° Gieren dreht die LÃ¤nge auf die Breitenachse', () => {
+  it('Drehung: 90° Gieren dreht die Länge auf die Breitenachse', () => {
     const { lo, hi } = worldBox(body('r', { size: { length: 1, width: 0.2, height: 0.2 }, rotation: { yaw: 90, pitch: 0, roll: 0 } }));
     close(hi[1] - lo[1], 1);
     close(hi[0] - lo[0], 0.2);

@@ -1,17 +1,17 @@
-﻿// Verdeckung in den orthografischen Ansichten (Auftrag 05B.0.1): Tiefenpuffer je Bildpunkt statt einer
-// Sortierung ganzer KÃ¶rper. Eine Sortierung nach KÃ¶rperabstand versagt bei schrÃ¤gen oder Ã¼berlappenden
-// KÃ¶rpern (z. B. ein Quader vor der schrÃ¤gen FlÃ¤che eines grÃ¶ÃŸeren Keils). Hier entscheidet je Bildpunkt
-// die tatsÃ¤chlich nÃ¤chste FlÃ¤che.
+// Verdeckung in den orthografischen Ansichten (Auftrag 05B.0.1): Tiefenpuffer je Bildpunkt statt einer
+// Sortierung ganzer Körper. Eine Sortierung nach Körperabstand versagt bei schrägen oder überlappenden
+// Körpern (z. B. ein Quader vor der schrägen Fläche eines größeren Keils). Hier entscheidet je Bildpunkt
+// die tatsächlich nächste Fläche.
 //
 // Reines TypeScript ohne WebGL: dieselbe Rasterung zeichnet die Ansichten, beantwortet die Auswahl per
-// Klick und ist ohne Browser testbar. MaÃŸstab, Mittelpunkt und Achsabbildung kommen unverÃ¤ndert aus
+// Klick und ist ohne Browser testbar. Maßstab, Mittelpunkt und Achsabbildung kommen unverändert aus
 // sharedFrames()/VIEWS (projection.ts).
 import { bodyGeometry, type V3, type ViewDef } from './projection';
 import type { SpatialDesign } from './spatial';
 
 export interface RasterFrame {
   view: ViewDef;
-  /** Bildpunkte je LÃ¤ngeneinheit (fÃ¼r alle Ansichten gleich). */
+  /** Bildpunkte je Längeneinheit (für alle Ansichten gleich). */
   scale: number;
   /** Modellmittelpunkt dieser Ansicht in (u, v); liegt in der Bildmitte. */
   center: [number, number];
@@ -22,13 +22,13 @@ export interface RasterFrame {
 export interface Raster {
   width: number;
   height: number;
-  /** Index des sichtbaren KÃ¶rpers in design.bodies je Bildpunkt (âˆ’1 = Hintergrund). */
+  /** Index des sichtbaren Körpers in design.bodies je Bildpunkt (−1 = Hintergrund). */
   body: Int32Array;
-  /** Laufende Nummer der sichtbaren FlÃ¤che (fÃ¼r Kanten), âˆ’1 = Hintergrund. */
+  /** Laufende Nummer der sichtbaren Fläche (für Kanten), −1 = Hintergrund. */
   face: Int32Array;
-  /** Ausrichtung der sichtbaren FlÃ¤che zur Kamera 0â€¦1 (Schattierung). */
+  /** Ausrichtung der sichtbaren Fläche zur Kamera 0…1 (Schattierung). */
   shade: Float32Array;
-  /** Abstand zur Kamera in Objekteinheiten (grÃ¶ÃŸer = nÃ¤her); âˆ’Infinity = Hintergrund. */
+  /** Abstand zur Kamera in Objekteinheiten (größer = näher); −Infinity = Hintergrund. */
   depth: Float32Array;
   bodyIds: string[];
 }
@@ -43,8 +43,8 @@ export function toPixel(p: V3, f: RasterFrame): [number, number, number] {
 }
 
 /**
- * FlÃ¤chennormale nach Newell Ã¼ber alle Ecken. Robust, wenn Ecken zusammenfallen (spitzer Keil: zwei
- * Ecken jeder SeitenflÃ¤che liegen aufeinander â€“ das Kreuzprodukt der ersten drei Ecken wÃ¤re dann null).
+ * Flächennormale nach Newell über alle Ecken. Robust, wenn Ecken zusammenfallen (spitzer Keil: zwei
+ * Ecken jeder Seitenfläche liegen aufeinander – das Kreuzprodukt der ersten drei Ecken wäre dann null).
  */
 export function faceNormal(vs: V3[], face: number[]): V3 {
   const n: V3 = [0, 0, 0];
@@ -58,7 +58,7 @@ export function faceNormal(vs: V3[], face: number[]): V3 {
   return n;
 }
 
-/** Rastert alle KÃ¶rper mit Tiefenpuffer; abgetastet wird jeweils die Bildpunktmitte. */
+/** Rastert alle Körper mit Tiefenpuffer; abgetastet wird jeweils die Bildpunktmitte. */
 export function rasterize(d: Pick<SpatialDesign, 'bodies'>, f: RasterFrame): Raster {
   const W = Math.max(1, Math.round(f.width));
   const H = Math.max(1, Math.round(f.height));
@@ -72,9 +72,9 @@ export function rasterize(d: Pick<SpatialDesign, 'bodies'>, f: RasterFrame): Ras
       const id = faceNo++;
       const nrm = faceNormal(g.vertices, fc);
       const len = Math.hypot(...nrm);
-      if (len < 1e-12) continue; // entartete FlÃ¤che ohne Inhalt (z. B. VorderflÃ¤che eines spitzen Keils)
+      if (len < 1e-12) continue; // entartete Fläche ohne Inhalt (z. B. Vorderfläche eines spitzen Keils)
       const facing = dot(nrm, f.view.toCamera) / len;
-      if (facing <= 1e-9) continue; // RÃ¼ckseite bzw. genau seitlich: nicht sichtbar (alle KÃ¶rper sind konvex und geschlossen)
+      if (facing <= 1e-9) continue; // Rückseite bzw. genau seitlich: nicht sichtbar (alle Körper sind konvex und geschlossen)
       for (let k = 1; k + 1 < fc.length; k++) tri(r, px[fc[0]], px[fc[k]], px[fc[k + 1]], bi, id, facing);
     }
   });
@@ -110,7 +110,7 @@ function tri(r: Raster, p0: number[], p1: number[], p2: number[], bi: number, fa
   }
 }
 
-/** Sichtbarer KÃ¶rper an einer Bildpunktposition (fÃ¼r Auswahl per Klick und Tests); null = Hintergrund. */
+/** Sichtbarer Körper an einer Bildpunktposition (für Auswahl per Klick und Tests); null = Hintergrund. */
 export function bodyAt(r: Raster, x: number, y: number): string | null {
   const xi = Math.floor(x);
   const yi = Math.floor(y);
@@ -119,7 +119,7 @@ export function bodyAt(r: Raster, x: number, y: number): string | null {
   return b < 0 ? null : r.bodyIds[b];
 }
 
-/** Anteil sichtbarer Bildpunkte je KÃ¶rper (z. B. um zu prÃ¼fen, dass ein KÃ¶rper nicht vollstÃ¤ndig verdeckt ist). */
+/** Anteil sichtbarer Bildpunkte je Körper (z. B. um zu prüfen, dass ein Körper nicht vollständig verdeckt ist). */
 export function visiblePixels(r: Raster): Map<string, number> {
   const m = new Map<string, number>();
   for (let i = 0; i < r.body.length; i++) if (r.body[i] >= 0) m.set(r.bodyIds[r.body[i]], (m.get(r.bodyIds[r.body[i]]) ?? 0) + 1);
@@ -132,8 +132,8 @@ const hex = (h: string): [number, number, number] => {
 };
 
 /**
- * Farbbild aus dem Raster: KÃ¶rperfarbe nach FlÃ¤chenausrichtung schattiert, Kanten an FlÃ¤chen- und
- * KÃ¶rpergrenzen, ausgewÃ¤hlter KÃ¶rper mit blauem Umriss. Ergebnis als RGBA (fÃ¼r ImageData).
+ * Farbbild aus dem Raster: Körperfarbe nach Flächenausrichtung schattiert, Kanten an Flächen- und
+ * Körpergrenzen, ausgewählter Körper mit blauem Umriss. Ergebnis als RGBA (für ImageData).
  */
 export function shadeRaster(r: Raster, colors: string[], selectedIndex: number, background: [number, number, number] = [246, 248, 250]): Uint8ClampedArray {
   const out = new Uint8ClampedArray(r.width * r.height * 4);
@@ -149,7 +149,7 @@ export function shadeRaster(r: Raster, colors: string[], selectedIndex: number, 
         const k = 0.55 + 0.45 * r.shade[i];
         c = [rgb[b][0] * k, rgb[b][1] * k, rgb[b][2] * k];
       }
-      // Kanten: Nachbar rechts/unten gehÃ¶rt zu anderer FlÃ¤che bzw. anderem KÃ¶rper
+      // Kanten: Nachbar rechts/unten gehört zu anderer Fläche bzw. anderem Körper
       const fr = x + 1 < W ? r.face[i + 1] : -1;
       const fd = y + 1 < r.height ? r.face[i + W] : -1;
       const br = x + 1 < W ? r.body[i + 1] : -1;

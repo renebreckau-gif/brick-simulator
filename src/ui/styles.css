@@ -376,3 +376,19 @@ button.danger { color: var(--block); }
 .btag.sbasis-assumed { border-style: dashed; }
 .btag.sbasis-user { border-style: double; border-width: 3px; }
 @media (max-width: 900px) { .spsplit { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Ansichten in den Bildern (05A.5) */
+.dviews { border: 1px solid var(--rule); border-radius: 6px; display: grid; gap: var(--s2); margin: 0; min-width: 0; }
+.dviews legend { font-weight: 700; }
+.vlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: var(--s2); }
+.vitem { border: 1px solid var(--rule); border-radius: 6px; padding: var(--s2); display: grid; gap: var(--s1); align-content: start; min-width: 0; overflow-wrap: anywhere; }
+.vitem.entwurf { border: 2px dashed var(--warn); background: #fff8ec; }
+.vitem figure { margin: 0; display: grid; gap: 4px; }
+.vitem figcaption { font-size: 13px; }
+.vcrop { width: 100%; max-height: 220px; background-repeat: no-repeat; background-color: #f4f6f8; border: 1px solid var(--rule); border-radius: 4px; }
+.vcrop.empty { display: grid; place-items: center; font-size: 12px; color: var(--ink-2); aspect-ratio: 4 / 3; }
+.vtag { font-size: 12px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--rule); }
+.vtag.entwurf { border: 2px solid var(--warn); color: var(--warn); font-weight: 700; }
+.vcontra ul { margin: 0; padding-left: 1.2em; }
+.vcontra .err { color: var(--block); }
+.doverlay rect.viewframe { stroke: var(--select); stroke-width: 3; stroke-dasharray: 8 4; fill: none; }

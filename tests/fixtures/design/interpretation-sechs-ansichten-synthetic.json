@@ -1,0 +1,570 @@
+{
+ "fixture": "SYNTHETISCH – von Claude Code nach Betrachtung der Sechs-Ansichten-Tafel (1536 × 1024) geschätzt; keine Ausgabe eines Analysedienstes, keine Live-Analyse. Das Bild selbst liegt nicht im Repository.",
+ "interpretation": {
+  "subject": "Proportionstafel eines Patrouillenschiffs mit sechs orthogonalen Ansichten",
+  "summary": "SYNTHETISCHE Testinterpretation (von Claude Code nach Betrachtung des Bildes eingetragen; keine Dienstantwort).",
+  "silhouette": {
+   "description": "Langgestreckter Rumpf mit zwei hinteren Gondeln",
+   "aspectWidthToHeight": 1.5,
+   "basis": "observed"
+  },
+  "groups": [
+   {
+    "id": "rumpf",
+    "name": "Rumpf",
+    "role": "hauptkoerper",
+    "description": "langgestreckter Mittelrumpf mit spitzem Bug",
+    "basis": "observed",
+    "boxes": [
+     {
+      "imageIndex": 0,
+      "x": 0.0977,
+      "y": 0.249,
+      "w": 0.1042,
+      "h": 0.6299,
+      "viewId": "v-oben"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.3483,
+      "y": 0.2441,
+      "w": 0.1009,
+      "h": 0.6348,
+      "viewId": "v-unten"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.5306,
+      "y": 0.1318,
+      "w": 0.3809,
+      "h": 0.1562,
+      "viewId": "v-links"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.5859,
+      "y": 0.4004,
+      "w": 0.3874,
+      "h": 0.1855,
+      "viewId": "v-rechts"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.6022,
+      "y": 0.7275,
+      "w": 0.0684,
+      "h": 0.1514,
+      "viewId": "v-vorne"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.8398,
+      "y": 0.7275,
+      "w": 0.0684,
+      "h": 0.1514,
+      "viewId": "v-hinten"
+     }
+    ],
+    "relativeSize": {
+     "length": 1,
+     "width": 1,
+     "height": 1
+    },
+    "colorIds": [
+     "grau"
+    ],
+    "confidence": "mittel"
+   },
+   {
+    "id": "gondel_l",
+    "name": "Triebwerksgondel links",
+    "role": "baugruppe",
+    "description": "zylindrische Gondel mit runder Düse",
+    "basis": "observed",
+    "boxes": [
+     {
+      "imageIndex": 0,
+      "x": 0.179,
+      "y": 0.1807,
+      "w": 0.0684,
+      "h": 0.2783,
+      "viewId": "v-oben"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.2962,
+      "y": 0.1807,
+      "w": 0.0684,
+      "h": 0.2783,
+      "viewId": "v-unten"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.7682,
+      "y": 0.1514,
+      "w": 0.2051,
+      "h": 0.1416,
+      "viewId": "v-links"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.6803,
+      "y": 0.7324,
+      "w": 0.0553,
+      "h": 0.1367,
+      "viewId": "v-vorne"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.7715,
+      "y": 0.7324,
+      "w": 0.0684,
+      "h": 0.1367,
+      "viewId": "v-hinten"
+     }
+    ],
+    "relativeSize": {
+     "length": 0.45,
+     "width": 0.35,
+     "height": 0.75
+    },
+    "colorIds": [
+     "oliv"
+    ],
+    "confidence": "mittel"
+   },
+   {
+    "id": "gondel_r",
+    "name": "Triebwerksgondel rechts",
+    "role": "baugruppe",
+    "description": "zylindrische Gondel mit runder Düse",
+    "basis": "observed",
+    "boxes": [
+     {
+      "imageIndex": 0,
+      "x": 0.0488,
+      "y": 0.1807,
+      "w": 0.0684,
+      "h": 0.2783,
+      "viewId": "v-oben"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.4264,
+      "y": 0.1807,
+      "w": 0.0684,
+      "h": 0.2783,
+      "viewId": "v-unten"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.5306,
+      "y": 0.415,
+      "w": 0.2116,
+      "h": 0.1611,
+      "viewId": "v-rechts"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.5469,
+      "y": 0.7324,
+      "w": 0.0488,
+      "h": 0.1367,
+      "viewId": "v-vorne"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.9082,
+      "y": 0.7324,
+      "w": 0.0651,
+      "h": 0.1367,
+      "viewId": "v-hinten"
+     }
+    ],
+    "relativeSize": {
+     "length": 0.45,
+     "width": 0.35,
+     "height": 0.75
+    },
+    "colorIds": [
+     "oliv"
+    ],
+    "confidence": "mittel"
+   },
+   {
+    "id": "turm",
+    "name": "Geschützturm",
+    "role": "baugruppe",
+    "description": "",
+    "basis": "observed",
+    "boxes": [
+     {
+      "imageIndex": 0,
+      "x": 0.1335,
+      "y": 0.459,
+      "w": 0.026,
+      "h": 0.1074,
+      "viewId": "v-oben"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.7129,
+      "y": 0.1055,
+      "w": 0.0586,
+      "h": 0.041,
+      "viewId": "v-links"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.7324,
+      "y": 0.3955,
+      "w": 0.0586,
+      "h": 0.0391,
+      "viewId": "v-rechts"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.6217,
+      "y": 0.7227,
+      "w": 0.0293,
+      "h": 0.0293,
+      "viewId": "v-vorne"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.8594,
+      "y": 0.7227,
+      "w": 0.0293,
+      "h": 0.0293,
+      "viewId": "v-hinten"
+     }
+    ],
+    "relativeSize": {
+     "length": 0.12,
+     "width": 0.25,
+     "height": 0.3
+    },
+    "colorIds": [
+     "grau"
+    ],
+    "confidence": "mittel"
+   },
+   {
+    "id": "kanzel",
+    "name": "Cockpitkanzel",
+    "role": "baugruppe",
+    "description": "",
+    "basis": "observed",
+    "boxes": [
+     {
+      "imageIndex": 0,
+      "x": 0.1204,
+      "y": 0.625,
+      "w": 0.0553,
+      "h": 0.2148,
+      "viewId": "v-oben"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.5729,
+      "y": 0.1562,
+      "w": 0.0977,
+      "h": 0.0537,
+      "viewId": "v-links"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.804,
+      "y": 0.4443,
+      "w": 0.1107,
+      "h": 0.0537,
+      "viewId": "v-rechts"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.6152,
+      "y": 0.7373,
+      "w": 0.0423,
+      "h": 0.0439,
+      "viewId": "v-vorne"
+     }
+    ],
+    "relativeSize": {
+     "length": 0.3,
+     "width": 0.5,
+     "height": 0.35
+    },
+    "colorIds": [
+     "glas"
+    ],
+    "confidence": "mittel"
+   },
+   {
+    "id": "beine",
+    "name": "Landebeine",
+    "role": "baugruppe",
+    "description": "",
+    "basis": "observed",
+    "boxes": [
+     {
+      "imageIndex": 0,
+      "x": 0.5599,
+      "y": 0.2539,
+      "w": 0.2799,
+      "h": 0.0586,
+      "viewId": "v-links"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.6641,
+      "y": 0.5469,
+      "w": 0.2799,
+      "h": 0.0537,
+      "viewId": "v-rechts"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.5599,
+      "y": 0.8594,
+      "w": 0.1628,
+      "h": 0.0537,
+      "viewId": "v-vorne"
+     },
+     {
+      "imageIndex": 0,
+      "x": 0.7878,
+      "y": 0.8594,
+      "w": 0.1693,
+      "h": 0.0537,
+      "viewId": "v-hinten"
+     }
+    ],
+    "relativeSize": {
+     "length": 0.6,
+     "width": 0.9,
+     "height": 0.35
+    },
+    "colorIds": [
+     "schwarz"
+    ],
+    "confidence": "mittel"
+   }
+  ],
+  "colors": [
+   {
+    "id": "grau",
+    "name": "Dunkelgrau",
+    "hex": "#5a5f66",
+    "areaShare": 0.45,
+    "basis": "observed"
+   },
+   {
+    "id": "oliv",
+    "name": "Olivgrün",
+    "hex": "#6b7d3a",
+    "areaShare": 0.3,
+    "basis": "observed"
+   },
+   {
+    "id": "glas",
+    "name": "Rauchglas",
+    "hex": "#4a4038",
+    "areaShare": 0.05,
+    "basis": "observed"
+   },
+   {
+    "id": "schwarz",
+    "name": "Schwarz",
+    "hex": "#1d1f22",
+    "areaShare": 0.1,
+    "basis": "observed"
+   }
+  ],
+  "features": [
+   {
+    "id": "f1",
+    "description": "Zwei seitliche Triebwerksgondeln",
+    "basis": "observed",
+    "groupIds": [
+     "gondel_l",
+     "gondel_r"
+    ]
+   }
+  ],
+  "symmetry": {
+   "kind": "links-rechts",
+   "basis": "observed",
+   "note": "Ober- und Frontansicht zeigen spiegelgleiche Gondeln"
+  },
+  "hiddenAreas": [
+   {
+    "description": "Innenaufbau",
+    "basis": "assumed"
+   }
+  ],
+  "openQuestions": [],
+  "simplifications": [],
+  "notInferable": [
+   "Fußzeile der Vorlage: „Zielproportionen vereinheitlicht · Unterseite ergänzt · Kein geprüfter Bauplan“"
+  ],
+  "imageViews": {
+   "schema": "baustein-sim/image-views@1",
+   "views": [
+    {
+     "viewId": "v-oben",
+     "box": {
+      "x": 0.0098,
+      "y": 0.0781,
+      "w": 0.2507,
+      "h": 0.874
+     },
+     "label": "OBEN",
+     "direction": "oben",
+     "frontInImage": "unten",
+     "nature": "darstellung",
+     "annotations": [
+      {
+       "text": "B ≈ 0,72 L",
+       "kind": "mass"
+      },
+      {
+       "text": "L = 1,00",
+       "kind": "mass"
+      }
+     ],
+     "imageIndex": 0,
+     "basis": "observed",
+     "uncertainty": "mittel",
+     "note": ""
+    },
+    {
+     "viewId": "v-unten",
+     "box": {
+      "x": 0.2604,
+      "y": 0.0781,
+      "w": 0.2539,
+      "h": 0.874
+     },
+     "label": "UNTEN · ENTWURF",
+     "direction": "unten",
+     "frontInImage": "unten",
+     "nature": "entwurf",
+     "annotations": [
+      {
+       "text": "B ≈ 0,72 L",
+       "kind": "mass"
+      },
+      {
+       "text": "L = 1,00",
+       "kind": "mass"
+      }
+     ],
+     "imageIndex": 0,
+     "basis": "observed",
+     "uncertainty": "mittel",
+     "note": ""
+    },
+    {
+     "viewId": "v-links",
+     "box": {
+      "x": 0.5143,
+      "y": 0.0781,
+      "w": 0.4818,
+      "h": 0.2783
+     },
+     "label": "LINKE SEITE",
+     "direction": "links",
+     "frontInImage": "links",
+     "nature": "darstellung",
+     "annotations": [
+      {
+       "text": "L = 1,00",
+       "kind": "mass"
+      }
+     ],
+     "imageIndex": 0,
+     "basis": "observed",
+     "uncertainty": "mittel",
+     "note": ""
+    },
+    {
+     "viewId": "v-rechts",
+     "box": {
+      "x": 0.5143,
+      "y": 0.3613,
+      "w": 0.4818,
+      "h": 0.2881
+     },
+     "label": "RECHTE SEITE",
+     "direction": "rechts",
+     "frontInImage": "rechts",
+     "nature": "darstellung",
+     "annotations": [
+      {
+       "text": "L = 1,00",
+       "kind": "mass"
+      }
+     ],
+     "imageIndex": 0,
+     "basis": "observed",
+     "uncertainty": "mittel",
+     "note": ""
+    },
+    {
+     "viewId": "v-vorne",
+     "box": {
+      "x": 0.5143,
+      "y": 0.6592,
+      "w": 0.2279,
+      "h": 0.293
+     },
+     "label": "VORNE",
+     "direction": "vorne",
+     "frontInImage": null,
+     "nature": "darstellung",
+     "annotations": [
+      {
+       "text": "H ≈ 0,38 L",
+       "kind": "mass"
+      },
+      {
+       "text": "B ≈ 0,72 L",
+       "kind": "mass"
+      }
+     ],
+     "imageIndex": 0,
+     "basis": "observed",
+     "uncertainty": "mittel",
+     "note": ""
+    },
+    {
+     "viewId": "v-hinten",
+     "box": {
+      "x": 0.7422,
+      "y": 0.6592,
+      "w": 0.2474,
+      "h": 0.293
+     },
+     "label": "HINTEN",
+     "direction": "hinten",
+     "frontInImage": null,
+     "nature": "darstellung",
+     "annotations": [
+      {
+       "text": "H ≈ 0,38 L",
+       "kind": "mass"
+      },
+      {
+       "text": "B ≈ 0,72 L",
+       "kind": "mass"
+      }
+     ],
+     "imageIndex": 0,
+     "basis": "observed",
+     "uncertainty": "mittel",
+     "note": ""
+    }
+   ]
+  }
+ }
+}

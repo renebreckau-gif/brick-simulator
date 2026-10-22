@@ -118,6 +118,38 @@ Ohne Schlüssel, im statischen Build oder bei Dienstausfall steht der **manuelle
 - **Oberfläche:** Mit Schlüssel steht dort „Schlüssel eingerichtet; in dieser Serversitzung noch nicht live geprüft“, nach einem Aufruf „zuletzt erfolgreich live aufgerufen“ oder „letzter Live-Aufruf fehlgeschlagen (Code)“. Das frühere „einsatzbereit“ entfällt.
 - **Keine automatischen Wiederholungen:** Der Anbieter ruft die API mit `maxRetries: 0` auf. Ein fehlgeschlagener, möglicherweise kostenpflichtiger Aufruf wird nur auf ausdrückliche Nutzeraktion wiederholt.
 
+## Mehrere Ansichten in einer Bilddatei (Auftrag 05A.5)
+
+- **Schema `baustein-sim/image-views@1`** (`src/core/design/views.ts`, in der Interpretation als `imageViews`). Jede Ansicht hat:
+  - eine stabile Kennung,
+  - Bildindex und Prüfsumme des Originalbilds,
+  - einen normierten Ausschnitt,
+  - Blickrichtung und Orientierung (wohin die Vorderseite im Ausschnitt zeigt),
+  - die Art: Darstellung, entworfen oder unbekannt,
+  - Beschriftungen der Vorlage wörtlich,
+  - Herkunft und Unsicherheit der Zuordnung.
+- **Ein Objekt:** Jede Baugruppe gibt es genau einmal, mit einem Bildbereich je Ansicht (`viewId`).
+  - Je Ansicht doppelt erfasste Baugruppen werden als Hinweis gemeldet und lassen sich zusammenführen („Dasselbe Teil wie …“).
+  - Sechs Ansichten erzeugen keine sechs Rümpfe.
+- **Analyse:** Der Auftrag an den Dienst (`design-prompt@1.1.0`) fordert die Ansichten bereits in der ersten Interpretation. Die erweiterte Ausgabeform ist offline geprüft, live noch nicht.
+- **Prüfen und korrigieren:** Der Abschnitt „Ansichten in den Bildern“ zeigt beschriftete Ausschnittsvorschauen. Ansichten lassen sich ändern, ergänzen und entfernen. Jede Änderung ist eine protokollierte Korrektur und macht Bestätigungen und darauf beruhende räumliche Entwürfe veraltet.
+- **Ältere Entwürfe:** Sie laden unverändert (gleicher Hash). Ohne `imageViews` ist nichts über Ansichten belegt, und es wird keine Ansicht erfunden.
+- **Beschriftungen:** Angaben wie „B ≈ 0,72 L“ sind Angaben der Vorlage und werden nicht als Maß übernommen.
+  - Widersprüche werden angezeigt: Beschriftung gegen Zeichnung, abweichende Beschriftungen und abweichende Verhältnisse zwischen Ansichten.
+  - Entworfene Ansichten wie „Unten · Entwurf“ bleiben als solche markiert und zählen nicht als Messgrundlage.
+- **Räumlicher Entwurf:** Die bestätigten Ansichten werden Referenzansichten. Ab zwei orthografischen Messansichten mit sichtbarem Hauptkörper kommen Proportionen, Lage und Größe je Achse aus allen Ansichten (lokal, ohne Dienstaufruf).
+  - Ein Spiegelbild wird nur noch angenommen, wenn einer Seite der Ansichtsbeleg fehlt.
+
+## Verbindungsfehler bei der Analyse (Auftrag 05A.5)
+
+- **Ursache des gemeldeten „Failed to fetch“:** Der Test-Entwicklungsserver auf Port 5186 war gestoppt (04:34 UTC). Die Seite blieb im Browser geöffnet. Beide späteren Analyseversuche scheiterten mit `ERR_CONNECTION_REFUSED`. Sie haben weder den lokalen Server noch den Analysedienst erreicht.
+- **Jetzt:** `postOnce` (`src/ui/design/serverRequest.ts`) sendet genau einmal. Bei fehlender Antwort fragt es nur nach, über die Statusabfrage und `GET /api/design/request/<Kennung>`.
+  - Das **Anfrageprotokoll** des Servers vermerkt Empfang, tatsächlichen Dienstaufruf, Abschluss und die bildfreie Antwort.
+  - Eine bereits fertige Antwort wird abgeholt, ohne zweiten Dienstaufruf.
+  - Die Meldung unterscheidet: Server nicht erreichbar, fehlender Endpunkt bzw. statischer Build, ungültige Antwort und serverseitiger Fehler.
+  - „Nicht aufgerufen“ steht nur dort, wo das Protokoll es belegt. Ist der Server nicht erreichbar, heißt es ausdrücklich „nicht sicher ausgeschlossen“.
+  - Es gibt keine automatische Wiederholung.
+
 ## Import und Analysezuordnung (Korrekturauftrag 05A.1)
 
 - **Vollständige Laufzeitprüfung beim Laden** (Import und lokale Wiederherstellung, `parseBrief`):

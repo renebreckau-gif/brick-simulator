@@ -17,7 +17,8 @@ import { cyrb53, stableStringify } from '../model/hash';
 import type { DesignBrief } from './brief';
 import { analysisBound } from './brief';
 import { checkInterpretation, type Interpretation } from './interpretation';
-import { modelBounds, projectBody, VIEW_BY_ID, type ViewId } from './projection';
+import { bodyGeometry, modelBounds, VIEW_BY_ID, type ViewId } from './projection';
+import { viewContradictions, viewOfBox, type ImageView } from './views';
 
 export const SPATIAL_SCHEMA = 'baustein-sim/spatial-design@1';
 export const SPATIAL_METHOD_VERSION = 'spatial-proposal@1.0.0';
@@ -79,8 +80,12 @@ export const ReferenceViewSchema = z.object({
   imageIndex: z.number().int().min(0),
   box: z.object({ x: Finite, y: Finite, w: Finite, h: Finite }),
   direction: z.enum(REF_DIRECTIONS),
-  /** Nur bei Seiten- und Schrägansichten: Wohin zeigt die Vorderseite im Bildausschnitt? */
-  frontInImage: z.enum(['links', 'rechts']).nullable(),
+  /** Wohin zeigt die Vorderseite im Bildausschnitt? (Seiten-/Schrägansicht: links/rechts; Drauf-/Untersicht auch oben/unten) */
+  frontInImage: z.enum(['links', 'rechts', 'oben', 'unten']).nullable(),
+  /** Art der Ansicht aus der Interpretation (05A.5); „entwurf“ = entworfene Ansicht, nie Messgrundlage. */
+  nature: z.enum(['darstellung', 'entwurf', 'unbekannt']).optional(),
+  /** Ansicht der Interpretation, aus der dieser Ausschnitt stammt (05A.5). */
+  sourceViewId: z.string().optional(),
   /** Hauptreferenz für die Ableitung; Einschübe zeigen dasselbe Objekt, keine zusätzliche Baugruppe. */
   primary: z.boolean(),
   basis: SpatialBasis,
@@ -127,7 +132,7 @@ export type SpatialDesign = z.infer<typeof SpatialDesignSchema>;
  * Bewusst ohne Verfeinerungen, damit es sich als JSON-Schema übergeben lässt; geprüft wird danach.
  */
 export const SpatialProposal = z.object({
-  referenceViews: z.array(z.object({ imageIndex: z.number().int(), box: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }), direction: z.enum(REF_DIRECTIONS), frontInImage: z.enum(['links', 'rechts']).nullable(), primary: z.boolean(), note: z.string() })),
+  referenceViews: z.array(z.object({ imageIndex: z.number().int(), box: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }), direction: z.enum(REF_DIRECTIONS), frontInImage: z.enum(['links', 'rechts', 'oben', 'unten']).nullable(), primary: z.boolean(), note: z.string() })),
   symmetry: z.object({ kind: z.enum(['none', 'left-right']), note: z.string() }),
   bodies: z.array(z.object({
     id: z.string(), name: z.string(), groupId: z.string().nullable(), isMain: z.boolean(), shape: z.enum(SHAPES),
@@ -228,7 +233,7 @@ export function spatialPrerequisite(b: DesignBrief): string | null {
   if (!b.images.length) return 'Zuerst ein Bild hochladen.';
   if (!b.interpretation) return 'Zuerst eine Interpretation erstellen (automatisch, manuell oder per Import).';
   if (!analysisBound(b)) return 'Die Interpretation passt nicht mehr zu den aktuellen Bildern oder Ansichten – zuerst erneut prüfen.';
-  const c = checkInterpretation(b.interpretation, b.images.length);
+  const c = checkInterpretation(b.interpretation, b.images.length, b.images.map((i) => i.sha256));
   if (!c.ok) return `Die Interpretation ist noch nicht stimmig: ${c.errors[0]}`;
   return null;
 }
@@ -248,8 +253,38 @@ function directionOfLabel(view: string): { direction: RefDirection; note: string
   return { direction: 'unbekannt', note: 'Ansicht nicht bezeichnet – als seitliche bzw. schräge Ansicht behandelt' };
 }
 
-/** Standard-Referenzansichten: je Bild das ganze Bild; Einschübe ergänzt der Nutzer oder der Analysedienst. */
+/** Referenzansicht aus einer Ansicht der Interpretation (05A.5). */
+function refFromView(v: ImageView, primary: boolean): ReferenceView {
+  const lateral = v.direction === 'links' || v.direction === 'rechts' || v.direction === 'schraeg' || v.direction === 'unbekannt';
+  const front = v.frontInImage ?? (v.direction === 'links' ? 'links' : v.direction === 'rechts' ? 'rechts' : lateral ? 'links' : null);
+  return {
+    id: v.viewId, imageIndex: v.imageIndex, box: { ...v.box }, direction: v.direction, frontInImage: front, primary,
+    basis: v.basis === 'user' ? 'user' : 'assumed', nature: v.nature, sourceViewId: v.viewId,
+    note: `Ansicht „${v.label}“ aus der Interpretation${v.nature === 'entwurf' ? ' – entworfene Ansicht, keine Messgrundlage' : ''}${v.frontInImage ? '' : front ? `; Vorderseite ${front} angenommen` : ''}`,
+  };
+}
+
+/** Hauptreferenz unter mehreren Ansichten: Seitenansicht vor Draufsicht vor Frontansicht; nie eine entworfene Ansicht. */
+function pickPrimary(views: ImageView[]): ImageView | undefined {
+  const order: ImageView['direction'][] = ['links', 'rechts', 'oben', 'vorne', 'hinten', 'schraeg', 'unbekannt', 'unten'];
+  const real = views.filter((v) => v.nature !== 'entwurf');
+  return [...(real.length ? real : views)].sort((p, q) => order.indexOf(p.direction) - order.indexOf(q.direction))[0];
+}
+
+/**
+ * Standard-Referenzansichten. Hat die Interpretation Ansichten (05A.5), werden genau diese übernommen;
+ * Bilder ohne Ansicht erscheinen als ganzes Bild. Sonst je Bild das ganze Bild (wie bisher).
+ */
 export function defaultReferenceViews(b: DesignBrief): ReferenceView[] {
+  const views = b.interpretation?.imageViews?.views ?? [];
+  if (views.length) {
+    const prim = pickPrimary(views);
+    const refs = views.map((v) => refFromView(v, v === prim));
+    b.images.forEach((_img, i) => {
+      if (!views.some((v) => v.imageIndex === i)) refs.push({ id: `ref-bild-${i + 1}`, imageIndex: i, box: { x: 0, y: 0, w: 1, h: 1 }, direction: 'unbekannt', frontInImage: 'links', primary: false, basis: 'assumed', note: 'Bild ohne erkannte Ansicht – als Ganzes' });
+    });
+    return refs;
+  }
   return b.images.map((img, i) => {
     const d = directionOfLabel(img.view);
     const lateral = d.direction === 'unbekannt' || d.direction === 'schraeg' || d.direction === 'links' || d.direction === 'rechts';
@@ -288,6 +323,168 @@ const r3 = (n: number) => Math.round(n * 1000) / 1000;
 const de = (n: number) => String(n).replace('.', ',');
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+// ---- Ableitung aus mehreren orthografischen Ansichten (05A.5)
+
+type Axis = 'x' | 'y' | 'z';
+type AxisMap = { axis: Axis; sign: number };
+const AXES: Axis[] = ['x', 'y', 'z'];
+
+/** Welche Objektachse zeigt im Ausschnitt nach rechts bzw. nach unten (mit Vorzeichen); Drauf-/Untersicht je nach Vorderseite gedreht. */
+export function screenMap(direction: RefDirection, frontInImage: ReferenceView['frontInImage']): { right: AxisMap; down: AxisMap } | null {
+  if (!(direction in VIEW_BY_ID)) return null;
+  const view = VIEW_BY_ID[direction as ViewId];
+  const toMap = (v: number[]): AxisMap => { const k = v.findIndex((c) => c !== 0); return { axis: AXES[k], sign: v[k] }; };
+  let right = toMap(view.right);
+  let down = (() => { const u = toMap(view.up); return { axis: u.axis, sign: -u.sign }; })();
+  if (direction === 'oben' || direction === 'unten') {
+    const neg = (m: AxisMap): AxisMap => ({ axis: m.axis, sign: -m.sign });
+    // Standard: Vorderseite oben im Bild
+    if (frontInImage === 'unten') [right, down] = [neg(right), neg(down)];
+    else if (frontInImage === 'links') [right, down] = [down, neg(right)]; // 90° gegen den Uhrzeigersinn
+    else if (frontInImage === 'rechts') [right, down] = [neg(down), right]; // 90° im Uhrzeigersinn
+  }
+  return { right, down };
+}
+
+type BoxN = { imageIndex: number; x: number; y: number; w: number; h: number; viewId?: string | null };
+
+interface ViewMeasure { ref: ReferenceView; map: { right: AxisMap; down: AxisMap }; img: { width: number; height: number }; mainBox: BoxN }
+
+/** Messansichten: orthografisch, keine entworfene Ansicht, Hauptkörper darin sichtbar. */
+function measureViews(b: DesignBrief, refs: ReferenceView[], views: ImageView[]): ViewMeasure[] {
+  const main = b.interpretation!.groups.find((g) => g.role === 'hauptkoerper')!;
+  const out: ViewMeasure[] = [];
+  for (const ref of refs) {
+    if (ref.nature === 'entwurf') continue;
+    const map = screenMap(ref.direction, ref.frontInImage);
+    const img = b.images[ref.imageIndex];
+    if (!map || !img) continue;
+    const mainBox = main.boxes.find((bx) => boxInRef(bx, ref, views));
+    if (mainBox) out.push({ ref, map, img, mainBox });
+  }
+  return out;
+}
+
+function boxInRef(bx: BoxN, ref: ReferenceView, views: ImageView[]): boolean {
+  if (ref.sourceViewId) return viewOfBox(bx, views)?.viewId === ref.sourceViewId;
+  return bx.imageIndex === ref.imageIndex && bx.x + bx.w / 2 >= ref.box.x && bx.x + bx.w / 2 <= ref.box.x + ref.box.w && bx.y + bx.h / 2 >= ref.box.y && bx.y + bx.h / 2 <= ref.box.y + ref.box.h;
+}
+
+const mean = (l: number[]) => l.reduce((a, c) => a + c, 0) / l.length;
+const VIEW_NAME = (m: ViewMeasure) => (m.ref.note.match(/„(.+?)“/)?.[1] ?? m.ref.id);
+
+/**
+ * Mehransichten-Ableitung: Proportionen des Hauptkörpers und Lage/Größe der Baugruppen je Achse aus allen
+ * Messansichten, in denen sie sichtbar sind. Jede Ansicht hat ihren eigenen Bildmaßstab (über die
+ * Hauptkörperlänge bzw. -breite in dieser Ansicht); widersprüchliche Werte werden gemittelt UND benannt.
+ * Entworfene Ansichten zählen nicht. Beschriftungen der Vorlage werden nicht als Maß übernommen.
+ */
+function deriveFromViews(b: DesignBrief, refs: ReferenceView[], ms: ViewMeasure[], designId: string, at: string): SpatialDesign {
+  const interp = b.interpretation!;
+  const views = interp.imageViews?.views ?? [];
+  const main = interp.groups.find((g) => g.role === 'hauptkoerper')!;
+  const contradictions: string[] = [];
+  const questions: string[] = [];
+  const px = (m: ViewMeasure, bx: BoxN, which: 'right' | 'down') => (which === 'right' ? bx.w * m.img.width : bx.h * m.img.height);
+  // Hauptkörper: Breite (y) und Höhe (z) relativ zur Länge (x = 1)
+  const est: Record<'y' | 'z', { v: number; view: string }[]> = { y: [], z: [] };
+  const frontRatios: { v: number; view: string }[] = []; // Breite/Höhe aus Front-/Heckansichten
+  for (const m of ms) {
+    const ext: Partial<Record<Axis, number>> = { [m.map.right.axis]: px(m, m.mainBox, 'right'), [m.map.down.axis]: px(m, m.mainBox, 'down') };
+    if (ext.x) { for (const a of ['y', 'z'] as const) if (ext[a] !== undefined) est[a].push({ v: ext[a]! / ext.x, view: VIEW_NAME(m) }); }
+    else if (ext.y && ext.z) frontRatios.push({ v: ext.y / ext.z, view: VIEW_NAME(m) });
+  }
+  const spread = (l: { v: number; view: string }[], what: string) => {
+    if (l.length < 2) return;
+    const lo = l.reduce((a, c) => (c.v < a.v ? c : a));
+    const hi = l.reduce((a, c) => (c.v > a.v ? c : a));
+    if (hi.v / lo.v > 1.15) contradictions.push(`${what} weicht zwischen Ansichten ab: ${de(r2(lo.v))} („${lo.view}“) bis ${de(r2(hi.v))} („${hi.view}“) – gemittelt`);
+  };
+  spread(est.y, `Breite des Hauptkörpers „${main.name}“ (× Länge)`);
+  spread(est.z, `Höhe des Hauptkörpers „${main.name}“ (× Länge)`);
+  let W = est.y.length ? mean(est.y.map((e) => e.v)) : null;
+  let H = est.z.length ? mean(est.z.map((e) => e.v)) : null;
+  const fr = frontRatios.length ? mean(frontRatios.map((e) => e.v)) : null;
+  if (fr !== null && W !== null && H !== null && Math.abs(W / H / fr - 1) > 0.15) contradictions.push(`Breite : Höhe des Hauptkörpers: aus Drauf- und Seitenansicht ${de(r2(W / H))}, aus Front-/Heckansicht ${de(r2(fr))}`);
+  if (W === null && H !== null && fr !== null) W = fr * H;
+  if (H === null && W !== null && fr !== null) H = W / fr;
+  const wBasis = W !== null;
+  const hBasis = H !== null;
+  if (W === null) { W = 0.5; questions.push(`Breite des Hauptkörpers „${main.name}“: in keiner Messansicht erkennbar, 0,5 × Länge angenommen.`); }
+  if (H === null) { H = 0.4; questions.push(`Höhe des Hauptkörpers „${main.name}“: in keiner Messansicht erkennbar, 0,4 × Länge angenommen.`); }
+  const dims: Record<Axis, number> = { x: 1, y: W, z: H };
+  // Maßstab je Ansicht: Bildpunkte je Hauptkörperlänge
+  const scale = (m: ViewMeasure) => (m.map.right.axis === 'x' ? px(m, m.mainBox, 'right') : m.map.down.axis === 'x' ? px(m, m.mainBox, 'down') : px(m, m.mainBox, 'right') / dims[m.map.right.axis]);
+
+  const groups = interp.groups.filter((g) => g.role !== 'detail');
+  const skipped = interp.groups.filter((g) => g.role === 'detail');
+  const colorOf = (g: Interpretation['groups'][number]) => interp.colors.find((c) => c.id === g.colorIds[0])?.hex ?? '#9aa5b1';
+  const idFor = (g: Interpretation['groups'][number]) => `k-${g.id}`.replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 40);
+  const bodies: SpatialBody[] = [];
+  const yEvidence = new Set<string>();
+  for (const g of groups) {
+    const isMain = g === main;
+    const pos: Record<Axis, number[]> = { x: [], y: [], z: [] };
+    const size: Record<Axis, number[]> = { x: [], y: [], z: [] };
+    const used: string[] = [];
+    if (!isMain)
+      for (const m of ms) {
+        const bx = g.boxes.find((x) => boxInRef(x, m.ref, views));
+        if (!bx) continue;
+        const s = scale(m);
+        const mc = { u: (m.mainBox.x + m.mainBox.w / 2) * m.img.width, v: (m.mainBox.y + m.mainBox.h / 2) * m.img.height };
+        const c = { u: (bx.x + bx.w / 2) * m.img.width, v: (bx.y + bx.h / 2) * m.img.height };
+        pos[m.map.right.axis].push(((c.u - mc.u) / s) * m.map.right.sign);
+        pos[m.map.down.axis].push(((c.v - mc.v) / s) * m.map.down.sign);
+        size[m.map.right.axis].push(px(m, bx, 'right') / s);
+        size[m.map.down.axis].push(px(m, bx, 'down') / s);
+        used.push(VIEW_NAME(m));
+      }
+    for (const a of AXES) if (pos[a].length > 1 && Math.max(...pos[a]) - Math.min(...pos[a]) > 0.1) contradictions.push(`Lage von „${g.name}“ entlang ${a === 'x' ? 'der Länge' : a === 'y' ? 'der Breite' : 'der Höhe'} weicht zwischen Ansichten um ${de(r2(Math.max(...pos[a]) - Math.min(...pos[a])))} L ab – gemittelt`);
+    if (pos.y.length) yEvidence.add(g.id);
+    const rel: Record<Axis, number> = { x: g.relativeSize.length, y: g.relativeSize.width * dims.y, z: g.relativeSize.height * dims.z };
+    const sz = isMain ? { length: 1, width: r3(dims.y), height: r3(dims.z) } : { length: r3(size.x.length ? mean(size.x) : rel.x), width: r3(size.y.length ? mean(size.y) : rel.y), height: r3(size.z.length ? mean(size.z) : rel.z) };
+    const center = isMain ? { x: 0, y: 0, z: 0 } : { x: r3(pos.x.length ? mean(pos.x) : 0), y: r3(pos.y.length ? mean(pos.y) : 0), z: r3(pos.z.length ? mean(pos.z) : 0) };
+    const { shape, note } = shapeFor(g);
+    const missing = AXES.filter((a) => !pos[a].length);
+    const assumptions = [note];
+    if (isMain) assumptions.push(`Proportionen aus ${ms.length} Ansicht(en): ${ms.map(VIEW_NAME).join(', ')} – gezeichnete Vorlage, keine Messung`);
+    else if (used.length) assumptions.push(`Lage und Größe aus Ansicht(en): ${[...new Set(used)].join(', ')}${missing.length ? `; ${missing.map((a) => ({ x: 'Länge', y: 'Breite', z: 'Höhe' })[a]).join(', ')} ohne Ansichtsbeleg (angenommen)` : ''}`);
+    else { assumptions.push('In keiner Messansicht sichtbar – Lage mittig angenommen, Größe aus der relativen Größe der Interpretation'); questions.push(`Lage von „${g.name}“ fehlt (in keiner Messansicht sichtbar).`); }
+    bodies.push({
+      id: idFor(g), name: g.name, groupId: g.id, isMain, shape, center, size: sz, rotation: { yaw: 0, pitch: 0, roll: 0 }, taper: 1, color: colorOf(g),
+      basis: { position: isMain ? 'assumed' : used.length && missing.length < 2 ? 'image-derived' : 'assumed', size: isMain ? (wBasis && hBasis ? 'image-derived' : 'assumed') : 'image-derived', rotation: 'assumed', shape: 'assumed', color: g.colorIds.length ? 'image-derived' : 'assumed' },
+      assumptions, uncertainty: used.length >= 2 ? 'mittel' : 'hoch', mirrorOf: null,
+    });
+  }
+  // Paare nur dann koppeln, wenn einer Seite der Ansichtsbeleg für die Lage quer fehlt (sonst ist nichts anzunehmen)
+  const symmetric = interp.symmetry.kind === 'links-rechts';
+  if (symmetric) {
+    const same = (p: Interpretation['groups'][number], q: Interpretation['groups'][number]) => (['length', 'width', 'height'] as const).every((k) => Math.abs(p.relativeSize[k] - q.relativeSize[k]) <= 0.05 * Math.max(p.relativeSize[k], q.relativeSize[k]));
+    const cands = groups.filter((g) => g.role === 'baugruppe');
+    const done = new Set<string>();
+    for (const p of cands) for (const q of cands) {
+      if (p.id >= q.id || done.has(p.id) || done.has(q.id) || !same(p, q)) continue;
+      const [src, dst] = yEvidence.has(p.id) && !yEvidence.has(q.id) ? [p, q] : yEvidence.has(q.id) && !yEvidence.has(p.id) ? [q, p] : [null, null];
+      if (!src || !dst) continue;
+      done.add(p.id); done.add(q.id);
+      const bs = bodies.find((x) => x.groupId === src.id)!;
+      const bd = bodies.find((x) => x.groupId === dst.id)!;
+      Object.assign(bd, mirrorPose(bs), { mirrorOf: bs.id, basis: MIRROR_BASIS });
+      bd.assumptions.push(`Gekoppeltes Spiegelbild von „${src.name}“ – Symmetrieannahme, weil „${dst.name}“ in keiner Ansicht seitlich verortet ist; kein Beleg für Gleichheit`);
+    }
+  }
+  if (skipped.length) questions.push(`Nicht als Körper übernommen (Details): ${skipped.map((g) => g.name).join(', ')}. Bei Bedarf als Körper ergänzen.`);
+  for (const a of views.flatMap((v) => v.annotations.filter((x) => x.kind === 'mass').map((x) => `${x.text} („${v.label}“)`))) questions.push(`Angabe der Vorlage, nicht als Maß übernommen: ${a}`);
+  for (const q of interp.openQuestions) questions.push(`Aus der Interpretation: ${q.question}`);
+  contradictions.push(...viewContradictions(interp, b.images));
+  const origin: SpatialDesign['origin'] = { method: 'derived', provider: `Lokale Ableitung aus ${ms.length} Ansicht(en) der Interpretation (Bildbereiche je Ansicht + relative Größen; keine 3D-Erkennung)`, model: null, methodVersion: SPATIAL_METHOD_VERSION, promptVersion: null, at, ticketId: null, requestId: null };
+  return create(b, designId, origin, {
+    symmetry: symmetric ? { kind: 'left-right', basis: interp.symmetry.basis === 'user' ? 'user' : 'assumed', note: `Aus der Interpretation (${interp.symmetry.basis}): ${interp.symmetry.note}` } : { kind: 'none', basis: 'assumed', note: `Interpretation: ${interp.symmetry.kind}` },
+    referenceViews: refs, bodies, contradictions, openQuestions: questions,
+  }, `Räumlicher Entwurf lokal aus ${ms.length} Ansichten abgeleitet`);
+}
+
 /**
  * Erster räumlicher Vorschlag aus der tatsächlichen Interpretation:
  * - Hauptkörper: Länge 1; Höhe aus dem Seitenverhältnis seines Bildbereichs (perspektivisch geschätzt);
@@ -304,6 +501,9 @@ export function deriveSpatialProposal(b: DesignBrief, opts: { designId: string; 
   const at = opts.at ?? now();
   const interp = b.interpretation!;
   const refs = opts.referenceViews?.length ? opts.referenceViews : defaultReferenceViews(b);
+  // Mehrere Messansichten mit sichtbarem Hauptkörper: Ableitung je Achse aus allen Ansichten (05A.5)
+  const ms = measureViews(b, refs, interp.imageViews?.views ?? []);
+  if (ms.length >= 2) return deriveFromViews(b, refs, ms, opts.designId, at);
   const primary = refs.find((r) => r.primary) ?? refs[0];
   const insets = refs.filter((r) => r !== primary);
   const img = b.images[primary.imageIndex];
@@ -514,32 +714,36 @@ export function compareWithReferences(d: SpatialDesign, b: DesignBrief): string[
   const out: string[] = [];
   const interp = b.interpretation;
   if (!interp) return out;
+  // Ausdehnung eines Körpers entlang einer Objektachse (Weltkoordinaten, inkl. Drehung)
+  const ext = (x: SpatialBody, a: Axis) => { const vs = bodyGeometry(x).vertices.map((p) => p[AXES.indexOf(a)]); return [Math.min(...vs), Math.max(...vs)] as const; };
   for (const r of d.referenceViews) {
-    const viewId = ORTHO[r.direction];
-    if (!viewId) continue;
+    if (!ORTHO[r.direction] || r.nature === 'entwurf') continue; // entworfene Ansichten sind kein Vergleichsmaßstab
+    // Bildachsen dieses Ausschnitts – berücksichtigt die Orientierung (z. B. Draufsicht mit Vorderseite unten)
+    const map = screenMap(r.direction, r.frontInImage);
     const img = b.images[r.imageIndex];
-    if (!img) continue;
-    const view = VIEW_BY_ID[viewId];
+    if (!map || !img) continue;
     const mainBody = d.bodies.find((x) => x.isMain);
     const mainGroup = interp.groups.find((g) => g.id === mainBody?.groupId);
     const mainBox = mainGroup?.boxes.find((bx) => inside(bx, r));
+    const screenU = (x: SpatialBody) => { const [lo, hi] = ext(x, map.right.axis); return ((lo + hi) / 2) * map.right.sign; };
     for (const x of d.bodies) {
       if (x.isMain && !mainBox) continue;
       const g = interp.groups.find((gg) => gg.id === x.groupId);
       const bx = g?.boxes.find((bb) => inside(bb, r));
       if (!g || !bx) continue;
-      const p = projectBody(x, view);
-      const modelAspect = (p.bbox.u1 - p.bbox.u0) / Math.max(p.bbox.v1 - p.bbox.v0, 1e-9);
+      const [r0, r1] = ext(x, map.right.axis);
+      const [d0, d1] = ext(x, map.down.axis);
+      const modelAspect = (r1 - r0) / Math.max(d1 - d0, 1e-9);
       const imageAspect = (bx.w * img.width) / Math.max(bx.h * img.height, 1e-9);
       const ratio = modelAspect / imageAspect;
       if (ratio > 1.5 || ratio < 1 / 1.5) out.push(`„${x.name}“ ${REF_DIRECTION_LABEL[r.direction]} (Ausschnitt ${r.id}): Breite : Höhe im Bild ≈ ${de(r2(imageAspect))}, im Modell ${de(r2(modelAspect))}`);
       if (!x.isMain && mainBox && mainBody) {
-        const pm = projectBody(mainBody, view);
         const imgSide = Math.sign(bx.x + bx.w / 2 - (mainBox.x + mainBox.w / 2));
-        const modSide = Math.sign((p.bbox.u0 + p.bbox.u1) / 2 - (pm.bbox.u0 + pm.bbox.u1) / 2);
+        const du = screenU(x) - screenU(mainBody);
+        const [m0, m1] = ext(mainBody, map.right.axis);
         const offImg = Math.abs(bx.x + bx.w / 2 - (mainBox.x + mainBox.w / 2)) > 0.1 * mainBox.w;
-        const offMod = Math.abs((p.bbox.u0 + p.bbox.u1) / 2 - (pm.bbox.u0 + pm.bbox.u1) / 2) > 0.1 * (pm.bbox.u1 - pm.bbox.u0);
-        if (offImg && offMod && imgSide !== modSide) out.push(`„${x.name}“ ${REF_DIRECTION_LABEL[r.direction]} (Ausschnitt ${r.id}): im Bild ${imgSide > 0 ? 'rechts' : 'links'}, im Modell ${modSide > 0 ? 'rechts' : 'links'} – Seiten vertauscht oder Richtung falsch?`);
+        const offMod = Math.abs(du) > 0.1 * (m1 - m0);
+        if (offImg && offMod && imgSide !== Math.sign(du)) out.push(`„${x.name}“ ${REF_DIRECTION_LABEL[r.direction]} (Ausschnitt ${r.id}): im Bild ${imgSide > 0 ? 'rechts' : 'links'}, im Modell ${du > 0 ? 'rechts' : 'links'} – Seiten vertauscht oder Richtung falsch?`);
       }
     }
   }
