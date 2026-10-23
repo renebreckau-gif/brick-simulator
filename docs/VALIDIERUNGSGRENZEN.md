@@ -148,3 +148,17 @@ Die Werte stehen versioniert in `part-meta@1.1.0` und werden in `tests/upin-geom
 - **Nicht physisch erprobt:**
   - Halt der Plattenstapel, Klemmung der Schrägsteine, Steifigkeit der Spitze.
   - Strukturbefunde (z. B. durchgehende Fugen) sind Heuristiken.
+
+## Teilebibliothek (Auftrag 05C.1)
+
+Die Teilebibliothek erweitert **nicht** den Prüfumfang. Geprüft werden weiterhin nur Teile mit eigenen Teil-Metadaten (`partMeta.ts`). Für alle anderen Teile gilt:
+
+- **Importierte Anschlüsse** (LDCad, BrickNet) sind Suchhinweise. Der Validator wertet sie nicht als Verbindung. Ein Teil mit importierten Anschlüssen bleibt „nicht unterstützt“, bis seine Metadaten geprüft eingetragen sind.
+- **Fehlende Anschlussdaten** bedeuten „unbekannt“. Daraus folgt weder „verbindbar“ noch „unverbindbar“. Widersprechen sich die Quellen, wird das als „widersprüchlich“ ausgewiesen.
+- **Geometrie-Kennwerte** (geneigt, gekrümmt, runde Wand …) sind Messungen über Flächenrichtungen ohne Anschluss-Primitive.
+  - Sie zählen nur außenliegende Flächen (Stützebenen der Hülle, Toleranz 1 LDU).
+  - Schwellen: geneigt ≥ 8 %, gekrümmt/runde Wand ≥ 15 %, schräge Kante ≥ 5 % der Körperoberfläche.
+  - Grenzfälle (sehr kleine Fasen, Gitter) können anders eingeordnet werden, als ein Mensch es täte.
+- **Hüllquader** enthalten keine Anschluss-Primitive (Noppen, Röhren). Bei schief gedrehten Unterdateien sind sie genähert und als „genähert“ markiert.
+- **Farbbelege** stammen aus Set-Inventaren (Rebrickable, nur lokal). Sie belegen, dass eine Kombination existierte, aber keine heutige Verfügbarkeit. Ohne lokale Daten ist keine Farbe belegt.
+- **Druckvarianten** behalten ihre eigene LDraw-Datei. Kennwerte, Anschlüsse und Unterstützung des Grundteils werden nicht auf sie übertragen.

@@ -30,3 +30,11 @@ desktop.ini
 local-designs/
 *.entwurfsauftrag.json
 *.raumentwurf.json
+
+# Teilebibliothek (05C.1): heruntergeladene Quelldaten, reproduzierbar per npm run library:fetch
+data-cache/
+# … und die aus Rebrickable abgeleiteten Farbbelege (Weitergabe ungeklärt, nur lokal)
+data/library/private/
+
+# Python-Zwischendateien
+__pycache__/

@@ -136,6 +136,27 @@ Der vierte Bereich baut **Bug und Kanzel aus realen Teilen**. Die Formvorgabe st
 
 Details, Variantenvergleich und Grenzen: [docs/KONSTRUKTIONSNACHWEIS.md](docs/KONSTRUKTIONSNACHWEIS.md).
 
+## Teilebibliothek
+
+Der fünfte Bereich durchsucht die **gesamte LDraw-Teilebibliothek** (24 856 Dateien, Stand 2026-09). Er zeigt Kandidaten mit Nummer, Vorschau, Maßen, Katalogfamilie, gemessenen Eigenschaften (geneigt, Eckneigung, gekrümmt, runde Wand, Noppen seitlich …), Farbbelegen und Unterstützungsgrad. Je Teil sind Katalogidentität, Geometrie, Farbbelege, Anschlüsse je Quelle (LDCad Shadow Library, BrickNet), Unterstützungsgrad und Beschaffungsbelege getrennt. Fehlende Angaben stehen als „unbekannt“, nie als „nein“. Die Ansicht „Abdeckung“ zeigt Katalog-, Geometrie-, Anschluss- und Prüfkern-Abdeckung je Referenzmenge sowie den Abgleich mit den geprüften Teil-Metadaten.
+
+- **Versionierte Indizes** (`data/library/`): Sie reichen für Suche und Abdeckung; ein frischer Checkout braucht nichts weiter.
+- **Vorschaubilder:** Dafür braucht der Entwicklungsserver das Quellpaket (einmalig, ca. 150 MB in `data-cache/`, git-ignoriert):
+
+  ```bash
+  npm run library:fetch
+  ```
+
+- **Indizes neu erzeugen**, z. B. nach `npm run library:fetch -- --update` für eine neue Bibliotheksversion:
+
+  ```bash
+  npm run library:import
+  ```
+
+  Voraussetzung ist Python ≥ 3.10, nur die Standardbibliothek. Liegt `data-raw/rebrickable/` vor, entstehen zusätzlich die privaten Farbbelege in `data/library/private/` (git-ignoriert, nie im Build).
+
+Details, Übernahmeentscheidung, Abdeckungsbericht und Grenzen: [docs/TEILEBIBLIOTHEK.md](docs/TEILEBIBLIOTHEK.md).
+
 ## Bauanleitung
 
 Der Schalter „Bauanleitung“ über dem Hauptbereich wechselt vom Modell zur Anleitung des angezeigten Modells. Das gilt für jedes Modell ohne Blocker mit Baufolge: Raumschiffe, Referenzen und Grenzfälle. Die Anleitung zeigt eine Übersicht mit tatsächlicher Teilezahl, Außenmaßen, Modell-ID, Hash und Planversion. Dazu kommen Schritte mit großen Bildern aus den Teilinstanzen: neue Teile hervorgehoben, Einsetzpfeile nur bei geprüften Steckwegen. Je Schritt gibt es eine Teileübersicht, für die Ausleger eine isolierte Vormontage, und am Ende die vollständige Stückliste. Druckansicht und PDF-Export (A4, lokal im Browser) nutzen dieselbe Datenbasis. Nach einer Modelländerung ist die Anleitung als veraltet gekennzeichnet, und der Export ist gesperrt. Der Hinweis zur Herkunft richtet sich nach dem Modell (eigener Entwurf, Referenz oder Testfall). Keine Anleitung ist physisch erprobt. Details und Grenzen: [docs/BAUANLEITUNG.md](docs/BAUANLEITUNG.md).
@@ -160,6 +181,7 @@ src/core/          UI-unabhängiger Kern
 src/fixtures/      Grenzfälle und Fehlervarianten (synthetisch, gekennzeichnet)
 src/core/design/   Bildvorlage, Interpretation, Entwurfsauftrag (versioniert, ohne Teilinstanzen)
 src/core/construct/ Formvorgabe, Vorlagenmessung, Bautechniken, Vergleich mit der Vorlage (05B.1)
+src/core/library/  Teilebibliothek: Index, Anschlüsse je Quelle, Eigenschaften, Suche, Abdeckung (05C.1)
 src/core/instructions/ Anleitungsplan (abgeleitet, versioniert, mit Modellbezug)
 src/generator/     Raumschiff-Generator (deterministisch, versioniert)
 src/ui/instructions/ Bauanleitung: Rendering, Bildschirm-/Druckansicht, PDF (jsPDF)
@@ -185,8 +207,9 @@ docs/              Architektur, Quellen, Referenzmatrix, Grenzen, Roadmap, Prüf
 - [Aus Bild entwerfen: Interpretation, Entwurfsauftrag, Analyse einrichten](docs/BILDENTWURF.md)
 - [Räumlicher Entwurf: Volumenmodell, sechs Ansichten, Prüfung](docs/RAUMENTWURF.md)
 - [Konstruktionsnachweis: Bug und Kanzel aus realen Teilen, Variantenvergleich](docs/KONSTRUKTIONSNACHWEIS.md)
+- [Teilebibliothek: Quellen, Import, Suche, Abdeckung](docs/TEILEBIBLIOTHEK.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Namensnennung
 
-Teilegeometrie: **LDraw Parts Library** (ldraw.org), CC BY 4.0. Referenzmodelle aus dem LDraw Official Model Repository, CC BY 2.0: 40013-1 von Takeshi Takahashi, 21002-1 von Orion Pobursky, 1869-1 von Merlijn Wissink. Katalogdaten: Rebrickable (rebrickable.com). LEGO® ist eine Marke der LEGO Gruppe, die dieses Projekt weder unterstützt noch autorisiert.
+Teilegeometrie: **LDraw Parts Library** (ldraw.org), CC BY 4.0. Referenzmodelle aus dem LDraw Official Model Repository, CC BY 2.0: 40013-1 von Takeshi Takahashi, 21002-1 von Orion Pobursky, 1869-1 von Merlijn Wissink. Anschlussdaten der Teilebibliothek: LDCad Shadow Library (Roland Melkert u. a., CC BY-SA 4.0) und BrickNet (Peter Kulits, MIT); Einzelheiten in `data/library/LIZENZEN.md`. Katalogdaten: Rebrickable (rebrickable.com). LEGO® ist eine Marke der LEGO Gruppe, die dieses Projekt weder unterstützt noch autorisiert.

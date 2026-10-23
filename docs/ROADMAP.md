@@ -68,3 +68,7 @@ Ziel: Aus einem hochgeladenen Konzeptbild entsteht ein kanonisches Modell aus re
 - **Raumschiff-Projekt**: erste Stufe mit Teilezahl und Größe umgesetzt (Auftrag 03); Budget und Nutzungsprofil folgen mit der Beschaffung.
 
 Ausdrücklich **nicht** in Phase 1: Text-zu-Modell, allgemeine Physiksimulation, Mechanismenbibliothek, PDF-Anleitungen, automatische Bestellung.
+
+## Auftrag 05C.1 – allgemeine Teile- und Anschlussbibliothek ✔ (PR offen)
+
+Vollständige LDraw-Bibliothek als Index, Anschlüsse aus LDCad Shadow Library und BrickNet, Suche, Abdeckungsbericht – siehe `TEILEBIBLIOTHEK.md`. Nächster Schritt 05C.2 „Bauwissen aus digitalen Modellen“ (Empfehlung dort, Abschnitt 8; noch nicht begonnen).

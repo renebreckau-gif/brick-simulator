@@ -17,6 +17,7 @@ import { comparisonReferenceId, GENERATED_COMPARISON_NOTE } from './comparison';
 import { buildInstructionPlan, InstructionPlanError, type InstructionPlan } from '../core/instructions/plan';
 import { InstructionView } from './instructions/InstructionView';
 import { DesignLab } from './design/DesignLab';
+import { LibraryLab } from './library/LibraryLab';
 import { buildVariant, type AnyPlan } from '../core/construct/variants';
 import { ConstructionLab, DEFAULT_CONSTRUCT, useConstructionTarget, useEvidence, type ConstructParams } from './construct/ConstructionLab';
 import { SixViews } from './construct/SixViews';
@@ -52,7 +53,7 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>('report');
-  const [mode, setMode] = useState<'pruef' | 'schiff' | 'bild' | 'konstrukt'>('pruef');
+  const [mode, setMode] = useState<'pruef' | 'schiff' | 'bild' | 'konstrukt' | 'teile'>('pruef');
   const [shipParams, setShipParams] = useState<ShipParams>(VARIANTS.kompakt.params);
   const [shipPlan, setShipPlan] = useState<ShipPlan | null>(null);
   const [shipError, setShipError] = useState<{ message: string; hints: string[] } | null>(null);
@@ -213,6 +214,7 @@ export function App() {
           <button role="tab" aria-selected={mode === 'schiff'} className={mode === 'schiff' ? 'tab active' : 'tab'} onClick={() => setMode('schiff')}>Raumschiff-Labor</button>
           <button role="tab" aria-selected={mode === 'bild'} className={mode === 'bild' ? 'tab active' : 'tab'} onClick={() => setMode('bild')}>Aus Bild entwerfen</button>
           <button role="tab" aria-selected={mode === 'konstrukt'} className={mode === 'konstrukt' ? 'tab active' : 'tab'} onClick={() => setMode('konstrukt')}>Konstruktionsnachweis</button>
+          <button role="tab" aria-selected={mode === 'teile'} className={mode === 'teile' ? 'tab active' : 'tab'} onClick={() => setMode('teile')}>Teilebibliothek</button>
         </div>
         {mode === 'konstrukt' && (
           <ConstructionLab params={cParams} onChange={setCParams} template={construct.template} target={construct.target} plan={constructStale ? null : bowPlan} model={constructStale ? null : model} error={bowError} parts={constructStale ? null : model.instances.length} dims={constructStale ? null : dims} bom={constructStale ? null : validated.bom} catalogLoaded={bundle.catalog.available} evidence={evidence} evidenceError={evidenceError} />
@@ -274,7 +276,11 @@ export function App() {
         <main className="center instrwrap">
           <DesignLab />
         </main>
-      ) : view === 'varianten' && mode === 'konstrukt' ? (
+      ) : mode === 'teile' ? (
+        <main className="center instrwrap">
+          <LibraryLab />
+        </main>
+      ) :view === 'varianten' && mode === 'konstrukt' ? (
         <main className="center instrwrap">
           <ViewSwitch view={view} onChange={setView} withViews />
           {construct.target ? (

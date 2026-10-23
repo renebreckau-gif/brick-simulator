@@ -1,0 +1,42 @@
+{
+  "schema": "baustein-sim/library-sources@1",
+  "note": "Festgelegte Quellpakete der Teilebibliothek. Prüfsummen werden von scripts/library/fetch.py geprüft; neue Versionen nur bewusst mit --update übernehmen.",
+  "sources": [
+    {
+      "id": "ldraw",
+      "name": "LDraw Official Parts Library (complete.zip)",
+      "url": "https://library.ldraw.org/library/updates/complete.zip",
+      "homepage": "https://library.ldraw.org/",
+      "licence": "CC BY 4.0 (siehe CAreadme.txt/CAlicense4.txt im Paket)",
+      "role": "Katalogidentität (Dateiname, Titel, Kategorie, Schlüsselwörter, Umbenennungen) und Geometrie",
+      "sha256": "F3E496D0EDE69CA7942FA4AA198E661EE2D22723906101E2E339D8917A4DD5F2",
+      "bytes": 146075744
+    },
+    {
+      "id": "ldcad-shadow",
+      "name": "LDCad Shadow Library",
+      "url": "https://codeload.github.com/RolandMelkert/LDCadShadowLibrary/zip/9b1131fb1991f8c0bfc072325e4e12f6271aba35",
+      "homepage": "https://github.com/RolandMelkert/LDCadShadowLibrary",
+      "commit": "9b1131fb1991f8c0bfc072325e4e12f6271aba35",
+      "commitDate": "2026-09-10T19:58:44Z",
+      "licence": "CC BY-SA 4.0",
+      "role": "Anschlussdaten (SNAP-Metadaten je Teil und Primitiv)",
+      "sha256": "EB62298A8F6AAFF1D2CA143807D588F3477B3E83F886C8581AFE960995BE663A",
+      "bytes": 2176497,
+      "pinnedAt": "2026-10-23T04:45:39Z"
+    },
+    {
+      "id": "bricknet",
+      "name": "BrickNet (Kulits, CVPR 2026) – mitgelieferter Katalog v1",
+      "url": "https://codeload.github.com/kulits/BrickNet/zip/283faf73063d3af4eb378b624df68dec683e4695",
+      "homepage": "https://github.com/kulits/BrickNet",
+      "commit": "283faf73063d3af4eb378b624df68dec683e4695",
+      "commitDate": "2026-10-08T00:57:13Z",
+      "licence": "MIT (Repository einschließlich src/bricknet/_data/v1); abgeleitet aus LDraw",
+      "role": "Anschlussdaten (labels.json.xz) und Gleich-Geometrie-Zuordnungen (part_aliases.json.xz); Code wird nicht ausgeführt",
+      "sha256": "7CE20B38036C8807C49D1975BDBC0920B7CD9516317A3132A0419C7227845365",
+      "bytes": 586832,
+      "pinnedAt": "2026-10-23T04:45:43Z"
+    }
+  ]
+}

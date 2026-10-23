@@ -38,7 +38,8 @@ describe('Positivliste veröffentlichbarer Daten', () => {
     expect(list).toEqual(expect.arrayContaining(['ldraw/CAreadme.txt', 'ldraw/manifest.json', 'ldraw/LDConfig.ldr', 'catalog/id-map.json', 'references/references.json', 'references/omr/40013-1.mpd']));
     expect(list.filter((f) => f.endsWith('.dat'))).toHaveLength(174);
     for (const p of PRIVATE_DEV_FILES) expect(list).not.toContain(p);
-    expect(list.some((f) => /rebrickable-extract|data-raw|\.csv/.test(f))).toBe(false);
+    expect(list.some((f) => /rebrickable-extract|data-raw|\.csv|library\/private/.test(f))).toBe(false);
+    expect(list).toEqual(expect.arrayContaining(['library/parts.json', 'library/connectors-ldcad.json', 'library/connectors-bricknet.json', 'library/LIZENZEN.md']));
   });
 });
 
@@ -52,7 +53,11 @@ describe('Prüfung öffentlicher Builds (scripts/check-public-build.mjs)', () =>
   const dirty: [string, (d: string) => void, RegExp][] = [
     ['privater Katalogauszug unter data/', (d) => put(d, 'data/catalog/rebrickable-extract.json', FAKE_EXTRACT), /rebrickable-extract/],
     ['Rohdaten', (d) => put(d, 'data-raw/rebrickable/sets.csv', 'set_num'), /data-raw/],
-    ['nicht freigegebene Datei unter data/', (d) => put(d, 'data/catalog/notizen.json', '{}'), /nicht freigegebene Datei/],
+    // Auftrag 05C.1: private Farbbelege der Teilebibliothek – unter ihrem Pfad und unter anderem Namen
+    ['private Farbbelege der Teilebibliothek', (d) => put(d, 'data/library/private/rebrickable-colors.json', '{}'), /library\/private/],
+    ['Farbbelege unter anderem Namen', (d) => put(d, 'assets/farben.json', JSON.stringify({ schema: 'baustein-sim/library-rebrickable-private@1' })), /library-rebrickable-private/],
+    ['Quellpaket-Zwischenspeicher', (d) => put(d, 'data-cache/ldraw/parts/3001.dat', '0'), /data-cache/],
+    ['nicht freigegebene Datei unter data/',(d) => put(d, 'data/catalog/notizen.json', '{}'), /nicht freigegebene Datei/],
     ['Auszug unter anderem Namen', (d) => put(d, 'assets/katalog.json', FAKE_EXTRACT), /Katalogauszug \(Schema/],
     ['veränderte freigegebene Datei', (d) => put(d, 'data/catalog/id-map.json', '{"manipuliert":true}'), /weicht vom Original ab/],
     ['.env', (d) => put(d, '.env', 'TOKEN=x'), /verbotener Pfad/],

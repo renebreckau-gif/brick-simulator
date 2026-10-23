@@ -14,19 +14,30 @@ export const FIXED_PUBLIC_FILES = [
   'catalog/id-map.json',
   'references/references.json',
   'expectations/edge-cases.json',
+  // Teilebibliothek (05C.1): je Quelle/Lizenz getrennt, Lizenzhinweise in library/LIZENZEN.md
+  'library/sources.json',
+  'library/build-info.json',
+  'library/parts.json',
+  'library/connectors-ldcad.json',
+  'library/connectors-bricknet.json',
+  'library/LIZENZEN.md',
 ];
 
 /**
- * Nur vom lokalen Entwicklungsserver ausgeliefert, nie gebaut: private Katalogauszüge sowie die im Repository
- * dokumentierten, zeitgebundenen Angebotsbelege Dritter (05B.2; nicht für den öffentlichen Build bestimmt).
+ * Nur vom lokalen Entwicklungsserver ausgeliefert, nie gebaut: private Katalogauszüge, die daraus erzeugten
+ * Farbbelege der Teilebibliothek sowie die im Repository dokumentierten, zeitgebundenen Angebotsbelege Dritter
+ * (05B.2; nicht für den öffentlichen Build bestimmt).
  */
-export const PRIVATE_DEV_FILES = ['catalog/rebrickable-extract.json', 'procurement/evidence-05b2.json'];
+export const PRIVATE_DEV_FILES = ['catalog/rebrickable-extract.json', 'procurement/evidence-05b2.json', 'library/private/rebrickable-colors.json'];
 
 /** Muster, die in einem öffentlichen Build nie vorkommen dürfen. */
-export const FORBIDDEN_PATTERNS = [/(^|\/)data-raw\//, /rebrickable-extract/i, /\.csv(\.gz)?$/i, /(^|\/)\.env/];
+export const FORBIDDEN_PATTERNS = [/(^|\/)data-raw\//, /rebrickable-extract/i, /\.csv(\.gz)?$/i, /(^|\/)\.env/, /(^|\/)library\/private\//, /(^|\/)data-cache\//];
 
 /** Inhaltliche Kennung eines Katalogauszugs (Schema-Feld). */
 export const EXTRACT_SCHEMA = 'baustein-sim/rebrickable-extract@1';
+
+/** Schemata privater, aus Rebrickable abgeleiteter Dateien – dürfen unter keinem Namen in einen Build. */
+export const PRIVATE_SCHEMAS = [EXTRACT_SCHEMA, 'baustein-sim/library-rebrickable-private@1'];
 
 /**
  * Liefert die vollständige Positivliste (relativ zu data/), abgeleitet aus festen Einträgen,

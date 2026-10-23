@@ -12,6 +12,8 @@
     "test": "vitest run",
     "data:ldraw": "node scripts/fetch-ldraw.mjs",
     "data:rebrickable": "node scripts/extract-rebrickable.mjs data-raw/rebrickable",
+    "library:fetch": "python -I scripts/library/fetch.py",
+    "library:import": "python -I scripts/library/build.py",
     "check": "npm run typecheck && npm run test && npm run build",
     "check:dist": "node scripts/check-public-build.mjs",
     "test:rebrickable": "vitest run --config vitest.rebrickable.config.ts"

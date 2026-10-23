@@ -161,3 +161,26 @@ Regeln für die künftigen Stufen 1–3:
   - Ob das Ergebnis trägt, entscheidet unabhängig der Validator.
 - **Exakte Formkörper** (`src/core/validation/solids.ts`): konvexe Prismen in den Teilemetadaten, Trennachsentest für Kollisionen und gefegte Körper für Steckwege. Für Quader bleibt der bisherige Weg.
 - **Vergleich aus derselben Geometrie** (`compare.ts`): Die Umrissprofile des Modells werden aus den LDraw-Dreiecken der verbauten Teile gerastert. Die sechs Renderings sind orthografische Ansichten derselben Instanzen, ausgerichtet wie die Vorlage (`ldrawScreenAxes`). Volumenkörper des räumlichen Entwurfs sind nur interne Planungshilfe und erscheinen nie als Modellansicht.
+
+## A22 – Allgemeine Teilebibliothek mit getrennten Angabeebenen (Auftrag 05C.1)
+
+- **Übernehmen statt nachbauen:** Katalogidentität und Geometrie kommen aus dem vollständigen LDraw-Paket. Anschlüsse kommen aus zwei unabhängigen Quellen, der LDCad Shadow Library und BrickNet. Selbst gepflegt bleiben nur die geprüften Teil-Metadaten des Prüfkerns (`partMeta.ts`).
+- **Reproduzierbarer Import** (`scripts/library/`, Python-Standardbibliothek):
+  - Das Quellenregister `data/library/sources.json` hält URL, Commit und SHA-256 fest. Neue Versionen werden nur mit `--update` übernommen.
+  - Die erzeugten Indizes sind deterministisch und je Quelle/Lizenz getrennt.
+  - Prüfsummen der Ausgaben stehen in `build-info.json` und werden per Test geprüft.
+- **Getrennte Ebenen je Teil** (`src/core/library/`):
+  - Katalogidentität (mit Umbenennungen, Aliasen, Druckvarianten);
+  - Geometrie-Kennwerte;
+  - Farbbelege (nur lokal);
+  - Anschlüsse je Quelle;
+  - Unterstützungsgrad;
+  - Beschaffungsbelege.
+
+  Eigenschaften sind dreiwertig plus „widersprüchlich“. Fehlende Daten heißen nie „nein“.
+- **Katalogfamilie ≠ Messung ≠ Vermutung:**
+  - Familien kommen aus LDraw-Kategorie und Titel.
+  - Eigenschaften werden aus der Geometrie gemessen (Flächenrichtungen, nur außenliegende Flächen) oder aus Anschlussdaten abgeleitet.
+  - Verwendungen sind ausdrücklich als Vermutung gekennzeichnet.
+- **Prüfkern unverändert:** Importierte Anschlüsse ersetzen keine Teil-Metadaten. Abweichungen werden im Abgleich angezeigt (`crosscheckWithPartMeta`) und nicht still übernommen.
+- **Geometrie bei Bedarf:** Der Entwicklungsserver liefert LDraw-Dateien aus `data-cache/` (`/library-geometry/`). Ein Renderer erzeugt alle Vorschaubilder, neutral eingefärbt.

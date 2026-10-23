@@ -1,0 +1,57 @@
+{
+ "schema": "baustein-sim/library-build@1",
+ "builder": "library-import@1.0.0",
+ "sources": {
+  "ldraw": {
+   "url": "https://library.ldraw.org/library/updates/complete.zip",
+   "sha256": "F3E496D0EDE69CA7942FA4AA198E661EE2D22723906101E2E339D8917A4DD5F2",
+   "bytes": 146075744,
+   "licence": "CC BY 4.0 (siehe CAreadme.txt/CAlicense4.txt im Paket)"
+  },
+  "ldcad-shadow": {
+   "url": "https://codeload.github.com/RolandMelkert/LDCadShadowLibrary/zip/9b1131fb1991f8c0bfc072325e4e12f6271aba35",
+   "sha256": "EB62298A8F6AAFF1D2CA143807D588F3477B3E83F886C8581AFE960995BE663A",
+   "bytes": 2176497,
+   "commit": "9b1131fb1991f8c0bfc072325e4e12f6271aba35",
+   "licence": "CC BY-SA 4.0"
+  },
+  "bricknet": {
+   "url": "https://codeload.github.com/kulits/BrickNet/zip/283faf73063d3af4eb378b624df68dec683e4695",
+   "sha256": "7CE20B38036C8807C49D1975BDBC0920B7CD9516317A3132A0419C7227845365",
+   "bytes": 586832,
+   "commit": "283faf73063d3af4eb378b624df68dec683e4695",
+   "licence": "MIT (Repository einschließlich src/bricknet/_data/v1); abgeleitet aus LDraw"
+  }
+ },
+ "ldrawRelease": "2026-09",
+ "counts": {
+  "ldrawFiles": 24856,
+  "byType": {
+   "alias": 497,
+   "hidden": 2735,
+   "moved": 1161,
+   "part": 9112,
+   "print": 8756,
+   "shortcut": 2595
+  },
+  "withGeometry": 11701,
+  "ldcadParts": 7543,
+  "ldcadOwnShadow": 2827,
+  "bricknetParts": 7017,
+  "bricknetVocabulary": 14603
+ },
+ "outputs": {
+  "connectors-bricknet.json": {
+   "sha256": "2027CDBD88B6EC3B5902975651F80C08F14D7544E7C15F207C56060250AF3073",
+   "bytes": 4545241
+  },
+  "connectors-ldcad.json": {
+   "sha256": "D71C40D4E80D872CA3C245F51E9393E2596021DD36D598D6CE31BD805C08489F",
+   "bytes": 4353844
+  },
+  "parts.json": {
+   "sha256": "EA2A4D33041D8D4CE76D73256DFDD1F22FAB460054C96513EEECBACE129C6F35",
+   "bytes": 5763417
+  }
+ }
+}
