@@ -155,6 +155,8 @@ Der fünfte Bereich durchsucht die **gesamte LDraw-Teilebibliothek** (24 856 Dat
 
   Voraussetzung ist Python ≥ 3.10, nur die Standardbibliothek. Liegt `data-raw/rebrickable/` vor, entstehen zusätzlich die privaten Farbbelege in `data/library/private/` (git-ignoriert, nie im Build).
 
+  Maßgeblich ist je Quelle ein Inhalts-Prüfwert. Liefert LDraw unter `complete.zip` inzwischen einen neueren Stand, stellt `library:fetch` den festgelegten Stand aus Webarchiv-Grundstand und versionierten Monats-Updates wieder her. Liegt das Projekt in einem synchronisierten Ordner (OneDrive), empfiehlt sich ein Zwischenspeicher außerhalb, z. B. `LIBRARY_CACHE=C:\temp\baustein-cache`; der Entwicklungsserver liest dieselbe Variable.
+
 Details, Übernahmeentscheidung, Abdeckungsbericht und Grenzen: [docs/TEILEBIBLIOTHEK.md](docs/TEILEBIBLIOTHEK.md).
 
 ## Bauanleitung

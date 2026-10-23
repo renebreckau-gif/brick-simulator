@@ -184,3 +184,18 @@ Regeln für die künftigen Stufen 1–3:
   - Verwendungen sind ausdrücklich als Vermutung gekennzeichnet.
 - **Prüfkern unverändert:** Importierte Anschlüsse ersetzen keine Teil-Metadaten. Abweichungen werden im Abgleich angezeigt (`crosscheckWithPartMeta`) und nicht still übernommen.
 - **Geometrie bei Bedarf:** Der Entwicklungsserver liefert LDraw-Dateien aus `data-cache/` (`/library-geometry/`). Ein Renderer erzeugt alle Vorschaubilder, neutral eingefärbt.
+
+## A23 – Verlässlichkeit der Bibliotheksangaben (Auftrag 05C.1.1)
+
+- **Eine Identitätsauflösung für Prüfkern und Bibliothek** (`src/core/connectivity/identity.ts`):
+  - Metadaten gelten für eine andere Nummer nur über eine belegte reine Umbenennung: genau ein Verweis, Einheitsmatrix. Die Regel wird aus den LDraw-Dateien abgeleitet.
+  - Die Bibliothek zeigt „prüfbar“ nur nach Aussage des Prüfkerns (`Catalog.part(id).simulation`), nicht nach eigener Liste.
+- **Farbbelege nur aus Identität:**
+  - Begründen können sie gleiche Nummer, LDraw-Querverweis oder LDraw-Umbenennung. Alternativen und Formvarianten werden genannt, belegen aber nichts; mehrdeutige Zuordnungen ergeben keine Belege.
+  - Gezählt werden eindeutige Sets je neuester Inventarversion, die Herkunft wird je Beleg geführt.
+- **Getrennte Bezugsgrößen in der Abdeckung:** Gesamtbestand einschließlich unbekannter Zuordnungen und zugeordneter Bestand; Gewichte bleiben für alle Teile erhalten.
+- **Datenlader mit Laufzeitprüfung** (zod): fehlt, beschädigt und nicht erreichbar werden unterschieden, mit Datei und Grund.
+- **Reproduzierbarkeit über Plattformen:**
+  - Inhalts-Prüfwert statt Archiv-Prüfsumme.
+  - Import nur mit korrekt gerundeten Grundrechenarten (keine Winkelfunktionen in der Klassifikation, kein versionsabhängiges `sum()`).
+  - Wiederherstellungsrezept für den festgelegten LDraw-Stand; CI-Matrix Linux/Windows mit verschiedenen Python-Versionen.

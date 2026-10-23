@@ -48,7 +48,11 @@ jobs:
             git diff --stat -- data/library
             for f in $(git diff --name-only -- data/library); do
               echo "::error file=$f::weicht vom versionierten Stand ab"
-              git diff -U0 -- "$f" | grep '^[-+]"' | head -5 | while read -r l; do echo "::error file=$f::${l:0:300}"; done
+              case "$f" in
+                *parts.json|*connectors-*.json)
+                  git show "HEAD:$f" > "$RUNNER_TEMP/alt.json"
+                  python -I scripts/library/compare.py "$RUNNER_TEMP/alt.json" "$f" --annotate 12 || true ;;
+              esac
             done
             exit 1
           fi

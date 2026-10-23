@@ -1,6 +1,6 @@
 # Teilebibliothek (Auftrag 05C.1)
 
-Allgemeine Teile- und Anschlussbibliothek als Grundlage des Bild-zu-LEGO-Konstrukteurs. Der Umfang ist allgemein (Gebäude, Fahrzeuge, Türme …); Technic-Mechanik ist ausgenommen. Stand: 2026-10-23.
+Allgemeine Teile- und Anschlussbibliothek als Grundlage des Bild-zu-LEGO-Konstrukteurs. Der Umfang ist allgemein (Gebäude, Fahrzeuge, Türme …); Technic-Mechanik ist ausgenommen. Stand: 2026-10-23, korrigiert mit Auftrag 05C.1.1 (Abschnitt 9).
 
 ## 1. Ausgangslage
 
@@ -31,8 +31,26 @@ Bewertet wurden Abdeckung, Format, Version, Lizenz und Einbindungsaufwand. Die A
 
 | Schritt | Befehl | Ergebnis |
 |---|---|---|
-| Quellen holen | `npm run library:fetch` | lädt nach `data-cache/` (git-ignoriert) und prüft SHA-256 gegen `data/library/sources.json`. Bei Abweichung bricht es ab; neue Version nur mit `npm run library:fetch -- --update` |
-| Importieren | `npm run library:import` | erzeugt die Indizes (deterministisch, ca. 6 Minuten); zwei Läufe ergeben byte-identische Dateien |
+| Quellen holen | `npm run library:fetch` | lädt nach `data-cache/` (oder in den Ordner aus `LIBRARY_CACHE`) und prüft den **Inhalts-Prüfwert** jeder Quelle gegen `data/library/sources.json` |
+| Neue Version übernehmen | `npm run library:fetch -- --update` | lädt immer neu, auch wenn ein Archiv im Zwischenspeicher liegt; schreibt neuen Prüfwert und neue Prüfsumme ins Register |
+| Festgelegten LDraw-Stand wiederherstellen | automatisch, wenn `complete.zip` inzwischen einen anderen Stand liefert; Probe: `python -I scripts/library/fetch.py --reconstruct` | Grundstand aus dem Webarchiv + versionierte LDraw-Monats-Updates + Korrekturen, geprüft gegen den Prüfwert |
+| Importieren | `npm run library:import` | erzeugt die Indizes (deterministisch, ca. 6–7 Minuten) |
+
+**Inhalts-Prüfwert:**
+- Maßgeblich ist SHA-256 über die sortierte Liste „Pfad, SHA-256 des Inhalts“ aller Dateien im Umfang (bei LDraw `parts/` und `p/`).
+- Die Archiv-Prüfsumme wird nur noch mitgeführt. Ein neu gepacktes Archiv mit gleichem Inhalt wird deshalb angenommen, ein anderer Inhalt nie stillschweigend.
+- Der Import prüft den Prüfwert des entpackten Stands erneut, bevor er ihn liest.
+
+**Wiederherstellung des festgelegten LDraw-Stands 2026-09.** LDraw ersetzt `complete.zip` mit jedem Release, die URL allein reicht also nicht. Das Rezept in `sources.json`:
+- **Grundstand:** `complete.zip` vom 2025-12-04 aus dem Internet Archive, Prüfsumme festgehalten.
+- **Updates:** die zehn versionierten Archive `lcad2512.zip` … `lcad2609.zip` von library.ldraw.org, je Prüfsumme festgehalten.
+- **Korrekturen:** eine gelöschte Datei (`parts/s/41770s01.dat`) und zwei Dateien, die LDraw außerhalb der Updates geändert hat (`24201d00.dat`, `24201d01.dat`). Letztere liegen in `data/library/ldraw-overrides/` (CC BY 4.0).
+- **Probe:** am 2026-10-23 mit frischem Download ausgeführt. Ergebnis: 37 104 Dateien, Prüfwert identisch, 214 s.
+
+**Zwischenspeicher:**
+- Jeder Stand wird in einen neuen Ordner geschrieben und erst fertig gegen den alten getauscht. So hinterlässt ein Abbruch keinen halben Stand.
+- `data-cache/` liegt hier im OneDrive-Ordner. Beim Löschen hielt die Synchronisation Dateien fest, und ein erster Wiederherstellungslauf brach deshalb ab.
+- Empfehlung: `LIBRARY_CACHE` auf einen nicht synchronisierten Ordner setzen oder `data-cache/` von der Synchronisation ausnehmen.
 
 Erzeugte Dateien, je Quelle und Lizenz getrennt (Lizenzhinweise: `data/library/LIZENZEN.md`):
 
@@ -42,7 +60,8 @@ Erzeugte Dateien, je Quelle und Lizenz getrennt (Lizenzhinweise: `data/library/L
 | `connectors-ldcad.json` | 7 543 Teile, je Anschluss Klasse, Rohform, Position, Steckachse | 4,4 MB |
 | `connectors-bricknet.json` | 7 017 Teile, gleiches Zeilenformat | 4,5 MB |
 | `build-info.json` | Quellenversionen, Prüfsummen der Ausgaben (per Test geprüft), Zählungen | – |
-| `private/rebrickable-colors.json` | **nur lokal**: Farbbelege, Rebrickable-Zuordnung, Referenzmenge | – |
+| `ldraw-overrides/` | zwei LDraw-Dateien für die Wiederherstellung (siehe oben) | 1 KB |
+| `private/rebrickable-colors.json` | **nur lokal**: Farbbelege mit Herkunft, Rebrickable-Zuordnung, Referenzmenge mit Gewichten (Schema `@2`) | – |
 
 **Druckvarianten:**
 - Sie bleiben eigene Einträge mit eigener LDraw-Datei und Verweis `pr` auf das Grundteil.
@@ -62,10 +81,31 @@ Erzeugte Dateien, je Quelle und Lizenz getrennt (Lizenzhinweise: `data/library/L
 | Geometrie, Maße, Kategorie, Suchmerkmale | LDraw-Geometrie | „unbekannt“; Hülle bei schiefen Drehungen „genähert“ |
 | Farbbelege und Transparenz | Set-Inventare (lokal) | keine Farbe gilt als belegt |
 | Anschlüsse mit Herkunft | LDCad bzw. BrickNet, je Anschluss mit Rohform | „keine Daten – weder verbindbar noch unverbindbar“ |
-| Unterstützungsgrad | Prüfkern-Metadaten bzw. Datenlage | prüfbar / Anschlüsse importiert / nur Geometrie / Geometrie unvollständig / nicht einzeln geführt |
+| Unterstützungsgrad | **Aussage des Prüfkerns selbst** (`Catalog.part(id).simulation`, gleiche Identitätsauflösung wie die Modellprüfung), sonst Datenlage | prüfbar / teilweise prüfbar / Anschlüsse importiert / nur Geometrie / Geometrie unvollständig / nicht einzeln geführt; ohne Prüfkern-Anbindung nie „prüfbar“ |
 | Beschaffung (Zeit, Menge) | Belegdateien (bisher 05B.2) | „kein Beleg – unbekannt gilt als nicht verfügbar“ |
 
 Abgeleitete Aussagen sind dreiwertig plus „widersprüchlich“: Melden die Quellen verschiedene Ergebnisse, steht das so da.
+
+**Farbbelege** (`scripts/library/rebrickable.py`, synthetisch geprüft mit `tests/fixtures/rebrickable-mini`):
+
+*Zuordnung Rebrickable → LDraw.* Nur drei Gründe begründen eine Identität:
+- gleiche Nummer;
+- LDraw-Schlüsselwort „Rebrickable <Nummer>“;
+- nachgewiesene LDraw-Umbenennung („~Moved to“, Alias).
+
+Führen sie auf verschiedene LDraw-Teile, ist die Zuordnung **mehrdeutig**, und es gibt keine Farbbelege. Bei echten Daten betrifft das 761 Rebrickable-Teile, meist eine Nummer für mehrere LDraw-Formvarianten. Rebrickable-Beziehungen „Alternative“ und „Formvariante“ werden je Teil genannt, belegen aber **keine** Farben des Zielteils.
+
+*Zählung:*
+- Je Set zählt nur die neueste Inventarversion; Ersatzteile und Minifiguren-Inventare zählen nicht.
+- Je Teil und Farbe zählen eindeutige Sets. Belege mehrerer Rebrickable-Teile werden als Set-Vereinigung gezählt.
+- Die Herkunft (Rebrickable-Teil und Grund) bleibt je Beleg erhalten.
+
+*Abgrenzung:* Druckfarben belegen nicht das unbedruckte Grundteil. Ein Farbbeleg zeigt Existenz in einem Set-Inventar, keine Kaufverfügbarkeit; die steht nur unter „Beschaffung“.
+
+**Datenlader** (`src/core/library/load.ts`):
+- Jede Datei wird einzeln geladen und zur Laufzeit gegen ihre Datenform geprüft.
+- Zustände: geladen, fehlt (404 oder HTML statt Daten), beschädigt (kein JSON oder falsche Form, mit Ort), nicht erreichbar (Netzwerk- oder Serverfehler).
+- Die Oberfläche zeigt Datei und Grund. Nur ein fehlender oder beschädigter Teile-Index verhindert die Bibliothek; ein beschädigter optionaler Farbkatalog erscheint als „beschädigt“ und blockiert nichts.
 
 ## 5. Teilesuche
 
@@ -83,34 +123,43 @@ Suchaufgaben aus dem Auftrag (mit lokalen Farbbelegen; Reihenfolge nach Prüfbar
 
 | Aufgabe | Anfrage | Treffer | erste Kandidaten |
 |---|---|---|---|
-| glatte, geneigte Ecke | geneigt + zwei Neigungsrichtungen + keine Noppe oben | 57 (42 unentschieden) | 15571, 22388, 35464, 3044c, 3049d, 3043, 3300 |
-| runde Wand | runde senkrechte Wand | 494 | 6141, 98138, 3062b, 4032a, 85861, 35480, 3941 |
+| glatte, geneigte Ecke | geneigt + zwei Neigungsrichtungen + keine Noppe oben | 57 (42 unentschieden) | 96910, 15571, 22388, 35464, 3044c, 3049d, 3043, 3300 |
+| runde Wand | runde senkrechte Wand | 494 | 6141, 98138, 4032a, 3062b, 85861, 35480, 14769 |
 | Fensteröffnung | Familie Fenster/Glas/Kanzel | 539 | 2437, 60596, 60592, 60594, 60601, 60593 |
-| seitlich angesetzte Platte | Noppen zur Seite | 82 (18 unentschieden) | 87087, 11211, 99780, 99207, 44728, 4070, 99781 |
+| seitlich angesetzte Platte | Noppen zur Seite | 82 (18 unentschieden) | 99780, 11211, 87087, 99207, 44728, 99781, 4070 |
+
+Die Reihenfolge innerhalb der Treffer hat sich mit der korrigierten Gewichtung leicht verschoben; die Treffermengen sind unverändert.
 
 „Unentschieden“ heißt: Für diese Teile fehlen Anschlussdaten oder die Quellen widersprechen sich. Sie fallen nicht als „hat die Eigenschaft nicht“ heraus.
 
 ## 6. Abdeckungsbericht
 
 **Referenzmengen:**
-- **A, LDraw-Systemteile (öffentlich):** LDraw-Dateien vom Typ „Part“, ohne Drucke, Umbenennungen, Aliase, versteckte Unterteile, Minifiguren, Technic, Duplo, Figuren/Tiere und Fremdsysteme.
-- **B, in Sets ab 2016 verwendet (lokal):** Teile aus Rebrickable-Set-Inventaren ohne Ersatzteile. Drucke werden auf das Grundteil gefaltet. Ausgeschlossen sind dieselben Kategorien wie bei A sowie Schläuche und Schnüre. Gewichtet nach Anzahl der Sets.
+- **A, LDraw-Systemteile (öffentlich):** LDraw-Dateien vom Typ „Part“, ohne Drucke, Umbenennungen, Aliase, versteckte Unterteile, Minifiguren, Technic, Duplo, Figuren/Tiere und Fremdsysteme. Alle sind zugeordnet.
+- **B, in Sets ab 2016 verwendet (lokal):**
+  - Basis: Grundteile aus Rebrickable-Set-Inventaren (neueste Inventarversion, ohne Ersatzteile); Drucke auf das Grundteil gefaltet; ausgeschlossen sind die Kategorien wie bei A sowie Schläuche und Schnüre.
+  - Gewicht: Anzahl **eindeutiger** Sets ab 2016, in denen das Grundteil vorkommt. Farben, Drucke und Inventarversionen zählen ein Set nicht mehrfach.
+  - Umfang: 13 954 Sets ab 2016 bei 28 512 Sets insgesamt.
 
-| Ebene | A: LDraw-Systemteile (3 302) | B: Sets ab 2016 (1 710 zugeordnet + 803 ohne LDraw) |
-|---|---|---|
-| Katalog: LDraw-Datei zugeordnet | 3 302 / 3 302 | 1 690 / 2 513 (67 %) |
-| Geometrie vollständig | 3 302 (100 %) | 1 690 / 1 710 (98,8 %; gewichtet 99,2 %) |
-| Anschlüsse LDCad | 2 718 (82,3 %) | 1 507 (88,1 %; gew. 98,2 %) |
-| Anschlüsse BrickNet | 2 696 (81,6 %) | 1 584 (92,6 %; gew. 97,8 %) |
-| Anschlüsse aus mindestens einer Quelle | 2 954 (89,5 %) | 1 642 (96,0 %; gew. 99,0 %) |
-| aus beiden Quellen | 2 460 (74,5 %) | 1 449 (84,7 %; gew. 97,0 %) |
-| beide einig (Noppen oben, Aufnahmen unten) | 1 715 (51,9 %) | 1 015 (59,4 %; gew. 80,7 %) |
-| Verbindungen bereits prüfbar (Prüfkern) | 39 (1,2 %) | 39 (2,3 %; gew. 24,0 %) |
+**Zwei Bezugsgrößen je Ebene:** Der *Gesamtbestand* schließt Teile ohne eindeutige LDraw-Zuordnung ein; sie gelten dort als nicht abgedeckt, und ihr Gewicht bleibt erhalten. *Innerhalb zugeordnet* bezieht sich nur auf zugeordnete Teile.
+
+| Ebene | A (3 302 Teile) | B am Gesamtbestand (2 554 Teile, Gewicht 423 735) | B innerhalb zugeordnet (1 723 Teile, Gewicht 409 392) |
+|---|---|---|---|
+| Katalog: eindeutig einer LDraw-Datei zugeordnet | 100 % | 1 723 (67,5 %; gew. 96,6 %) | – |
+| Geometrie vollständig | 100 % | 1 688 (66,1 %; gew. 96,6 %) | 98,0 % (gew. 100,0 %) |
+| Anschlüsse LDCad | 2 718 (82,3 %) | 1 513 (59,2 %; gew. 95,2 %) | 87,8 % (gew. 98,5 %) |
+| Anschlüsse BrickNet | 2 696 (81,6 %) | 1 590 (62,3 %; gew. 95,7 %) | 92,3 % (gew. 99,0 %) |
+| Anschlüsse aus mindestens einer Quelle | 2 954 (89,5 %) | 1 644 (64,4 %; gew. 96,3 %) | 95,4 % (gew. 99,7 %) |
+| aus beiden Quellen | 2 460 (74,5 %) | 1 459 (57,1 %; gew. 94,5 %) | 84,7 % (gew. 97,9 %) |
+| beide einig (Noppen oben, Aufnahmen unten) | 1 715 (51,9 %) | 1 016 (39,8 %; gew. 79,1 %) | 59,0 % (gew. 81,9 %) |
+| Verbindungen prüfbar (laut Prüfkern) | 39 (1,2 %) | 35 (1,4 %; gew. 16,3 %) | 2,0 % (gew. 16,9 %) |
+
+Die 35 Teile aus B ohne vollständige Geometrie (Gewicht 187) sind Teile, die Rebrickable als Grundteil führt, LDraw aber nur als Druckdatei. Für Druckdateien werden bewusst keine Kennwerte berechnet.
 
 **Abgleich mit dem Prüfkern** (alle 41 Teile mit geprüften Metadaten; `crosscheckWithPartMeta`):
 - **Umfang:** Verglichen werden Positionen für Noppen oben, seitlich, Aufnahmen unten, Röhren und Unterseitenstifte.
 - **Treffer:** LDCad stimmt in 71 von 75 Vergleichen überein, BrickNet in 86 von 95. Noppen oben stimmen ausnahmslos.
-- **Umbenennung:** Die Prüfkern-Nummer 3023 heißt in LDraw 2026-09 „~Moved to 3023b“; abgeglichen wird über 3023b. Der Druck 4162p0b hat in keiner Quelle Anschlüsse.
+- **Umbenennung:** Die Prüfkern-Nummer 3023 heißt in LDraw 2026-09 „~Moved to 3023b“. Seit 05C.1.1 gilt das auch im Prüfkern: Ein Modell mit 3023b wird geprüft (Abschnitt 9). Der Druck 4162p0b hat in keiner Quelle Anschlüsse.
 
 Abweichungen (bewusst **nicht** in den Prüfkern übernommen; per Test festgehalten):
 
@@ -121,16 +170,17 @@ Abweichungen (bewusst **nicht** in den Prüfkern übernommen; per Test festgehal
 | 3065, 3069b, 3066 | Aufnahmen unten | 2 / 2 / 4 | stimmt | 3 / 3 / 7 | BrickNet zählt Zwischenpositionen ohne Röhre (halber Versatz) als Aufnahme; der Prüfkern hat dafür keine Regel. |
 | 3039, 3298, 41767, 41768 | Röhren | 0 | nicht modelliert | 1–2 | Der Prüfkern führt die verkürzten Röhren der Schrägen (stud4a) bewusst nicht als Anschluss. Folge: Versatzverbindungen dort bleiben „ungeprüft“. |
 
-Von den 1 449 Teilen aus B mit Daten aus beiden Quellen sind sich die Quellen bei 434 nicht einig. Stichproben zeigen dieselben Muster wie im Prüfkern-Abgleich: BrickNet zählt Zwischenpositionen ohne Röhre als Aufnahme, LDCad lässt Unterseiten teils ohne Angaben (43722a). Eine vollständige Klassifikation der Widersprüche steht noch aus.
+Von den 1 459 Teilen aus B mit Daten aus beiden Quellen sind sich die Quellen bei 443 nicht einig. Stichproben zeigen dieselben Muster wie im Prüfkern-Abgleich: BrickNet zählt Zwischenpositionen ohne Röhre als Aufnahme, LDCad lässt Unterseiten teils ohne Angaben (43722a). Eine vollständige Klassifikation der Widersprüche steht noch aus.
 
 **Verbleibende Lücken:**
-1. 803 Teile aus B haben keine LDraw-Zuordnung. Gründe: meist Drucke oder Folien ohne Rebrickable-Beziehung, neuere Teile ohne LDraw-Datei, abweichende Nummern. Eine Bestätigung über externe IDs fehlt, weil kein API-Schlüssel vorhanden ist.
-2. 68 Teile aus B haben keine Anschlussdaten; bei 434 widersprechen sich die beiden Quellen.
-3. Nur 39 Teile sind prüfbar. Importierte Anschlüsse sind Suchhinweise, kein Prüfumfang.
+1. 831 Grundteile aus B (Gewicht 14 343, 3,4 %) haben keine eindeutige LDraw-Zuordnung. Gründe: keine LDraw-Datei, abweichende Nummern, mehrdeutige Querverweise. Eine Bestätigung über externe IDs fehlt, weil kein API-Schlüssel vorhanden ist.
+2. 79 zugeordnete Teile aus B haben keine Anschlussdaten; bei 443 widersprechen sich die beiden Quellen.
+3. Nur 35 Teile aus B sind prüfbar, gewichtet 16,9 % des zugeordneten Bestands. Importierte Anschlüsse sind Suchhinweise, kein Prüfumfang.
 4. Clips, Stangen, Scharniere und Technic sind importiert, aber ohne Regeln im Prüfkern.
 5. Die Körper-Hüllquader enthalten keine Anschluss-Primitive. Beispiel: Bei 3062a ist der untere Ring `stud4a.dat`, die Hülle wird deshalb 20 statt 24 LDU hoch.
 6. Farbbelege gibt es nur lokal. Ohne sie sind „transparent“ und alle Farben unbekannt.
 7. Vorschaubilder gibt es nur im Entwicklungsserver mit Quellpaket.
+8. Die Wiederherstellung hängt von zwei externen Archiven ab (Internet Archive, LDraw-Update-Archive). Fallen beide weg, bleibt nur ein eigener Spiegel; der ist nicht eingerichtet.
 
 ## 7. Bestehendes System
 
@@ -138,7 +188,7 @@ Von den 1 449 Teilen aus B mit Daten aus beiden Quellen sind sich die Quellen be
 - **Private Daten:**
   - `data/library/private/` und `data-cache/` sind git-ignoriert.
   - Sie stehen nicht in der Positivliste.
-  - `check-public-build.mjs` weist sie unter jedem Pfad und am Schema `library-rebrickable-private@1` ab (neue Testfälle in `tests/public-build.test.ts`).
+  - `check-public-build.mjs` weist sie unter jedem Pfad und an jedem Schema `library-rebrickable-private@…` ab (Testfälle in `tests/public-build.test.ts`).
 - **Unverändert:**
   - Teil-Metadaten, Regeln, Validator, Bautechniken, Anleitung und Exporte;
   - die Bibliothek ersetzt keine Prüfung.
@@ -158,4 +208,60 @@ Von den 1 449 Teilen aus B mit Daten aus beiden Quellen sind sich die Quellen be
 4. **Prüfkern gezielt erweitern:**
    - die meistverwendeten Teile ohne Prüfkern-Unterstützung (gewichtet nach Referenzmenge B) halbautomatisch aus Geometrie und Anschlussdaten vorschlagen;
    - Aufnahme in `partMeta` erst nach dem bestehenden Abgleich gegen LDraw.
-   - Ziel: gewichtete Prüfbarkeit deutlich über 24 %.
+   - Ziel: gewichtete Prüfbarkeit deutlich über die korrigierten 16,9 %.
+
+## 9. Korrekturen aus Auftrag 05C.1.1 – Nachweise
+
+Jeder Fehler wurde zuerst reproduziert und dann behoben; die Tests laufen ohne private Daten.
+
+**Farbbelege übertragen über Alternativen** (Fehler bis `2d365b2`):
+- *Reproduktion:* der alte Code auf den synthetischen CSV-Daten `tests/fixtures/rebrickable-mini`. Ergebnis:
+  - 3794a erhielt Grün vom Rebrickable-Teil `alt9`, das nur als Alternative verknüpft ist;
+  - 3001 erhielt Schwarz aus einer veralteten Inventarversion;
+  - 3001 wurde mit 5 statt 2 Sets gewichtet;
+  - die Mehrdeutigkeit von `amb` blieb unerkannt;
+  - nicht zugeordnete Teile hatten kein Gewicht.
+- *Behebung:* `scripts/library/rebrickable.py`.
+- *Test:* `tests/library-rebrickable-rules.test.ts`, 13 Fälle mit von Hand hergeleiteten Zahlen.
+- *Echte Daten:* 3794a trägt nur noch eigene Farben (letzte Sets 2014); 15573 und 3794b sind als Alternativen genannt.
+
+**3023b: Bibliothek „prüfbar“, Prüfkern „unsupported“:**
+- *Reproduktion:* `catalog.part('3023b').simulation` war „unsupported“, während die Bibliothek 3023b über eine eigene ID-Liste als prüfbar zeigte.
+- *Behebung:* gemeinsame Identitätsauflösung (`identity.ts`) im Katalog des Prüfkerns; die Bibliothek fragt den Prüfkern.
+- *Test:* `tests/library-validator-path.test.ts`.
+  - Platte 3023b auf 3001 wird in der Modellprüfung verbunden und erzeugt keinen Befund „nicht unterstützt“.
+  - Jedes als prüfbar angezeigte Teil führt der Prüfkern als unterstützt.
+  - Ohne Prüfkern-Anbindung erscheint nie „prüfbar“.
+- *Folge:* Prüfbar sind 35 statt 39 Teile der Referenzmenge B. Die bisherige Zählung hatte Prüfkern-Nummern über Umbenennungen und Drucke hinweg gezählt.
+
+**Abdeckung und Gewichtung:**
+- Gesamtbestand und zugeordneter Bestand stehen jetzt getrennt (Abschnitt 6). Die Gewichte zählen eindeutige Sets (neueste Inventarversion), auch für nicht zugeordnete Teile.
+- *Test:* `tests/library-load-coverage.test.ts`, eine von Hand nachrechenbare Mini-Bibliothek.
+- *Folge:* Die gewichtete Prüfbarkeit sinkt von berichteten 24,0 % auf **16,9 %** des zugeordneten bzw. **16,3 %** des Gesamtbestands. Die alte Zahl war durch Mehrfachzählung über Farben, Drucke und Inventarversionen überhöht.
+
+**Datenlader:**
+- Zuvor erschien ein beschädigter optionaler Katalog als „fehlt“, oder er hätte eine Ausnahme ausgelöst.
+- Jetzt: Laufzeitprüfung je Datei; die Zustände fehlt, beschädigt und nicht erreichbar werden unterschieden, mit Datei und Grund.
+- *Tests:* 7 Fälle in `tests/library-load-coverage.test.ts`.
+- *Im Browser geprüft:* Ein absichtlich zerstörter Farbkatalog wurde als „beschädigt – kein gültiges JSON“ angezeigt, und die Suche lief weiter. Die Originaldatei ist wiederhergestellt; die Prüfsumme ist identisch.
+
+**Linux-Abweichung bei u9200** (f.cv 0,095 → 0,096; f.in 0,261 → 0,260):
+- *Ursache:* `x ** 2` ruft `pow()` der C-Bibliothek auf. Unter Windows (MSVC) ist `pow(x, 2)` nicht korrekt gerundet, gemessen in 1 063 von 2 000 000 Zufallswerten ≠ `x * x`. glibc unter Linux rundet korrekt.
+- *Behebung:* Nur noch korrekt gerundete Operationen; Kreisfunktionen entfernt. Danach erzeugt Windows genau die Linux-Bytes: `parts.json` SHA-256 beginnt mit `F005261941DCF50D`. Die einzige Änderung gegenüber dem bisherigen Windows-Stand ist u9200 mit den Linux-Werten.
+- *Absicherung:*
+  - `tests/library-determinism.test.ts` hält die Regel fest;
+  - `.github/workflows/library-reproducibility.yml` vergleicht Linux (Python 3.11 und 3.13) und Windows (Python 3.13) byte-genau mit den versionierten Dateien;
+  - bei Abweichung nennt `scripts/library/compare.py` die betroffenen Teile.
+- Die Prüfsummen wurden nicht angepasst, sondern sind das Ergebnis des korrigierten Imports.
+
+**`--update` bei vorhandenem Zwischenspeicher:**
+- Zuvor wurde nicht neu geladen, wenn ein Archiv mit der festgelegten Prüfsumme im Zwischenspeicher lag. Ein neuer Stand wurde so nie übernommen.
+- Jetzt lädt `--update` immer neu.
+- *Test:* `tests/library-fetch.test.ts` mit lokalen `file://`-Archiven; dazu ungeprüfter Stand, geänderter Inhalt ohne Rezept und neu gepacktes Archiv.
+
+**Erneute Beschaffung der festgelegten LDraw-Version:** über das Wiederherstellungsrezept (Abschnitt 3), mit frischem Download geprüft.
+
+**Weitere Funde unterwegs:**
+- Die Import-Skripte brachen unter Windows bei umgeleiteter Ausgabe an Umlauten und Pfeilen ab (cp1252). Sie geben jetzt immer UTF-8 aus.
+- Die Wiederherstellung öffnete das 136-MB-Archiv für jede Datei neu (`setdefault` wertet sein Argument immer aus). Behoben, Laufzeit 214 s.
+- OneDrive blockierte das Löschen im Zwischenspeicher. Deshalb gibt es jetzt den atomaren Ordnertausch und `LIBRARY_CACHE`.

@@ -24360,7 +24360,7 @@
 "u9190c01": {"t":"~Electric Power Functions Coiled Cable With Dark Bluish Grey Functions Connector With PF Bottom","ty":"hidden","c":"Electric","lic":"CC BY 4.0","u":"2019-03"},
 "u9190c02": {"t":"~Electric Power Functions Coiled Cable With Dark Bluish Grey Functions Connector With PF Bottom","ty":"hidden","c":"Electric","lic":"CC BY 4.0","u":"2019-03"},
 "u9190c03": {"t":"~Electric Power Functions Coiled Cable with Dark Bluish Grey Functions Connector with PF Bottom","ty":"hidden","c":"Electric","lic":"CC BY 4.0","u":"2024-08"},
-"u9200": {"t":"Fabuland Aviator Helmet","ty":"part","c":"Figure","lic":"CC BY 4.0","u":"2011-02","bb":[-28,-35.3,-22.8,28,21,34.2],"f":{"cv":0.095,"cvv":0.001,"h":0.002,"i":0.006,"in":0.261,"va":0.017}},
+"u9200": {"t":"Fabuland Aviator Helmet","ty":"part","c":"Figure","lic":"CC BY 4.0","u":"2011-02","bb":[-28,-35.3,-22.8,28,21,34.2],"f":{"cv":0.096,"cvv":0.001,"h":0.002,"i":0.006,"in":0.26,"va":0.017}},
 "u9201": {"t":"Fabuland Straw Hat","ty":"part","c":"Figure","lic":"CC BY 4.0","u":"2011-02","bb":[-34.1,-17.8,-27.3,34.1,23.5,33.4],"f":{"cv":0.059,"h":0.006,"i":0.001,"in":0.541,"va":0.003}},
 "u9202": {"t":"~Technic Control Centre II - Power Socket","ty":"hidden","c":"Electric","lic":"CC BY 4.0","u":"2012-01"},
 "u9203": {"t":"~Fabuland Scooter Handlebars","ty":"hidden","c":"Vehicle","lic":"CC BY 4.0","u":"2012-03"},

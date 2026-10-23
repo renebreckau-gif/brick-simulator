@@ -38,3 +38,11 @@ Alle Abrufe am 2026-10-14. Primärdokumentation wurde vor der Integration gelese
 | `data/references/references.json` | Referenzmetadaten | aus den genannten Quellen; Abweichungen zwischen Quellen dokumentiert |
 | `data/expectations/edge-cases.json` | Erwartungen mit Begründungen | eigene Festlegung, unabhängig vom Validator formuliert |
 | `src/fixtures/*` | Grenzfälle, Fehlervarianten | **synthetisch** – nie als Referenz oder Katalognachweis verwenden |
+
+### Ergänzung 05C.1.1 – Wiederherstellung des festgelegten LDraw-Stands
+
+| Quelle | Verwendung | Abruf | Lizenz | Im Repository |
+|---|---|---|---|---|
+| [Internet Archive](https://web.archive.org/) – Aufzeichnung von `complete.zip` vom 2025-12-04 | Grundstand für die Wiederherstellung von LDraw 2026-09 | Download 2026-10-23, SHA-256 in `data/library/sources.json` | Inhalt CC BY 4.0 (LDraw) | nein (nur Prüfsumme) |
+| LDraw-Monats-Updates `lcad2512.zip` … `lcad2609.zip` ([library.ldraw.org/updates](https://library.ldraw.org/updates)) | Updates auf den Grundstand | Download 2026-10-23, je SHA-256 | CC BY 4.0 | nein (nur Prüfsummen) |
+| LDraw `parts/24201d00.dat`, `parts/24201d01.dat` (Stand 2026-09) | außerhalb der Updates geänderte Dateien | aus dem festgelegten `complete.zip` | CC BY 4.0, Autor Vincent Messenet | **ja**, `data/library/ldraw-overrides/` |

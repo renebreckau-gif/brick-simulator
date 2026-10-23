@@ -162,3 +162,9 @@ Die Teilebibliothek erweitert **nicht** den Prüfumfang. Geprüft werden weiterh
 - **Hüllquader** enthalten keine Anschluss-Primitive (Noppen, Röhren). Bei schief gedrehten Unterdateien sind sie genähert und als „genähert“ markiert.
 - **Farbbelege** stammen aus Set-Inventaren (Rebrickable, nur lokal). Sie belegen, dass eine Kombination existierte, aber keine heutige Verfügbarkeit. Ohne lokale Daten ist keine Farbe belegt.
 - **Druckvarianten** behalten ihre eigene LDraw-Datei. Kennwerte, Anschlüsse und Unterstützung des Grundteils werden nicht auf sie übertragen.
+
+### Ergänzung 05C.1.1
+
+- **Prüfkern-Identität:** Teil-Metadaten gelten für eine andere LDraw-Nummer nur über eine belegte reine Umbenennung, derzeit 3023 → 3023b. Formvarianten (z. B. 3794a/3794b) bleiben getrennt und brauchen eigene Metadaten.
+- **Farbbelege:** Sie stammen nur aus belegter Identität. Rund 760 mehrdeutige Rebrickable-Nummern bleiben ohne Beleg und gelten als unbekannt, nicht als „nicht vorhanden“.
+- **Geometrie-Kennwerte unter Linux und Windows:** Die Klassifikation verwendet keine Winkelfunktionen mehr. Einzig die Achsen der BrickNet-Anschlüsse nutzen für Winkel, die kein Vielfaches von 90° sind, noch `sin` und `cos`; das Ergebnis wird auf 0,01 gerundet.

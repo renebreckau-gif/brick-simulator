@@ -72,3 +72,7 @@ Ausdrücklich **nicht** in Phase 1: Text-zu-Modell, allgemeine Physiksimulation,
 ## Auftrag 05C.1 – allgemeine Teile- und Anschlussbibliothek ✔ (PR offen)
 
 Vollständige LDraw-Bibliothek als Index, Anschlüsse aus LDCad Shadow Library und BrickNet, Suche, Abdeckungsbericht – siehe `TEILEBIBLIOTHEK.md`. Nächster Schritt 05C.2 „Bauwissen aus digitalen Modellen“ (Empfehlung dort, Abschnitt 8; noch nicht begonnen).
+
+## Auftrag 05C.1.1 – Verlässlichkeit der Teilebibliothek ✔ (PR offen)
+
+Farbbelege nur aus belegter Identität, gemeinsame Identitätsauflösung mit dem Prüfkern (3023b), getrennte Bezugsgrößen und eindeutige Set-Gewichte, Datenlader mit Laufzeitprüfung, plattformunabhängiger Import (Ursache der Linux-Abweichung: MSVC-pow), Wiederherstellung des festgelegten LDraw-Stands – siehe `TEILEBIBLIOTHEK.md`, Abschnitt 9. 05C.2 noch nicht begonnen.

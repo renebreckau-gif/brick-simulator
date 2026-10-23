@@ -330,7 +330,7 @@ class GeometryStats:
                         C = cofactor(R)
                         for d, (a, pmax, pmin) in careas.items():
                             w = mat_vec(C, [d[0] * a, d[1] * a, d[2] * a])
-                            n = math.sqrt(w[0] ** 2 + w[1] ** 2 + w[2] ** 2)
+                            n = math.sqrt(w[0] * w[0] + w[1] * w[1] + w[2] * w[2])
                             if n > 1e-9:
                                 u = canon([w[0] / n, w[1] / n, w[2] / n])
                                 pts = [[q[k] + t[k] for k in range(3)] for q in (mat_vec(R, pmax), mat_vec(R, pmin))]
@@ -344,7 +344,7 @@ class GeometryStats:
                         u = [b[k] - a[k] for k in range(3)]
                         v = [c[k] - a[k] for k in range(3)]
                         w = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
-                        n = math.sqrt(w[0] ** 2 + w[1] ** 2 + w[2] ** 2)
+                        n = math.sqrt(w[0] * w[0] + w[1] * w[1] + w[2] * w[2])
                         if n > 1e-9:
                             add_area(areas, canon([w[0] / n, w[1] / n, w[2] / n]), n / 2, [a, b, c])
             for v in verts:
