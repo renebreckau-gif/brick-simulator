@@ -1,0 +1,1750 @@
+{
+ "schema": "baustein-sim/part-evidence@1",
+ "checkedAt": "2026-10-23",
+ "region": "DE",
+ "note": "Belege für Konstruktionsnachweis 05B.2. Existenz: LEGO-Element-IDs aus dem lokalen Rebrickable-Auszug (Einzelangaben zitiert) und BrickLink-Katalog. Verfügbarkeit: je Position ein konkretes Angebot aus der öffentlichen BrickLink-Angebotsliste zum genannten Zeitpunkt. Angebote sind zeitgebunden und vor einer Bestellung erneut zu prüfen; es wurde nichts bestellt. Massen: BrickLink-Katalogangabe je Teil.",
+ "colorMapping": [
+  {
+   "ldraw": 72,
+   "rebrickable": 72,
+   "rebrickableName": "Dark Bluish Gray",
+   "bricklink": 85,
+   "bricklinkName": "Dark Bluish Gray"
+  },
+  {
+   "ldraw": 19,
+   "rebrickable": 19,
+   "rebrickableName": "Tan",
+   "bricklink": 2,
+   "bricklinkName": "Tan"
+  },
+  {
+   "ldraw": 40,
+   "rebrickable": 40,
+   "rebrickableName": "Trans-Brown",
+   "bricklink": 13,
+   "bricklinkName": "Trans-Brown"
+  }
+ ],
+ "lines": [
+  {
+   "ldraw": {
+    "part": "2437",
+    "color": 40
+   },
+   "rebrickable": {
+    "part": "2437",
+    "color": 40,
+    "colorName": "Trans-Brown",
+    "elementIds": [
+     "4124083",
+     "6253360",
+     "6507913"
+    ],
+    "setInventories": 114,
+    "years": [
+     1999,
+     2023
+    ]
+   },
+   "bricklink": {
+    "part": "2437",
+    "color": 13,
+    "colorName": "Trans-Brown"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 3 LEGO-Element-ID(s) 4124083, 6253360, 6507913; in 114 Set-Inventar(en) 1999–2023",
+    "BrickLink-Katalog: Teil 2437 in Trans-Brown mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 2.26,
+   "offers": [
+    {
+     "offerId": "bl-2437-13-bricksbyslaaria",
+     "part": {
+      "system": "bricklink",
+      "id": "2437"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "13"
+     },
+     "condition": "new",
+     "quantityAvailable": 4,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.08,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 3.00"
+     },
+     "seller": {
+      "name": "BricksBySlaaria",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=2437&C=13#T=S&C=13&O={\"color\":13,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"2\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:46:40Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3066",
+    "color": 40
+   },
+   "rebrickable": {
+    "part": "3066",
+    "color": 40,
+    "colorName": "Trans-Brown",
+    "elementIds": [
+     "4198311",
+     "6514079",
+     "6245290"
+    ],
+    "setInventories": 44,
+    "years": [
+     2003,
+     2023
+    ]
+   },
+   "bricklink": {
+    "part": "3066",
+    "color": 13,
+    "colorName": "Trans-Brown"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 3 LEGO-Element-ID(s) 4198311, 6514079, 6245290; in 44 Set-Inventar(en) 2003–2023",
+    "BrickLink-Katalog: Teil 3066 in Trans-Brown mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.71,
+   "offers": [
+    {
+     "offerId": "bl-3066-13-steffisbricks",
+     "part": {
+      "system": "bricklink",
+      "id": "3066"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "13"
+     },
+     "condition": "new",
+     "quantityAvailable": 70,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.15,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "SteffisBricks",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3066&C=13#T=S&C=13&O={\"color\":13,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"8\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:46:45Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3065",
+    "color": 40
+   },
+   "rebrickable": {
+    "part": "3065",
+    "color": 40,
+    "colorName": "Trans-Brown",
+    "elementIds": [
+     "4226179",
+     "6244909",
+     "3065111",
+     "6514267"
+    ],
+    "setInventories": 98,
+    "years": [
+     2004,
+     2025
+    ]
+   },
+   "bricklink": {
+    "part": "3065",
+    "color": 13,
+    "colorName": "Trans-Brown"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 4 LEGO-Element-ID(s) 4226179, 6244909, 3065111, 6514267; in 98 Set-Inventar(en) 2004–2025",
+    "BrickLink-Katalog: Teil 3065 in Trans-Brown mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.82,
+   "offers": [
+    {
+     "offerId": "bl-3065-13-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "3065"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "13"
+     },
+     "condition": "new",
+     "quantityAvailable": 16,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.06,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3065&C=13#T=S&C=13&O={\"color\":13,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"6\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:49:10Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3023",
+    "color": 40
+   },
+   "rebrickable": {
+    "part": "3023",
+    "color": 40,
+    "colorName": "Trans-Brown",
+    "elementIds": [
+     "6001197",
+     "6514006",
+     "6240219",
+     "4173662"
+    ],
+    "setInventories": 82,
+    "years": [
+     2003,
+     2025
+    ]
+   },
+   "bricklink": {
+    "part": "3023",
+    "color": 13,
+    "colorName": "Trans-Brown"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 4 LEGO-Element-ID(s) 6001197, 6514006, 6240219, 4173662; in 82 Set-Inventar(en) 2003–2025",
+    "BrickLink-Katalog: Teil 3023 in Trans-Brown mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.36,
+   "offers": [
+    {
+     "offerId": "bl-3023-13-brickisworld",
+     "part": {
+      "system": "bricklink",
+      "id": "3023"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "13"
+     },
+     "condition": "new",
+     "quantityAvailable": 15,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.06,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 1.00"
+     },
+     "seller": {
+      "name": "BrickisWorld",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3023&C=13#T=S&C=13&O={\"color\":13,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"4\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:46:50Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3747b",
+    "color": 19
+   },
+   "rebrickable": {
+    "part": "3747b",
+    "color": 19,
+    "colorName": "Tan",
+    "elementIds": [
+     "4500453",
+     "4225609"
+    ],
+    "setInventories": 50,
+    "years": [
+     2007,
+     2024
+    ]
+   },
+   "bricklink": {
+    "part": "3747b",
+    "color": 2,
+    "colorName": "Tan"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 2 LEGO-Element-ID(s) 4500453, 4225609; in 50 Set-Inventar(en) 2007–2024",
+    "BrickLink-Katalog: Teil 3747b in Tan mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.68,
+   "offers": [
+    {
+     "offerId": "bl-3747b-2-brickstore24.de",
+     "part": {
+      "system": "bricklink",
+      "id": "3747b"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "2"
+     },
+     "condition": "new",
+     "quantityAvailable": 34,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.04,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "BrickStore24.de",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3747b&C=2#T=S&C=2&O={\"color\":2,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"4\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:46:55Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3298",
+    "color": 19
+   },
+   "rebrickable": {
+    "part": "3298",
+    "color": 19,
+    "colorName": "Tan",
+    "elementIds": [
+     "4114312",
+     "4240119",
+     "4542401",
+     "329805",
+     "6020375"
+    ],
+    "setInventories": 35,
+    "years": [
+     1998,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3298",
+    "color": 2,
+    "colorName": "Tan"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 5 LEGO-Element-ID(s) 4114312, 4240119, 4542401, 329805, 6020375; in 35 Set-Inventar(en) 1998–2026",
+    "BrickLink-Katalog: Teil 3298 in Tan mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.33,
+   "offers": [
+    {
+     "offerId": "bl-3298-2-lord-steinchen",
+     "part": {
+      "system": "bricklink",
+      "id": "3298"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "2"
+     },
+     "condition": "new",
+     "quantityAvailable": 11,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.09,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Lord Steinchen",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3298&C=2#T=S&C=2&O={\"color\":2,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"4\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:47:00Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3004",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3004",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211088"
+    ],
+    "setInventories": 691,
+    "years": [
+     2004,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3004",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211088; in 691 Set-Inventar(en) 2004–2026",
+    "BrickLink-Katalog: Teil 3004 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.83,
+   "offers": [
+    {
+     "offerId": "bl-3004-85-cj's-bricks-logistic",
+     "part": {
+      "system": "bricklink",
+      "id": "3004"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 35,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.07,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 1.00"
+     },
+     "seller": {
+      "name": "CJ's Bricks Logistic",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3004&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"30\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:47:25Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3005",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3005",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211098"
+    ],
+    "setInventories": 568,
+    "years": [
+     2004,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3005",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211098; in 568 Set-Inventar(en) 2004–2026",
+    "BrickLink-Katalog: Teil 3005 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.44,
+   "offers": [
+    {
+     "offerId": "bl-3005-85-die-baustelle",
+     "part": {
+      "system": "bricklink",
+      "id": "3005"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 36,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.03,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 3.00"
+     },
+     "seller": {
+      "name": "Die Baustelle",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3005&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"30\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:47:29Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3009",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3009",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211100"
+    ],
+    "setInventories": 395,
+    "years": [
+     2004,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3009",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211100; in 395 Set-Inventar(en) 2004–2026",
+    "BrickLink-Katalog: Teil 3009 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 2.42,
+   "offers": [
+    {
+     "offerId": "bl-3009-85-w3ltenbaum-egbr",
+     "part": {
+      "system": "bricklink",
+      "id": "3009"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 139,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.12,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 3.00"
+     },
+     "seller": {
+      "name": "W3ltenbaum eGbR",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3009&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"30\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:47:33Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3010",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3010",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211103"
+    ],
+    "setInventories": 521,
+    "years": [
+     2004,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3010",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211103; in 521 Set-Inventar(en) 2004–2026",
+    "BrickLink-Katalog: Teil 3010 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.64,
+   "offers": [
+    {
+     "offerId": "bl-3010-85-knopp´s-steinchen",
+     "part": {
+      "system": "bricklink",
+      "id": "3010"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 38,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.1,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 5.00"
+     },
+     "seller": {
+      "name": "Knopp´s Steinchen",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3010&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"20\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:47:38Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "2456",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "2456",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4210875",
+     "4282819"
+    ],
+    "setInventories": 277,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "2456",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 2 LEGO-Element-ID(s) 4210875, 4282819; in 277 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 2456 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 3.74,
+   "offers": [
+    {
+     "offerId": "bl-2456-85-cj's-bricks-logistic",
+     "part": {
+      "system": "bricklink",
+      "id": "2456"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 35,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.16,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 1.00"
+     },
+     "seller": {
+      "name": "CJ's Bricks Logistic",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=2456&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"25\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:47:42Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3001",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3001",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211085"
+    ],
+    "setInventories": 508,
+    "years": [
+     2004,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3001",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211085; in 508 Set-Inventar(en) 2004–2026",
+    "BrickLink-Katalog: Teil 3001 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 2.32,
+   "offers": [
+    {
+     "offerId": "bl-3001-85-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "3001"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 17,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.1,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3001&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:45:30Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3002",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3002",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211105"
+    ],
+    "setInventories": 344,
+    "years": [
+     2004,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3002",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211105; in 344 Set-Inventar(en) 2004–2026",
+    "BrickLink-Katalog: Teil 3002 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.92,
+   "offers": [
+    {
+     "offerId": "bl-3002-85-mota-brix",
+     "part": {
+      "system": "bricklink",
+      "id": "3002"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 19,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.08,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 5.00"
+     },
+     "seller": {
+      "name": "mota brix",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3002&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:10Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3003",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3003",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211060"
+    ],
+    "setInventories": 487,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3003",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211060; in 487 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3003 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.35,
+   "offers": [
+    {
+     "offerId": "bl-3003-85-ok-bricks",
+     "part": {
+      "system": "bricklink",
+      "id": "3003"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 23,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.05,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 5.00"
+     },
+     "seller": {
+      "name": "OK-Bricks",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3003&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:06Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3020",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3020",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211065"
+    ],
+    "setInventories": 1360,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3020",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211065; in 1360 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3020 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.2,
+   "offers": [
+    {
+     "offerId": "bl-3020-85-ortenaubrixx",
+     "part": {
+      "system": "bricklink",
+      "id": "3020"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 23,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.03,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Ortenaubrixx",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3020&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:15Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3021",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3021",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211043"
+    ],
+    "setInventories": 1150,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3021",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211043; in 1150 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3021 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.93,
+   "offers": [
+    {
+     "offerId": "bl-3021-85-steinewelt-samojlov",
+     "part": {
+      "system": "bricklink",
+      "id": "3021"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 126,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.02,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Steinewelt Samojlov",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3021&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:20Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3022",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3022",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211094"
+    ],
+    "setInventories": 1258,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3022",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211094; in 1258 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3022 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.64,
+   "offers": [
+    {
+     "offerId": "bl-3022-85-finiflo_bricks",
+     "part": {
+      "system": "bricklink",
+      "id": "3022"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 36,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.02,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 3.00"
+     },
+     "seller": {
+      "name": "FiniFlo_Bricks",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3022&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:25Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3023",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3023",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211063"
+    ],
+    "setInventories": 1435,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3023",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211063; in 1435 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3023 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.36,
+   "offers": [
+    {
+     "offerId": "bl-3023-85-der-noppenbotschafter",
+     "part": {
+      "system": "bricklink",
+      "id": "3023"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 50,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.03,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Der Noppenbotschafter",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3023&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"20\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:30Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3024",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3024",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4210719"
+    ],
+    "setInventories": 723,
+    "years": [
+     2003,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3024",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4210719; in 723 Set-Inventar(en) 2003–2026",
+    "BrickLink-Katalog: Teil 3024 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.2,
+   "offers": [
+    {
+     "offerId": "bl-3024-85-w3ltenbaum-egbr",
+     "part": {
+      "system": "bricklink",
+      "id": "3024"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 105,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.02,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 3.00"
+     },
+     "seller": {
+      "name": "W3ltenbaum eGbR",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3024&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"20\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:35Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3034",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3034",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4210997"
+    ],
+    "setInventories": 698,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3034",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4210997; in 698 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3034 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 2.27,
+   "offers": [
+    {
+     "offerId": "bl-3034-85-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "3034"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 37,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.08,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3034&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:54Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3666",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3666",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211056"
+    ],
+    "setInventories": 853,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3666",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211056; in 853 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3666 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.06,
+   "offers": [
+    {
+     "offerId": "bl-3666-85-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "3666"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 40,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.04,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3666&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:48:59Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3710",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3710",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211001"
+    ],
+    "setInventories": 1211,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3710",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211001; in 1211 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3710 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.71,
+   "offers": [
+    {
+     "offerId": "bl-3710-85-ortenaubrixx",
+     "part": {
+      "system": "bricklink",
+      "id": "3710"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 24,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.03,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Ortenaubrixx",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3710&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:49:03Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "3795",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "3795",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4211002"
+    ],
+    "setInventories": 1093,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "3795",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4211002; in 1093 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 3795 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.74,
+   "offers": [
+    {
+     "offerId": "bl-3795-85-ortenaubrixx",
+     "part": {
+      "system": "bricklink",
+      "id": "3795"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 30,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.03,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Ortenaubrixx",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=3795&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"12\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T03:49:07Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "41767",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "41767",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4242123",
+     "4287972"
+    ],
+    "setInventories": 42,
+    "years": [
+     2006,
+     2024
+    ]
+   },
+   "bricklink": {
+    "part": "41767",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 2 LEGO-Element-ID(s) 4242123, 4287972; in 42 Set-Inventar(en) 2006–2024",
+    "BrickLink-Katalog: Teil 41767 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.86,
+   "offers": [
+    {
+     "offerId": "bl-41767-85-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "41767"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 11,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.07,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=41767&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T04:02:08Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "41768",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "41768",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4242124",
+     "4287973"
+    ],
+    "setInventories": 42,
+    "years": [
+     2006,
+     2024
+    ]
+   },
+   "bricklink": {
+    "part": "41768",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 2 LEGO-Element-ID(s) 4242124, 4287973; in 42 Set-Inventar(en) 2006–2024",
+    "BrickLink-Katalog: Teil 41768 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 1.86,
+   "offers": [
+    {
+     "offerId": "bl-41768-85-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "41768"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 17,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.07,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=41768&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"10\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T04:02:11Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "41769a",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "41769",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4210782"
+    ],
+    "setInventories": 193,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "41769",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4210782; in 193 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 41769 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.83,
+   "offers": [
+    {
+     "offerId": "bl-41769-85-jens-brickyard",
+     "part": {
+      "system": "bricklink",
+      "id": "41769"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 12,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.04,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: None"
+     },
+     "seller": {
+      "name": "Jens Brickyard",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=41769&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"6\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T04:02:15Z"
+    }
+   ]
+  },
+  {
+   "ldraw": {
+    "part": "41770a",
+    "color": 72
+   },
+   "rebrickable": {
+    "part": "41770",
+    "color": 72,
+    "colorName": "Dark Bluish Gray",
+    "elementIds": [
+     "4210788"
+    ],
+    "setInventories": 191,
+    "years": [
+     2002,
+     2026
+    ]
+   },
+   "bricklink": {
+    "part": "41770",
+    "color": 85,
+    "colorName": "Dark Bluish Gray"
+   },
+   "existence": [
+    "Rebrickable-Datenauszug 2026-10-14 (lokal): 1 LEGO-Element-ID(s) 4210788; in 191 Set-Inventar(en) 2002–2026",
+    "BrickLink-Katalog: Teil 41770 in Dark Bluish Gray mit Angeboten gelistet (Abruf 2026-10-23)"
+   ],
+   "weightG": 0.83,
+   "offers": [
+    {
+     "offerId": "bl-41770-85-mio-stein",
+     "part": {
+      "system": "bricklink",
+      "id": "41770"
+     },
+     "color": {
+      "system": "bricklink",
+      "id": "85"
+     },
+     "condition": "new",
+     "quantityAvailable": 25,
+     "shipsFromRegion": "DE",
+     "deliveryRegions": [
+      "DE"
+     ],
+     "unitPrice": {
+      "amount": 0.04,
+      "currency": "EUR"
+     },
+     "shipping": {
+      "amount": null,
+      "currency": "EUR",
+      "note": "Versand nicht abgefragt; Min Buy: EUR 5.00"
+     },
+     "seller": {
+      "name": "Mio-Stein",
+      "sourceUrl": "https://www.bricklink.com/v2/catalog/catalogitem.page?P=41770&C=85#T=S&C=85&O={\"color\":85,\"ss\":\"DE\",\"loc\":\"DE\",\"cond\":\"N\",\"minqty\":\"6\",\"iconly\":0}"
+     },
+     "provider": "BrickLink (öffentliche Angebotsliste, Filter: Neu, Standort DE, Versand nach DE)",
+     "checkedAt": "2026-10-23T04:02:18Z"
+    }
+   ]
+  }
+ ]
+}

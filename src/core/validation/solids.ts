@@ -113,6 +113,50 @@ export function solidFromPrism(p: Prism, t: Transform): Solid {
   return { vertices, normals, edges, isBox: axisAligned && normals.length === 3, aabb: aabbOf(vertices) };
 }
 
+/**
+ * Flächen der konvexen Hülle einer kleinen Punktmenge (05B.2; Teilkörper mit gerundeten Kanten, die kein gerades
+ * Prisma sind). Durchprobieren aller Punkttripel genügt für die wenigen Ecken eines Teilkörpers.
+ */
+export function hullFaces(points: Vec3[], eps = 1e-6): { normal: Vec3; d: number; on: number[] }[] {
+  const faces: { normal: Vec3; d: number; on: number[] }[] = [];
+  const n = points.length;
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++)
+      for (let k = j + 1; k < n; k++) {
+        const a = points[i];
+        let nv = norm(cross([points[j][0] - a[0], points[j][1] - a[1], points[j][2] - a[2]], [points[k][0] - a[0], points[k][1] - a[1], points[k][2] - a[2]]));
+        if (!nv) continue;
+        let d = dot(nv, a);
+        const side = points.map((p) => dot(nv!, p) - d);
+        if (side.some((s) => s > eps) && side.some((s) => s < -eps)) continue;
+        if (side.some((s) => s > eps)) { nv = [-nv[0], -nv[1], -nv[2]]; d = -d; }
+        if (faces.some((f) => dot(f.normal, nv!) > 1 - 1e-9 && Math.abs(f.d - d) < 1e-6)) continue;
+        faces.push({ normal: nv, d, on: points.map((p, m) => (Math.abs(dot(nv!, p) - d) <= eps ? m : -1)).filter((m) => m >= 0) });
+      }
+  return faces;
+}
+
+/** Liegt ein Punkt (Teilsystem) in der konvexen Hülle (mit Toleranz)? */
+export function hullContains(points: Vec3[], q: Vec3, tol = 1e-6): boolean {
+  return hullFaces(points).every((f) => dot(f.normal, q) - f.d <= tol);
+}
+
+export function solidFromHull(points: Vec3[], t: Transform): Solid {
+  const faces = hullFaces(points);
+  const edgeDirs: (Vec3 | null)[] = [];
+  for (let i = 0; i < points.length; i++)
+    for (let j = i + 1; j < points.length; j++)
+      if (faces.filter((f) => f.on.includes(i) && f.on.includes(j)).length >= 2) edgeDirs.push(norm([points[j][0] - points[i][0], points[j][1] - points[i][1], points[j][2] - points[i][2]]));
+  const vertices = points.map((v) => applyTransform(t, v));
+  return {
+    vertices,
+    normals: uniqueDirs(faces.map((f) => norm(apply(t.rotation, f.normal)))),
+    edges: uniqueDirs(edgeDirs.map((d) => (d ? norm(apply(t.rotation, d)) : null))),
+    isBox: false,
+    aabb: aabbOf(vertices),
+  };
+}
+
 /** Körper entlang d verschoben gedacht (Montageweg): konvexe Hülle aus Körper und um len·d versetztem Körper. */
 export function sweepSolid(s: Solid, d: Vec3, len: number): Solid {
   const back: Vec3 = [-d[0] * len, -d[1] * len, -d[2] * len]; // die Einheit kommt aus −d

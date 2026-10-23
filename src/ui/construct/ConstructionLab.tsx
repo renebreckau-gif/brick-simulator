@@ -2,7 +2,11 @@
 // einer Vorlage im lokalen Entwurfsspeicher (nur gelesen) oder aus einer ausdrücklich synthetischen Testform.
 import { useEffect, useMemo, useState } from 'react';
 import type { Bom } from '../../core/bom/bom';
-import { BOW_TECHNIQUE_VERSION, BOW_VARIANT_LABEL, type BowPlan, type BowVariant } from '../../core/construct/bowTechnique';
+import { BOW_TECHNIQUE_VERSION } from '../../core/construct/bowTechnique';
+import { buildCockpitBow, COCKPIT_TECHNIQUE_VERSION } from '../../core/construct/cockpitTechnique';
+import { isCockpitPlan, VARIANT_LABEL, type AnyPlan, type ConstructVariant } from '../../core/construct/variants';
+import { coverageFor, EvidenceFileSchema, massEstimate, type EvidenceFile } from '../../core/procurement/evidence';
+import type { CanonicalModel } from '../../core/model/types';
 import type { Rgba } from '../../core/construct/silhouette';
 import { syntheticBowTarget, type BowTarget } from '../../core/construct/shapeTarget';
 import { bowTargetFromTemplate, viewAssignmentOrigin, type TemplateMeasurement } from '../../core/construct/templateTarget';
@@ -11,8 +15,23 @@ import type { ModelDimensions } from '../../core/model/dimensions';
 import { loadBrief, loadImage } from '../design/store';
 
 export type ConstructSource = 'vorlage' | 'synth-a' | 'synth-b';
-export interface ConstructParams { source: ConstructSource; variant: BowVariant; width: 6 | 8; canopyGroupId: string | null }
-export const DEFAULT_CONSTRUCT: ConstructParams = { source: 'vorlage', variant: 'keilplatten', width: 6, canopyGroupId: null };
+export interface ConstructParams { source: ConstructSource; variant: ConstructVariant; width: number; canopyGroupId: string | null; hollow: boolean; openingRows: number | null }
+export const DEFAULT_CONSTRUCT: ConstructParams = { source: 'vorlage', variant: 'cockpit', width: 8, canopyGroupId: null, hollow: true, openingRows: null };
+
+/** Teil-Farb-Belege und Angebote (nur im Entwicklungsserver bzw. Repository, nicht im öffentlichen Build). */
+export function useEvidence(): { evidence: EvidenceFile | null; error: string | null } {
+  const [state, setState] = useState<{ evidence: EvidenceFile | null; error: string | null }>({ evidence: null, error: null });
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}data/procurement/evidence-05b2.json`)
+      .then(async (r) => {
+        if (!r.ok || (r.headers.get('content-type') ?? '').includes('text/html')) throw new Error('Belegdatei nicht verfügbar (nur im Entwicklungsserver; nicht Teil des öffentlichen Builds)');
+        return EvidenceFileSchema.parse(await r.json());
+      })
+      .then((evidence) => setState({ evidence, error: null }))
+      .catch((e) => setState({ evidence: null, error: e instanceof Error ? e.message : String(e) }));
+  }, []);
+  return state;
+}
 
 const SOURCE_LABEL: Record<ConstructSource, string> = {
   vorlage: 'Vorlage (lokaler Entwurf)',
@@ -93,15 +112,31 @@ interface Props {
   onChange: (p: ConstructParams) => void;
   template: TemplateState;
   target: BowTarget | null;
-  plan: BowPlan | null;
+  plan: AnyPlan | null;
+  model: CanonicalModel | null;
   error: string | null;
   parts: number | null;
   dims: ModelDimensions | null;
   bom: Bom | null;
   catalogLoaded: boolean;
+  evidence: EvidenceFile | null;
+  evidenceError: string | null;
 }
 
-export function ConstructionLab({ params, onChange, template, target, plan, error, parts, dims, bom, catalogLoaded }: Props) {
+export function ConstructionLab({ params, onChange, template, target, plan, model, error, parts, dims, bom, catalogLoaded, evidence, evidenceError }: Props) {
+  const cov = useMemo(() => (model ? coverageFor(model, evidence) : null), [model, evidence]);
+  // Massenvergleich: gleiche Außenform massiv gebaut (nur Variante C)
+  const massive = useMemo(() => {
+    if (!target || params.variant !== 'cockpit' || !params.hollow) return null;
+    try {
+      const m = buildCockpitBow(target, { widthStuds: params.width, req: { hollow: false, openingRows: params.openingRows } }).model;
+      return { parts: m.instances.length, mass: massEstimate(m, evidence) };
+    } catch {
+      return null;
+    }
+  }, [target, params.variant, params.hollow, params.width, params.openingRows, evidence]);
+  const mass = model ? massEstimate(model, evidence) : null;
+  const total = cov?.lines.length ?? bom?.lines.length ?? 0;
   const set = (patch: Partial<ConstructParams>) => onChange({ ...params, ...patch });
   const b = template.brief;
   const groups = b?.interpretation?.groups.filter((g) => g.role !== 'hauptkoerper') ?? [];
@@ -146,18 +181,37 @@ export function ConstructionLab({ params, onChange, template, target, plan, erro
 
       <h2>Variante</h2>
       <div className="variants" role="group" aria-label="Bautechnik">
-        {(Object.keys(BOW_VARIANT_LABEL) as BowVariant[]).map((v) => (
-          <button key={v} className={params.variant === v ? 'navitem active' : 'navitem'} aria-pressed={params.variant === v} onClick={() => set({ variant: v })}>{BOW_VARIANT_LABEL[v]}</button>
+        {(Object.keys(VARIANT_LABEL) as ConstructVariant[]).map((v) => (
+          <button key={v} className={params.variant === v ? 'navitem active' : 'navitem'} aria-pressed={params.variant === v} onClick={() => set({ variant: v })}>{VARIANT_LABEL[v]}</button>
         ))}
       </div>
       <div className="form">
         <label className="wide">
           Breite (Noppen)
-          <select value={params.width} onChange={(e) => set({ width: Number(e.target.value) as 6 | 8 })}>
+          <select value={params.width} onChange={(e) => set({ width: Number(e.target.value) })}>
             <option value={6}>6 (erste Testgröße)</option>
-            <option value={8}>8 (größere Ausführung)</option>
+            <option value={8}>8{params.variant === 'cockpit' ? ' (gewählt für Variante C)' : ' (größere Ausführung)'}</option>
+            <option value={10}>10 (Vergleich)</option>
           </select>
         </label>
+        {params.variant === 'cockpit' && (
+          <>
+            <label className="wide">
+              Bauweise
+              <select value={params.hollow ? 'hohl' : 'massiv'} onChange={(e) => set({ hollow: e.target.value === 'hohl' })}>
+                <option value="hohl">Hohlbau mit Cockpit-Innenraum</option>
+                <option value="massiv">Massiv (Vergleich, gleiche Außenform)</option>
+              </select>
+            </label>
+            <label className="wide">
+              Cockpitöffnung (Funktionsanforderung)
+              <select value={params.openingRows ?? ''} onChange={(e) => set({ openingRows: e.target.value ? Number(e.target.value) : null })}>
+                <option value="">aus der Kanzellage der Vorlage</option>
+                {[3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n} Reihen lang</option>)}
+              </select>
+            </label>
+          </>
+        )}
       </div>
       {error && <div className="shiperror" role="alert"><strong>Nicht baubar:</strong> {error}</div>}
       {plan && target && !error && (
@@ -166,8 +220,14 @@ export function ConstructionLab({ params, onChange, template, target, plan, erro
             <dt>Teile</dt><dd>{parts}</dd>
             {dims && <><dt>Außenmaße</dt><dd>{dims.studs.length} × {dims.studs.width} Noppen, Höhe {dims.ldu.height} LDU (≈ {dims.mm.length} × {dims.mm.width} × {dims.mm.height} mm)</dd></>}
             <dt>Lagen</dt><dd>{plan.layers.map((l) => `${l.name}: ${l.parts}`).join(' · ')}</dd>
-            <dt>Bautechnik</dt><dd className="code">{BOW_TECHNIQUE_VERSION}</dd>
+            <dt>Bautechnik</dt><dd className="code">{isCockpitPlan(plan) ? COCKPIT_TECHNIQUE_VERSION : BOW_TECHNIQUE_VERSION}</dd>
+            {isCockpitPlan(plan) && plan.cockpit && (
+              <><dt>Nutzbarer Innenraum</dt><dd>Grundfläche {plan.cockpit.widthStuds} × {plan.cockpit.lengthStuds} Noppen ({plan.cockpit.mm.width} × {plan.cockpit.mm.length} mm), Höhe {plan.cockpit.wellPlates} Platten bis Randhöhe + {plan.cockpit.headroomPlates} unter dem Dach (≈ {plan.cockpit.mm.height} mm); Vorschlag, kein Minifigurenmaßstab vorausgesetzt</dd></>
+            )}
+            {isCockpitPlan(plan) && <><dt>Kanzel</dt><dd>{plan.canopyParts} Teile, als Baugruppe gerade nach oben abnehmbar (Prüfung „Funktion“ im Prüfbericht)</dd></>}
+            {mass && <><dt>Masse (Schätzung)</dt><dd>{mass.missing.length ? `unvollständig – keine Katalogmasse für ${mass.missing.join(', ')}` : `≈ ${mass.grams.toFixed(0)} g`}{massive && !massive.mass.missing.length && <> · massiv gleicher Außenform: {massive.parts} Teile, ≈ {massive.mass.grams.toFixed(0)} g</>}</dd></>}
           </dl>
+          {mass && <p className="small muted">Schätzverfahren: Summe der BrickLink-Katalogmassen je Teil (Belegdatei); keine Wägung, keine Stabilitätszusage.</p>}
           <details open>
             <summary>Entscheidungen ({plan.decisions.length})</summary>
             <ul className="small">{plan.decisions.map((d) => <li key={d}>{d}</li>)}</ul>
@@ -188,11 +248,31 @@ export function ConstructionLab({ params, onChange, template, target, plan, erro
         <>
           <h2>Teilestatus</h2>
           <dl className="shipfacts">
-            <dt>Teilegeometrie</dt><dd>alle {bom.lines.length} Positionen aus LDraw-Dateien (Herkunft und Prüfsummen in data/ldraw)</dd>
-            <dt>Katalogexistenz</dt><dd className={catalogLoaded ? '' : 'open'}>{catalogLoaded ? `${bom.lines.filter((l) => l.rebrickablePart !== null).length} von ${bom.lines.length} Positionen im Katalogauszug gefunden` : 'ungeprüft (kein Katalogauszug geladen)'}</dd>
-            <dt>Teil-Farb-Beleg</dt><dd className={unevidenced.length ? 'open' : ''}>{unevidenced.length ? `${unevidenced.length} Position(en) ohne Beleg: ${unevidenced.map((l) => `${l.ldrawPart} in ${l.colorName}`).join(', ')} – Farben nicht als real bestätigt` : 'alle Positionen belegt'}</dd>
-            <dt>Kaufverfügbarkeit</dt><dd className="open">nicht geprüft (keine Händlerdaten)</dd>
+            <dt>Teilegeometrie</dt><dd>alle {total} Positionen aus LDraw-Dateien (Herkunft und Prüfsummen in data/ldraw)</dd>
+            <dt>Katalogauszug</dt><dd className={catalogLoaded && !bom.unresolved.length ? '' : 'open'}>{catalogLoaded ? `${bom.lines.length} von ${total} Positionen im lokalen Auszug${bom.unresolved.length ? `, ${bom.unresolved.length} nicht enthalten (dort ungeprüft)` : ''}${unevidenced.length ? `; ${unevidenced.length} davon ohne Teil-Farb-Beleg im Auszug` : ''}` : 'ungeprüft (kein Katalogauszug geladen)'}</dd>
+            <dt>Teil-Farb-Beleg</dt><dd className={cov && evidence && cov.lines.every((l) => l.existenceEvidenced) ? '' : 'open'}>{!cov || !evidence ? 'ungeprüft (keine Belegdatei)' : cov.lines.every((l) => l.existenceEvidenced) ? `alle ${total} Positionen mit LEGO-Element-ID belegt (Belegdatei)` : `${cov.lines.filter((l) => !l.existenceEvidenced).length} Position(en) ohne Beleg: ${cov.lines.filter((l) => !l.existenceEvidenced).map((l) => `${l.ldrawPart}/${l.ldrawColor}`).join(', ')} – Farben nicht als real bestätigt`}</dd>
+            <dt>Kaufverfügbarkeit</dt><dd className={cov?.complete ? '' : 'open'}>{!evidence ? `nicht geprüft – ${evidenceError ?? 'lade Belege …'}` : cov?.complete ? `alle ${cov.lines.length} Positionen belegt und durch Angebote gedeckt (Lieferland ${cov.region}, Stand ${cov.checkedAt}; vor einer Bestellung erneut prüfen)` : `${cov?.lines.filter((l) => l.status !== 'gedeckt').length} von ${cov?.lines.length} Positionen nicht belegt oder nicht gedeckt – Nachweis unvollständig`}</dd>
           </dl>
+          {cov && evidence && (
+            <details>
+              <summary>Belege und Angebote je Position</summary>
+              <table className="bomtable small">
+                <thead><tr><th>Teil</th><th>Farbe</th><th>Bedarf</th><th>Beleg</th><th>Angebot</th><th>Status</th></tr></thead>
+                <tbody>
+                  {cov.lines.map((l) => (
+                    <tr key={`${l.ldrawPart}|${l.ldrawColor}`} className={l.status === 'gedeckt' ? '' : 'diff'}>
+                      <td className="code">{l.ldrawPart}{l.evidence && l.evidence.bricklink.part !== l.ldrawPart ? ` (BL ${l.evidence.bricklink.part})` : ''}</td>
+                      <td>{l.evidence ? `${l.evidence.bricklink.colorName} (LDraw ${l.ldrawColor}, RB ${l.evidence.rebrickable.color}, BL ${l.evidence.bricklink.color})` : `LDraw ${l.ldrawColor}`}</td>
+                      <td className="num">{l.needed}</td>
+                      <td>{l.existenceEvidenced ? `Element ${l.evidence!.rebrickable.elementIds.slice(0, 2).join(', ')}` : 'kein Beleg'}</td>
+                      <td>{l.used.length ? l.used.map((u) => `${u.offer.seller.name}: ${u.take} von ${u.offer.quantityAvailable}, ${u.offer.condition === 'new' ? 'neu' : 'gebraucht'}, ${u.offer.unitPrice.amount.toFixed(2)} € (${u.offer.checkedAt.slice(0, 16).replace('T', ' ')} UTC)`).join('; ') : '–'}</td>
+                      <td>{{ gedeckt: 'gedeckt', teilweise: 'teilweise gedeckt', 'kein-angebot': 'kein Angebot', 'kein-existenzbeleg': 'nicht belegt' }[l.status]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          )}
         </>
       )}
     </section>

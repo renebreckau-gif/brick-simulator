@@ -9,10 +9,10 @@ import { prismContains, type Prism } from '../validation/solids';
 import { BRICK_HEIGHT, LDU_PER_STUD, PLATE_HEIGHT, STUD_DIAMETER, STUD_HEIGHT } from '../units';
 import type { ConnectorKind } from './rules';
 
-export const PART_META_VERSION = 'part-meta@1.2.0';
+export const PART_META_VERSION = 'part-meta@1.3.0';
 
 export type SupportLevel = 'supported' | 'partial' | 'unsupported';
-export type PartFamily = 'brick' | 'plate' | 'tile' | 'jumper' | 'technic_brick' | 'special_brick' | 'cone' | 'bar' | 'slope' | 'wedge_plate';
+export type PartFamily = 'brick' | 'plate' | 'tile' | 'jumper' | 'technic_brick' | 'special_brick' | 'cone' | 'bar' | 'slope' | 'wedge_plate' | 'inverse_slope' | 'windscreen';
 
 export interface ConnectorDef {
   id: string;
@@ -57,6 +57,11 @@ export interface PartMeta {
    * gesetzt, prüft die Kollision mit ihnen statt mit Quadern; bodyBoxes bleibt dann leer.
    */
   bodyPrisms?: Prism[];
+  /**
+   * Konvexe Körper als Punktmengen (05B.2) für Formen mit gerundeten Kanten (z. B. Windschutzscheibe 2437): je
+   * Teilbereich die konvexe Hülle der LDraw-Ecken; geprüft wie die Prismen (tests/part-meta-shaped.test.ts).
+   */
+  bodyHulls?: Vec3[][];
   /** Formangaben für die Teileauswahl der Konstruktion (05B.1); aus der LDraw-Geometrie abgelesen. */
   shape?: ShapeInfo;
   connectors: ConnectorDef[];
@@ -204,6 +209,51 @@ function wedgePrism(lengthStuds: number, taperSide: '-x' | '+x', tipX: number): 
   return { axis: 1, polygon: [[hz, 20 * s], [-hz, 20 * s], [-hz, tipX * s], [hz, -20 * s]], lo: 0, hi: P };
 }
 
+interface SolidSpec {
+  id: string;
+  family: PartFamily;
+  studsX: number;
+  studsZ: number;
+  height: number;
+  prisms?: Prism[];
+  hulls?: Vec3[][];
+  studs: { x: number; z: number; hollow?: boolean }[];
+  /** Unterseiten-Aufnahmen ausdrücklich (aus der LDraw-Unterseite abgelesen, im Test als Sollwert geprüft). */
+  antistuds: [number, number][];
+  upins?: [number, number][];
+  note: string;
+}
+
+/** Formteil mit ausdrücklich angegebenen Anschlüssen und Prismen- bzw. Hüllkörpern (05B.2). */
+function solidPart(spec: SolidSpec): PartMeta {
+  const connectors: ConnectorDef[] = [];
+  for (const st of spec.studs) connectors.push({ id: `stud@${st.x},${st.z}`, kind: 'stud', position: [st.x, 0, st.z], axis: UP, hollow: st.hollow });
+  for (const [x, z] of spec.antistuds) connectors.push({ id: `antistud@${x},${z}`, kind: 'antistud', position: [x, spec.height, z], axis: DOWN });
+  for (const [x, z] of spec.upins ?? []) connectors.push({ id: `upin@${x},${z}`, kind: 'underside_pin', position: [x, spec.height, z], axis: DOWN });
+  return {
+    ldrawId: spec.id, family: spec.family, support: 'supported',
+    size: { studsX: spec.studsX, studsZ: spec.studsZ, height: spec.height },
+    bodyBoxes: [], bodyPrisms: spec.prisms, bodyHulls: spec.hulls, connectors, unsupportedFeatures: [], approximateVolume: false,
+    provenance: { method: 'parametric', verification: 'ldraw-primitive-crosscheck', note: spec.note },
+  };
+}
+
+/** Windschutzscheibe 2437: Teilbereiche als konvexe Hüllen der LDraw-Ecken (Skript-Auszug, im Test gegengeprüft). */
+const HULLS_2437: Vec3[][] = [
+  // Leiste vorn unten (mit gerundeten Ecken r 10)
+  [[-36, 24, -10], [36, 24, -10], [36, 32, -10], [-36, 32, -10], [30, 32, -30], [-30, 32, -30], [30, 24, -30], [-30, 24, -30], [40, 32, -20], [-40, 32, -20], [-39.24, 32, -23.83], [-37.07, 32, -27.07], [-33.83, 32, -29.24], [39.24, 32, -23.83], [37.07, 32, -27.07], [33.83, 32, -29.24], [33.83, 24, -29.24], [37.07, 24, -27.07], [39.24, 24, -23.83], [40, 24, -20], [-33.83, 24, -29.24], [-37.07, 24, -27.07], [-39.24, 24, -23.83], [-40, 24, -20]],
+  // schräge Scheibe (4 LDU stark)
+  [[30, 24, -30], [-30, 24, -30], [30, 24, -26], [30, 4, -9.33], [-30, 24, -26], [-30, 4, -9.33], [30, 0, -10], [-30, 0, -10]],
+  // Dachsteg mit den beiden Hohlnoppen
+  [[35.54, 4, -5.63], [36, 4, -3.33], [34.24, 4, -7.57], [32.3, 4, -8.87], [30, 4, -9.33], [-35.54, 4, -5.63], [-36, 4, -3.33], [-34.24, 4, -7.57], [-32.3, 4, -8.87], [-30, 4, -9.33], [36, 4, 10], [-36, 4, 10], [36, 0, 10], [-36, 0, 10], [39.24, 0, -3.83], [33.83, 0, -9.24], [30, 0, -10], [40, 0, 0], [37.07, 0, -7.07], [-39.24, 0, -3.83], [-33.83, 0, -9.24], [-30, 0, -10], [-40, 0, 0], [-37.07, 0, -7.07]],
+  // Seitenwangen (4 LDU stark, volle Höhe, hinten offen)
+  [[36, 32, -20], [36, 24, -20], [36, 32, 30], [40, 0, 30], [40, 32, 30], [36, 0, 30], [40, 32, -20], [39.24, 0, -3.83], [40, 0, 0], [37.07, 0, -7.07], [36, 0, 0], [40, 24, -20]],
+  [[-36, 32, -20], [-36, 24, -20], [-36, 32, 30], [-36, 0, 30], [-40, 32, 30], [-40, 0, 30], [-40, 32, -20], [-39.24, 0, -3.83], [-40, 0, 0], [-37.07, 0, -7.07], [-36, 0, 0], [-40, 24, -20]],
+  // Rundung Scheibe ↔ Seitenwange
+  [[36, 24, -10], [36, 24, -20], [30, 24, -30], [35.54, 24, -22.3], [30, 24, -26], [33.83, 0, -9.24], [30, 0, -10], [34, 0, 0], [30, 0, -4], [36, 0, 0], [35.54, 0, -2.3], [33.83, 24, -29.24]],
+  [[-36, 24, -10], [-36, 24, -20], [-30, 24, -30], [-35.54, 24, -22.3], [-30, 24, -26], [-33.83, 0, -9.24], [-30, 0, -10], [-34, 0, 0], [-30, 0, -4], [-36, 0, 0], [-35.54, 0, -2.3], [-33.83, 24, -29.24]],
+];
+
 /** Unterstützte und teilunterstützte Teile (Phase 1). Maße: studsX entlang lokaler X-Achse. */
 const DEFINED: PartMeta[] = [
   rect({ id: '3001', family: 'brick', sx: 4, sz: 2, height: B, top: 'grid' }),
@@ -269,6 +319,11 @@ const DEFINED: PartMeta[] = [
   rect({ id: '3710', family: 'plate', sx: 4, sz: 1, height: P, top: 'grid' }),
   rect({ id: '3666', family: 'plate', sx: 6, sz: 1, height: P, top: 'grid' }),
   rect({ id: '3795', family: 'plate', sx: 6, sz: 2, height: P, top: 'grid' }),
+  // ---- Konstruktionsnachweis 05B.2: Bodenplatte über 8 Noppen, Fliese, Steine ohne Unterseitenröhre (Glasseiten)
+  rect({ id: '3034', family: 'plate', sx: 8, sz: 2, height: P, top: 'grid' }),
+  rect({ id: '3068b', family: 'tile', sx: 2, sz: 2, height: P, top: 'none' }),
+  rect({ id: '3065', family: 'brick', sx: 2, sz: 1, height: B, top: 'grid', noUndersidePins: true, note: 'Stein 1×2 ohne Unterseitenstift (LDraw: kein stud3); Aufnahmen im Raster.' }),
+  rect({ id: '3066', family: 'brick', sx: 4, sz: 1, height: B, top: 'grid', noUndersidePins: true, note: 'Stein 1×4 ohne Unterseitenstifte (LDraw: kein stud3); Aufnahmen im Raster.' }),
   // ---- Schrägsteine (Geometrie s. tests/part-meta-shaped.test.ts); Röhren der Schrägen (stud4a, verkürzt) nicht als Anschluss gewertet
   shaped({
     id: '3039', family: 'slope', studsX: 2, studsZ: 2, height: B, prisms: [slopePrism(2, -30, -10)], studs: [[-10, 0], [10, 0]], gridUnder: cells(2, 2, 0, -10),
@@ -305,6 +360,33 @@ const DEFINED: PartMeta[] = [
     id: '43723a', family: 'wedge_plate', studsX: 2, studsZ: 3, height: P, prisms: [wedgePrism(3, '+x', 0)], studs: [[-10, -20], [-10, 0], [-10, 20]], gridUnder: cells(2, 3),
     shape: { kind: 'wedge', taperSide: '+x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 60 },
     note: 'Keilplatte 3×2 links: Spiegelbild von 43722a.',
+  }),
+  // ---- 05B.2: Keilsteine (Grundriss wie die Keilplatten 41769a/41770a, Steinhöhe) für die Bugkontur in Steinlagen
+  shaped({
+    id: '41767', family: 'wedge_plate', studsX: 2, studsZ: 4, height: B, prisms: [{ ...wedgePrism(4, '-x', 0), hi: B }], studs: [[10, -30], [10, -10], [10, 10], [10, 30]], gridUnder: cells(2, 4),
+    shape: { kind: 'wedge', taperSide: '-x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 80 },
+    note: 'Keilstein 4×2 rechts: Grundriss wie Keilplatte 41769a, 1 Steinhöhe; Noppen nur in der vollen Reihe (x = +10).',
+  }),
+  shaped({
+    id: '41768', family: 'wedge_plate', studsX: 2, studsZ: 4, height: B, prisms: [{ ...wedgePrism(4, '+x', 0), hi: B }], studs: [[-10, -30], [-10, -10], [-10, 10], [-10, 30]], gridUnder: cells(2, 4),
+    shape: { kind: 'wedge', taperSide: '+x', narrowEnd: '-z', wideLDU: 40, tipLDU: 20, lengthLDU: 80 },
+    note: 'Keilstein 4×2 links: Spiegelbild von 41767.',
+  }),
+  // ---- 05B.2: inverser Schrägstein und Windschutzscheibe
+  solidPart({
+    id: '3747b', family: 'inverse_slope', studsX: 2, studsZ: 3, height: B,
+    prisms: [{ axis: 0, polygon: [[0, 10], [24, 10], [24, -10], [3, -50], [0, -50]], lo: -20, hi: 20 }],
+    studs: [{ x: -10, z: 0 }, { x: 10, z: 0 }, { x: -10, z: -20 }, { x: 10, z: -20 }, { x: -10, z: -40 }, { x: 10, z: -40 }],
+    antistuds: [[-10, 0], [10, 0]],
+    note: 'Inverser Schrägstein 33° 3×2: Unterseite flach nur in der hinteren Reihe (z −10…10), Schrägfläche 0,885 y − 0,465 z = 25,9 bis zur Lippe (y 0…3 bei z −50); ovaler Unterseitenstift nicht als Anschluss gewertet.',
+  }),
+  solidPart({
+    id: '2437', family: 'windscreen', studsX: 4, studsZ: 3, height: 32,
+    hulls: HULLS_2437,
+    studs: [{ x: -30, z: 0, hollow: true }, { x: 30, z: 0, hollow: true }],
+    antistuds: [[-30, -20], [-10, -20], [10, -20], [30, -20]],
+    upins: [[-20, -20], [0, -20], [20, -20]],
+    note: 'Windschutzscheibe 3×4×1⅓: vordere Leiste (z −30…−10) mit Unterseitenstiften zwischen vier Aufnahmen, schräge Scheibe bis zum Dachsteg (y 0…4) mit zwei Hohlnoppen, Seitenwangen; unten hinter der Leiste und hinten offen.',
   }),
 ];
 

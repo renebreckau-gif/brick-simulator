@@ -16,6 +16,7 @@ export type Layer =
   | 'stability'
   | 'structure'
   | 'usage'
+  | 'function'
   | 'procurement';
 
 /** Drei getrennte Bewertungsdimensionen (plus Datenbasis). */
@@ -89,6 +90,7 @@ export const LAYER_LABEL: Record<Layer, string> = {
   stability: 'Stand/Kippen',
   structure: 'Struktur (Risikoindikatoren)',
   usage: 'Nutzungseignung',
+  function: 'Funktion (Freiraum, Entnahme, Anschluss)',
   procurement: 'Beschaffung',
 };
 
@@ -97,11 +99,12 @@ export const LAYER_SCOPE: Record<Layer, string> = {
   geometry: 'Rotation orthonormal, nicht gespiegelt, Vielfache von 90°',
   connection: 'Noppe↔Aufnahme, Noppe↔Röhre (gerade, achsparallel); Unterseitenstift↔Hohlnoppe nur 3004 auf 6541; andere Anschlussarten nicht unterstützt',
   graph: 'Zusammenhang über reguläre Verbindungen; deklarierte separate Module',
-  collision: 'Achsparallele Körper- und Noppenvolumen; Noppen in verbundenen Aufnahmen erlaubt; falsche Einstecktiefe erkannt',
+  collision: 'Körper- und Noppenvolumen (Quader, exakte Prismen und Hüllkörper, Trennachsentest); Noppen in verbundenen Aufnahmen erlaubt; falsche Einstecktiefe erkannt',
   assembly: 'Gerade Steckbewegung entlang der Noppenachse, Weg bis zur Endposition, Reihenfolge',
   stability: 'Heuristisch: Schwerpunkt (Volumen als Massenersatz) über Aufstandsfläche, Schwerkraft +Y, ebene Unterlage',
   structure: 'Heuristisch: schwächster Schnitt (Noppenzahl), Ein-Noppen-Anbauten, durchgehende Fugen',
   usage: 'Kleinteile/Altersgrenze (Regel), Klemmstellen nicht geprüft, keine Eignungsurteile',
+  function: 'Freizuhaltende Räume (Körper und Noppen), gerade Entnahme abnehmbarer Baugruppen, freie Anschlussnoppen – nur bei deklarierten Funktionsanforderungen',
   procurement: 'Nur Schema – keine Angebotsdaten',
 };
 

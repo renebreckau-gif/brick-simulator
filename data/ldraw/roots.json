@@ -1,5 +1,5 @@
 {
-  "comment": "Wurzelteile, deren Geometrie benötigt wird (unterstützte, teilunterstützte, in Referenzen vorkommende nicht unterstützte Teile und die im Konstruktionsnachweis 05B.1 verbauten Teile).",
+  "comment": "Wurzelteile, deren Geometrie benötigt wird (unterstützte, teilunterstützte, in Referenzen vorkommende nicht unterstützte Teile und die in den Konstruktionsnachweisen 05B.1/05B.2 verbauten Teile).",
   "parts": [
     "3001.dat",
     "3002.dat",
@@ -35,7 +35,15 @@
     "3022.dat",
     "3710.dat",
     "3666.dat",
-    "3795.dat"
+    "3795.dat",
+    "2437.dat",
+    "3747b.dat",
+    "3065.dat",
+    "3066.dat",
+    "3068b.dat",
+    "3034.dat",
+    "41767.dat",
+    "41768.dat"
   ],
   "extra": [
     "LDConfig.ldr",

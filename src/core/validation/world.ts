@@ -7,7 +7,7 @@ import { checkUpinGeometry } from '../connectivity/upin';
 import { apply, applyTransform, boxesPenetrate, det, dist, dot, isAxisAligned, orthonormalityError, transformBox, type Box, type Transform, type Vec3 } from '../math';
 import type { CanonicalModel, PartInstance } from '../model/types';
 import { STUD_HEIGHT, TOLERANCE } from '../units';
-import { penetrationDepth, solidFromBox, solidFromPrism, solidsTouch, type Solid } from './solids';
+import { penetrationDepth, solidFromBox, solidFromHull, solidFromPrism, solidsTouch, type Solid } from './solids';
 
 export interface WorldConnector {
   instanceId: string;
@@ -89,7 +89,7 @@ export function buildWorldInstance(inst: PartInstance, catalog: Catalog): WorldI
     meta,
     transform,
     bodyBoxes: (meta?.bodyBoxes ?? []).map((b) => transformBox(transform, b)),
-    bodySolids: [...(meta?.bodyBoxes ?? []).map((b) => solidFromBox(transformBox(transform, b))), ...(meta?.bodyPrisms ?? []).map((p) => solidFromPrism(p, transform))],
+    bodySolids: [...(meta?.bodyBoxes ?? []).map((b) => solidFromBox(transformBox(transform, b))), ...(meta?.bodyPrisms ?? []).map((p) => solidFromPrism(p, transform)), ...(meta?.bodyHulls ?? []).map((h) => solidFromHull(h, transform))],
     studs,
     connectors,
     upAxis: apply(inst.rotation, [0, -1, 0]),

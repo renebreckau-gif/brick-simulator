@@ -13,6 +13,7 @@ import { affected, finding, LAYER_SCOPE, renumber, VALIDATOR_VERSION, type Findi
 import { analyzeStability, marginMm, type StabilityResult } from './stability';
 import { bridges, continuousSeams, stoerWagner, subgraphWeights } from './structure';
 import { buildWorld, type World } from './world';
+import { checkFunction } from './checkFunction';
 
 const HEURISTIC_VERSION = 'heuristics@1.0.0';
 
@@ -146,7 +147,7 @@ function checkUsage(model: CanonicalModel): Finding[] {
 }
 
 function summarize(findings: Finding[]): LayerSummary[] {
-  const layers: Layer[] = ['catalog', 'geometry', 'connection', 'graph', 'collision', 'assembly', 'stability', 'structure', 'usage', 'procurement'];
+  const layers: Layer[] = ['catalog', 'geometry', 'connection', 'graph', 'collision', 'assembly', 'stability', 'structure', 'usage', 'function', 'procurement'];
   return layers.map((layer) => {
     const fs = findings.filter((f) => f.layer === layer);
     const counts = { passed: 0, failed: 0, unchecked: 0, unsupported: 0 };
@@ -175,6 +176,7 @@ export function validate(model: CanonicalModel, catalog: Catalog, now = new Date
     ...assembly.findings,
     ...sas.findings,
     ...checkUsage(model),
+    ...checkFunction(model, world),
     procurement,
   ]);
   const ref = modelRef(model);

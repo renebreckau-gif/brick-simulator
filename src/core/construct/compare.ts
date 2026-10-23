@@ -105,6 +105,30 @@ export function profileOverlap(a: Profile, b: Profile): number {
   return union > 0 ? inter / union : 0;
 }
 
+/**
+ * Abweichung einer Kante (hi = Oberkante, lo = Unterkante eines Höhenprofils) in einem Längenbereich d0…d1
+ * (0 = Spitze, 1 = hinteres Ende): mittlere und größte Differenz in Einheiten der Abschnittslänge. So lassen
+ * sich Bugoberkante, Bugunterkante und Kanzel getrennt bewerten statt nur über eine Gesamtüberdeckung.
+ */
+export function edgeDeviation(model: Profile, template: Profile, edge: 'hi' | 'lo', d0: number, d1: number): { mean: number; max: number; samples: number } | null {
+  const n = Math.min(model.samples.length, template.samples.length);
+  let sum = 0;
+  let max = 0;
+  let k = 0;
+  for (let s = 0; s < n; s++) {
+    const d = (s + 0.5) / n;
+    if (d < d0 || d > d1) continue;
+    const m = model.samples[s];
+    const t = template.samples[s];
+    if (!m || !t) continue;
+    const diff = Math.abs(m[edge] - t[edge]);
+    sum += diff;
+    max = Math.max(max, diff);
+    k++;
+  }
+  return k ? { mean: sum / k, max, samples: k } : null;
+}
+
 /** Größte Abweichung der Ausdehnung (Breite bzw. Oberkante) und wo sie liegt (d von der Spitze). */
 export function largestDeviation(model: Profile, template: Profile): { d: number; model: number; template: number } | null {
   let best: { d: number; model: number; template: number } | null = null;

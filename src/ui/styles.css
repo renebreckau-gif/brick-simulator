@@ -415,3 +415,10 @@ button.danger { color: var(--block); }
 .construct .shipfacts dd { overflow-wrap: anywhere; }
 .construct .navitem { white-space: normal; text-align: left; }
 .construct label.wide select { max-width: 100%; }.viewer.placeholder { display: grid; place-items: center; padding: var(--s5); text-align: center; }
+.viewtools { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); padding: var(--s2) var(--s4); font-size: 13px; color: var(--ink-2); }
+.viewtools label { display: inline-flex; align-items: center; gap: var(--s1); cursor: pointer; }
+.cmpgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--s4); }
+.cmpgrid img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); background: #fff; margin-bottom: var(--s1); }
+.cmpgrid img.cmptop { max-width: 160px; }
+.cmprow { display: grid; grid-template-columns: 120px 1fr; gap: var(--s2); align-items: start; }
+.construct table.bomtable { font-size: 11px; }

@@ -75,6 +75,21 @@ function geom(b: DesignBrief, v: ImageView, mainGroupId: string): ViewGeom {
 
 const de = (n: number, d = 2) => n.toFixed(d).replace('.', ',');
 
+/** Unterkantenprofil (Run.hi je Messlinie) morphologisch geöffnet: schmale Ausläufer nach unten verschwinden. */
+function openProfile(runs: Run[], win: number): Map<number, number> {
+  const pos = runs.map((r) => r.pos);
+  const hi = runs.map((r) => r.hi);
+  const filt = (vals: number[], f: (a: number, b: number) => number) => vals.map((_, k) => {
+    let v = vals[k];
+    for (let m = k - 1; m >= 0 && pos[k] - pos[m] <= win; m--) v = f(v, vals[m]);
+    for (let m = k + 1; m < vals.length && pos[m] - pos[k] <= win; m++) v = f(v, vals[m]);
+    return v;
+  });
+  const eroded = filt(hi, Math.min);
+  const opened = filt(eroded, Math.max);
+  return new Map(pos.map((p, k) => [p, opened[k]]));
+}
+
 /**
  * Leitet die Formvorgabe ab. pixels(imageIndex) liefert die RGBA-Daten des Originalbilds (nur lokal im Browser).
  */
@@ -134,9 +149,16 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
   const rows = Math.max(4, Math.round(segL * studsPerL));
   sources.push({ field: 'Maßstab', source: `${top.label} (Ausschnitt ${top.viewId})`, method: `größte gezeichnete Bugbreite ${de(maxW)} L ≙ ${W} Noppen → ${de(studsPerL, 1)} Noppen je L (Länge und Höhe gleich skaliert)` });
 
-  // Höhenprofil: Oberkante über der Rumpfunterkante (Median der Unterkanten im Abschnitt) in der gewählten Seitenansicht
-  const sideRunsInSeg = runsSide.filter((r) => Math.abs(r.pos - tipSide) / gSide.L <= segL);
-  const bottomRef = sideRunsInSeg.map((r) => r.hi).sort((a, c) => a - c)[sideRunsInSeg.length >> 1];
+  // Unterkante: schmale Anbauten unter dem Rumpf (z. B. Landebeine) per morphologischem Öffnen des
+  // Unterkantenprofils entfernt (Fensterbreite 8 % L); Bezug für Ober- und Unterkante = tiefster Rumpfpunkt im Abschnitt
+  const keel = (g: ViewGeom, runs: Run[], tip: number) => {
+    const opened = openProfile(runs, Math.max(1, Math.round(0.08 * g.L)));
+    const inSeg = runs.filter((r) => Math.abs(r.pos - tip) / g.L <= segL);
+    return { opened, ref: Math.max(...inSeg.map((r) => opened.get(r.pos) ?? r.hi)) };
+  };
+  const keelSide = keel(gSide, runsSide, tipSide);
+  const bottomRef = keelSide.ref;
+  const bottomL = (d: number) => { const r = runAt(runsSide, tipSide + dir(gSide) * d * gSide.L); return r ? Math.max(0, (bottomRef - (keelSide.opened.get(r.pos) ?? r.hi)) / gSide.L) : 0; };
   const heightL = (runs: Run[], tip: number, g: ViewGeom, d: number, bottom: number) => { const r = runAt(runs, tip + dir(g) * d * g.L); return r ? Math.max(0, (bottom - r.lo) / g.L) : null; };
   const width: number[] = [];
   const topP: number[] = [];
@@ -146,12 +168,16 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
   // eben in Höhe der Oberkante an der Kanzelvorderkante; die Kanzel ragt darüber hinaus.
   const hullUnderCanopy = heightL(runsSide, tipSide, gSide, Math.max(0, dFront - 0.01), bottomRef) ?? 0;
   let canopyTopL = 0;
+  const bottomP: number[] = [];
+  const canopyProfile: number[] = [];
   for (let j = 0; j < rows; j++) {
     width.push(Math.max(0.5, widthL(dRow(j)) * studsPerL));
     const h = heightL(runsSide, tipSide, gSide, dRow(j), bottomRef) ?? 0;
-    if (j >= canopyRows.from && j <= canopyRows.to) { canopyTopL = Math.max(canopyTopL, h); topP.push(Math.max(0.5, Math.min(h, hullUnderCanopy) * studsPerL * 2.5)); }
+    if (j >= canopyRows.from && j <= canopyRows.to) { canopyTopL = Math.max(canopyTopL, h); canopyProfile.push(h * studsPerL * 2.5); topP.push(Math.max(0.5, Math.min(h, hullUnderCanopy) * studsPerL * 2.5)); }
     else topP.push(Math.max(0.5, h * studsPerL * 2.5));
+    bottomP.push(Math.min(topP[j] - 0.5, bottomL(dRow(j)) * studsPerL * 2.5));
   }
+  sources.push({ field: 'Unterkante', source: `${side.label} (Ausschnitt ${side.viewId})`, method: 'Unterkante des Objektlaufs je Reihe über dem tiefsten Rumpfpunkt; schmale Anbauten (Landebeine) per Öffnen des Profils entfernt' });
   sources.push({ field: 'Bugkontur', source: `${top.label} (Ausschnitt ${top.viewId}, Vorderseite ${top.frontInImage ?? '?'})`, method: 'Breite des Objektlaufs durch die Rumpfmittellinie je Reihe' });
   sources.push({ field: 'Höhenprofil', source: `${side.label} (Ausschnitt ${side.viewId})`, method: 'Oberkante des Objektlaufs über der Rumpfunterkante (Median im Abschnitt) je Reihe' });
   const cw = cbTop ? (cbTop.w * b.images[top.imageIndex].width) / gTop.L * studsPerL : 2;
@@ -161,12 +187,13 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
 
   // Messprofile und Bildausschnitte für den Vergleich mit dem Teilemodell (Abschnitt Spitze … segL)
   const lenPx = (g: ViewGeom) => segL * g.L;
-  const profileOf = (g: ViewGeom, runs: Run[], tip: number, kind: Profile['kind'], bottom: number): Profile => ({
+  // Höhenprofil: Unterkante aus dem geöffneten Profil (ohne Landebeine), Oberkante wie gemessen
+  const profileOf = (g: ViewGeom, runs: Run[], tip: number, kind: Profile['kind'], bottom: number, opened?: Map<number, number>): Profile => ({
     kind,
     samples: Array.from({ length: PROFILE_SAMPLES }, (_, s) => {
       const r = runAt(runs, tip + dir(g) * ((s + 0.5) / PROFILE_SAMPLES) * lenPx(g));
       if (!r) return null;
-      return kind === 'breite' ? { lo: (r.lo - center(g)) / lenPx(g), hi: (r.hi - center(g)) / lenPx(g) } : { lo: (bottom - r.hi) / lenPx(g), hi: (bottom - r.lo) / lenPx(g) };
+      return kind === 'breite' ? { lo: (r.lo - center(g)) / lenPx(g), hi: (r.hi - center(g)) / lenPx(g) } : { lo: Math.max(0, bottom - (opened?.get(r.pos) ?? r.hi)) / lenPx(g), hi: (bottom - r.lo) / lenPx(g) };
     }),
   });
   const segRect = (g: ViewGeom, tip: number): PixelRect => {
@@ -182,7 +209,7 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
   const info = (v: ImageView) => ({ viewId: v.viewId, label: v.label, direction: v.direction, frontInImage: v.frontInImage, imageIndex: v.imageIndex });
   const measured: MeasuredView[] = [
     { ...info(top), use: 'quelle', rect: segRect(gTop, tipTop), profile: profileOf(gTop, runsTop, tipTop, 'breite', 0), note: 'Bugkontur und Maßstab' },
-    { ...info(side), use: 'quelle', rect: segRect(gSide, tipSide), profile: profileOf(gSide, runsSide, tipSide, 'hoehe', bottomRef), note: 'Höhenprofil, Kanzellage und -höhe' },
+    { ...info(side), use: 'quelle', rect: segRect(gSide, tipSide), profile: profileOf(gSide, runsSide, tipSide, 'hoehe', bottomRef, keelSide.opened), note: 'Höhenprofil, Kanzellage und -höhe' },
   ];
 
   // Vergleich mit der anderen Seitenansicht – nicht gemittelt
@@ -191,8 +218,8 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
       const gAlt = geom(b, alt, main.id);
       const runsAlt = measure(gAlt);
       const tipAlt = tipOf(gAlt, runsAlt);
-      const inSeg = runsAlt.filter((r) => Math.abs(r.pos - tipAlt) / gAlt.L <= segL);
-      const bottomAlt = inSeg.map((r) => r.hi).sort((a, c) => a - c)[inSeg.length >> 1];
+      const keelAlt = keel(gAlt, runsAlt, tipAlt);
+      const bottomAlt = keelAlt.ref;
       let maxDiff = 0;
       for (let j = 0; j < rows; j++) {
         const h1 = heightL(runsSide, tipSide, gSide, dRow(j), bottomRef);
@@ -200,7 +227,7 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
         if (h1 !== null && h2 !== null) maxDiff = Math.max(maxDiff, Math.abs(h1 - h2));
       }
       notes.push(`Höhenprofil aus „${side.label}“; „${alt.label}“ weicht im Abschnitt um bis zu ${de(maxDiff)} L (${de(maxDiff * studsPerL * 2.5, 1)} Plattenhöhen) ab – nicht gemittelt`);
-      measured.push({ ...info(alt), use: 'vergleich', rect: segRect(gAlt, tipAlt), profile: profileOf(gAlt, runsAlt, tipAlt, 'hoehe', bottomAlt), note: `gemessen, nicht gemittelt (Abweichung bis ${de(maxDiff * studsPerL * 2.5, 1)} Plattenhöhen)` });
+      measured.push({ ...info(alt), use: 'vergleich', rect: segRect(gAlt, tipAlt), profile: profileOf(gAlt, runsAlt, tipAlt, 'hoehe', bottomAlt, keelAlt.opened), note: `gemessen, nicht gemittelt (Abweichung bis ${de(maxDiff * studsPerL * 2.5, 1)} Plattenhöhen)` });
     } catch (e) {
       notes.push(`Vergleichsansicht „${alt.label}“ nicht messbar: ${(e as Error).message}`);
     }
@@ -219,7 +246,8 @@ export function bowTargetFromTemplate(b: DesignBrief, pixels: (imageIndex: numbe
     schema: SHAPE_TARGET_SCHEMA, kind: 'bow-with-canopy', label: `${b.title || 'Vorlage'} – Bug und Kanzel`,
     origin: { kind: 'template-measurement', description: `Gemessen aus „${top.label}“ und „${side.label}“ der Vorlage (Bild ${b.images[side.imageIndex].sha256.slice(0, 12)}…)`, imageSha256: b.images[side.imageIndex].sha256 },
     studsPerL, rows, width, top: topP,
-    canopy: canopyRows.to - canopyRows.from >= 1 ? { fromRow: canopyRows.from, toRow: canopyRows.to, width: Math.max(2, cw), height: Math.max(1, canopyHeight) } : null,
+    bottom: bottomP,
+    canopy: canopyRows.to - canopyRows.from >= 1 ? { fromRow: canopyRows.from, toRow: canopyRows.to, width: Math.max(2, cw), height: Math.max(1, canopyHeight), profile: canopyProfile } : null,
     sources, notes,
   };
   return { target, views: measured };

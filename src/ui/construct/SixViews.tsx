@@ -35,7 +35,7 @@ interface Props {
   imageUrls: string[];
 }
 
-function useCrops(views: MeasuredView[] | null, urls: string[]): Map<string, string> {
+export function useCrops(views: MeasuredView[] | null, urls: string[]): Map<string, string> {
   const [crops, setCrops] = useState(new Map<string, string>());
   useEffect(() => {
     if (!views?.length || !urls.length) { setCrops(new Map()); return; }

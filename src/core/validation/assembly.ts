@@ -73,6 +73,46 @@ function sameDir(a: Vec3, b: Vec3) {
   return dot(a, b) > 0.999;
 }
 
+/**
+ * Teile des Bestands, die eine Einheit auf geradem Weg entlang d (aus −d·∞ bis zur Endposition) blockieren.
+ * Ausgenommen: Noppen, die am Ende regulär in die Einheit greifen (und umgekehrt), und Paare mit eigenem
+ * Befund „ungeprüft“. Umgekehrt gelesen ist das auch der Entnahmeweg in Richtung −d (05B.2).
+ */
+export function straightPathBlockers(world: World, unit: Set<string>, existing: Set<string>, d: Vec3): string[] {
+  const uncheckedPairs = new Set(world.overlaps.filter((o) => o.classification === 'unchecked').map((o) => pairKey(o.a, o.b)));
+  const boxesOf = (ids: Iterable<string>) => {
+    const out: { id: string; box: Box; solid: Solid; studId: string | null }[] = [];
+    for (const id of ids) {
+      const w = world.instances.get(id);
+      if (!w) continue;
+      for (const s of w.bodySolids) out.push({ id, box: s.aabb, solid: s, studId: null });
+      for (const s of w.studs) out.push({ id, box: s.box, solid: solidFromBox(s.box), studId: s.connector.def.id });
+    }
+    return out;
+  };
+  const blockers = new Set<string>();
+  const ub = boxesOf(unit);
+  const eb = boxesOf(existing);
+  for (const u of ub) {
+    const swept = sweep(u.box, d);
+    // exakter Montageweg nur, wenn ein Schräg-/Keilkörper beteiligt ist (sonst gilt der Quadertest exakt)
+    let sweptSolid: Solid | null = null;
+    for (const e of eb) {
+      if (uncheckedPairs.has(pairKey(u.id, e.id))) continue; // eigener Befund „ungeprüft“
+      if (!boxesPenetrate(swept, e.box, TOLERANCE.penetration)) continue;
+      if (!(u.solid.isBox && e.solid.isBox)) {
+        sweptSolid ??= sweepSolid(u.solid, d, SWEEP_LENGTH);
+        if (penetrationDepth(sweptSolid, e.solid) <= TOLERANCE.penetration) continue;
+      }
+      // Erlaubt: Noppe des Bestands, die regulär in die Einheit greift (und umgekehrt)
+      if (e.studId && unit.has(world.studTarget.get(studKey(e.id, e.studId)) ?? '')) continue;
+      if (u.studId && existing.has(world.studTarget.get(studKey(u.id, u.studId)) ?? '')) continue;
+      blockers.add(e.id);
+    }
+  }
+  return [...blockers].sort();
+}
+
 export function analyzeAssembly(model: CanonicalModel, world: World): AssemblyAnalysis {
   const findings: Finding[] = [];
   const results: StepResult[] = [];
@@ -115,45 +155,11 @@ export function analyzeAssembly(model: CanonicalModel, world: World): AssemblyAn
   const connectionsBetween = (unit: Set<string>, existing: Set<string>): Connection[] =>
     world.connections.filter((c) => (unit.has(c.male.instanceId) && existing.has(c.female.instanceId)) || (unit.has(c.female.instanceId) && existing.has(c.male.instanceId)));
 
-  const boxesOf = (ids: Iterable<string>) => {
-    const out: { id: string; box: Box; solid: Solid; studId: string | null }[] = [];
-    for (const id of ids) {
-      const w = world.instances.get(id);
-      if (!w) continue;
-      for (const s of w.bodySolids) out.push({ id, box: s.aabb, solid: s, studId: null });
-      for (const s of w.studs) out.push({ id, box: s.box, solid: solidFromBox(s.box), studId: s.connector.def.id });
-    }
-    return out;
-  };
-
   // Paare, deren Überschneidung auf eine nicht unterstützte Technik/grobe Hülle zurückgeht
-  const uncheckedPairs = new Set(world.overlaps.filter((o) => o.classification === 'unchecked').map((o) => pairKey(o.a, o.b)));
   const uncheckedBetween = (unit: Set<string>, existing: Set<string>) =>
     world.overlaps.filter((o) => o.classification === 'unchecked' && ((unit.has(o.a) && existing.has(o.b)) || (unit.has(o.b) && existing.has(o.a))));
 
-  const pathBlockers = (unit: Set<string>, existing: Set<string>, d: Vec3): string[] => {
-    const blockers = new Set<string>();
-    const ub = boxesOf(unit);
-    const eb = boxesOf(existing);
-    for (const u of ub) {
-      const swept = sweep(u.box, d);
-      // exakter Montageweg nur, wenn ein Schräg-/Keilkörper beteiligt ist (sonst gilt der Quadertest exakt)
-      let sweptSolid: Solid | null = null;
-      for (const e of eb) {
-        if (uncheckedPairs.has(pairKey(u.id, e.id))) continue; // eigener Befund „ungeprüft“
-        if (!boxesPenetrate(swept, e.box, TOLERANCE.penetration)) continue;
-        if (!(u.solid.isBox && e.solid.isBox)) {
-          sweptSolid ??= sweepSolid(u.solid, d, SWEEP_LENGTH);
-          if (penetrationDepth(sweptSolid, e.solid) <= TOLERANCE.penetration) continue;
-        }
-        // Erlaubt: Noppe des Bestands, die regulär in die Einheit greift (und umgekehrt)
-        if (e.studId && unit.has(world.studTarget.get(studKey(e.id, e.studId)) ?? '')) continue;
-        if (u.studId && existing.has(world.studTarget.get(studKey(u.id, u.studId)) ?? '')) continue;
-        blockers.add(e.id);
-      }
-    }
-    return [...blockers].sort();
-  };
+  const pathBlockers = (unit: Set<string>, existing: Set<string>, d: Vec3): string[] => straightPathBlockers(world, unit, existing, d);
 
   const instancesOfAssembly = (assemblyId: string): string[] => {
     const ids = new Set([assemblyId]);

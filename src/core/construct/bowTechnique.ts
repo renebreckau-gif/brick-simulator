@@ -42,9 +42,9 @@ export interface BowPlan {
   deviations: string[];
 }
 
-const PLATE = 8;
-const BRICK = 24;
-const HEIGHT: Record<string, number> = Object.fromEntries([...PLATES.map((p) => [p.part, PLATE]), ...BRICKS.map((p) => [p.part, BRICK]), ['3298', BRICK], ['4286', BRICK], ['3039', BRICK], ['41769a', PLATE], ['41770a', PLATE], ['43722a', PLATE], ['43723a', PLATE]]);
+export const PLATE = 8;
+export const BRICK = 24;
+export const HEIGHT: Record<string, number> = Object.fromEntries([...PLATES.map((p) => [p.part, PLATE]), ...BRICKS.map((p) => [p.part, BRICK]), ['3298', BRICK], ['4286', BRICK], ['3039', BRICK], ['41769a', PLATE], ['41770a', PLATE], ['43722a', PLATE], ['43723a', PLATE], ['3034', PLATE], ['3068b', PLATE], ['3065', BRICK], ['3066', BRICK], ['3747b', BRICK], ['2437', 32]]);
 
 /** Formvorgabe auf eine Breite skalieren (Länge und Höhe proportional, lineare Interpolation je Reihe). */
 export function scaleTarget(t: BowTarget, widthStuds: number): { target: BowTarget; factor: number } {
@@ -59,11 +59,17 @@ export function scaleTarget(t: BowTarget, widthStuds: number): { target: BowTarg
   };
   const width = Array.from({ length: rows }, (_, j) => sample(t.width, j) * f);
   const top = Array.from({ length: rows }, (_, j) => sample(t.top, j) * f);
+  const bottom = t.bottom && Array.from({ length: rows }, (_, j) => sample(t.bottom!, j) * f);
   const canopy = t.canopy && { fromRow: Math.round(t.canopy.fromRow * f), toRow: Math.min(rows - 1, Math.round(t.canopy.toRow * f)), width: t.canopy.width * f, height: t.canopy.height * f };
-  return { target: { ...t, rows, width, top, canopy, studsPerL: t.studsPerL === null ? null : t.studsPerL * f }, factor: f };
+  if (canopy && t.canopy?.profile) {
+    const prof = t.canopy.profile;
+    const n = canopy.toRow - canopy.fromRow + 1;
+    (canopy as { profile?: number[] }).profile = Array.from({ length: n }, (_, k) => prof[Math.min(prof.length - 1, Math.round(((k + 0.5) / n) * prof.length - 0.5))] * f);
+  }
+  return { target: { ...t, rows, width, top, ...(bottom ? { bottom } : {}), canopy, studsPerL: t.studsPerL === null ? null : t.studsPerL * f }, factor: f };
 }
 
-interface Placed { part: string; color: number; position: Vec3; rotation: Mat3; layer: string }
+export interface Placed { part: string; color: number; position: Vec3; rotation: Mat3; layer: string }
 
 /**
  * Bauzustand mit Verbandsbewertung: Union-Find über alle gesetzten Teile, verbunden über Noppen der darunter
@@ -73,15 +79,21 @@ interface Placed { part: string; color: number; position: Vec3; rotation: Mat3; 
 /** Lexikografischer Vergleich der Bewertungen (kleiner = besser). */
 const lexLess = (a: number[], b: number[]) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i]; return false; };
 
-class Stack {
+export class Stack {
   placed: Placed[] = [];
   private studsAt = new Map<number, Map<string, number>>();
   /** Zelle → Teil je Oberkante (alle Grundrisszellen, für den Fugenvergleich). */
   private cellsAt = new Map<number, Map<string, number>>();
   private parent: number[] = [];
+  /**
+   * Zusätzlich von der Spitze her belegen (05B.2): Für freitragende Reihen vor einer Stütze müssen Teile von
+   * der Spitze nach hinten auf gestütztes Gebiet reichen; der gierige Packer setzt sonst hinten an.
+   */
+  fromTipStrategies = false;
   constructor(private readonly W: number) {}
   clone(): Stack {
     const c = new Stack(this.W);
+    c.fromTipStrategies = this.fromTipStrategies;
     c.placed = [...this.placed];
     c.parent = [...this.parent];
     for (const [k, m] of this.studsAt) c.studsAt.set(k, new Map(m));
@@ -161,24 +173,27 @@ class Stack {
     if (!cells.size) return 0;
     const height = Math.max(...palette.map((p) => HEIGHT[p.part])) / PLATE;
     let best: { stack: Stack; key: number[]; n: number } | null = null;
+    let lastError = '';
     for (const preferAlong of [layerIndex % 2 === 0, layerIndex % 2 !== 0])
       for (const rowOffset of [0, 1])
         for (const colOffset of [0, 1])
           // unterste Lage: immer Brücken – dort sind noch alle Teile getrennt, die Bewertung sieht den Nutzen erst in der Lage darüber
           for (const bridges of bottomLevel === 0 ? [true] : [layerIndex % 2 === 1, layerIndex % 2 !== 1])
             // eine übergebene Bewertung ist eine zusätzliche Strategie, kein Ersatz für die gewöhnliche
-            for (const sc of score ? [undefined, score] : [undefined]) {
-              const trial = this.clone();
-              let n: number;
-              try {
-                n = trial.fillLayer(new Set(cells), palette, preferAlong, { rowOffset, colOffset }, bridges, bottomLevel, color, layer, sc);
-              } catch {
-                continue;
+            for (const sc of score ? [undefined, score] : [undefined])
+              for (const fromTip of this.fromTipStrategies ? [false, true] : [false]) {
+                const trial = this.clone();
+                let n: number;
+                try {
+                  n = trial.fillLayer(new Set(cells), palette, preferAlong, { rowOffset, colOffset }, bridges && !fromTip, bottomLevel, color, layer, sc, fromTip);
+                } catch (e) {
+                  lastError = e instanceof Error ? e.message : String(e);
+                  continue;
+                }
+                const key = [lookahead ? lookahead(trial.clone()) : 0, trial.components(), trial.alignedSeams(bottomLevel, bottomLevel + height), n];
+                if (!best || lexLess(key, best.key)) best = { stack: trial, key, n };
               }
-              const key = [lookahead ? lookahead(trial.clone()) : 0, trial.components(), trial.alignedSeams(bottomLevel, bottomLevel + height), n];
-              if (!best || lexLess(key, best.key)) best = { stack: trial, key, n };
-            }
-    if (!best) throw new Error(`${layer}: keine Belegung gefunden`);
+    if (!best) throw new Error(`${layer}: keine Belegung gefunden (${lastError})`);
     this.placed = best.stack.placed;
     this.parent = best.stack.parent;
     this.studsAt = best.stack.studsAt;
@@ -186,7 +201,7 @@ class Stack {
     return best.n;
   }
   /** Eine Belegungsstrategie ausführen (Brücken an Breitensprüngen, dann gierig mit Verbandsbewertung). */
-  private fillLayer(cells: Set<string>, palette: RectPart[], preferAlong: boolean, stagger: { rowOffset: number; colOffset: number }, bridges: boolean, bottomLevel: number, color: number, layer: string, score?: CandidateScore): number {
+  private fillLayer(cells: Set<string>, palette: RectPart[], preferAlong: boolean, stagger: { rowOffset: number; colOffset: number }, bridges: boolean, bottomLevel: number, color: number, layer: string, score?: CandidateScore, fromTip = false): number {
     let n = 0;
     if (bridges) {
       const colsAt = new Map<number, number[]>();
@@ -216,7 +231,13 @@ class Stack {
       }
     }
     if (!cells.size) return n;
-    packCells(cells, palette, preferAlong, stagger, score ?? this.score(bottomLevel), (pl) => {
+    // von der Spitze her: Reihen gespiegelt packen (j → −j), Platzierungen zurückspiegeln
+    const flip = (k: string) => { const [i, j] = k.split(',').map(Number); return cellKey(i, -j); };
+    const base = score ?? this.score(bottomLevel);
+    const work = fromTip ? new Set([...cells].map(flip)) : cells;
+    const sc: CandidateScore = fromTip ? (cs) => base(cs.map(flip)) : base;
+    packCells(work, palette, preferAlong, stagger, sc, (pl0) => {
+      const pl = fromTip ? { ...pl0, j0: -(pl0.j0 + pl0.rows - 1) } : pl0;
       this.add(rectInstance(pl, this.W, bottomLevel, color, layer), bottomLevel, bottomLevel + HEIGHT[pl.part] / PLATE);
       n++;
     });
@@ -225,14 +246,14 @@ class Stack {
 }
 
 /** Rechteckteil aus der Belegung in Weltkoordinaten (LDraw: x quer, −z = vorn, −y = oben). */
-function rectInstance(p: RectPlacement, W: number, level: number, color: number, layer: string): Placed {
+export function rectInstance(p: RectPlacement, W: number, level: number, color: number, layer: string): Placed {
   const h = HEIGHT[p.part];
   const cx = (p.i0 + p.cols / 2) * 20 - W * 10;
   const cz = -(p.j0 + p.rows / 2) * 20;
   return { part: p.part, color, position: [cx, -PLATE * level - h, cz], rotation: p.rotated ? rotY90(1) : IDENTITY, layer };
 }
 
-const evenClamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, 2 * Math.round(v / 2)));
+export const evenClamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, 2 * Math.round(v / 2)));
 
 /** Rumpfbreite und -höhe je Reihe gerastert und zur Spitze hin nicht zunehmend. */
 function quantize(t: BowTarget, W: number, deviations: string[]) {
@@ -252,7 +273,7 @@ function quantize(t: BowTarget, W: number, deviations: string[]) {
   return { Wq, Hq };
 }
 
-function centeredCells(rows: [number, number], widthAt: (j: number) => number, W: number, into: Set<string>) {
+export function centeredCells(rows: [number, number], widthAt: (j: number) => number, W: number, into: Set<string>) {
   for (let j = rows[0]; j <= rows[1]; j++) {
     const w = widthAt(j);
     const c0 = (W - w) / 2;

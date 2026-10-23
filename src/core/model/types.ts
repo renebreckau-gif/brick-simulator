@@ -90,6 +90,8 @@ export interface CanonicalModel {
   generator?: { name: string; version: string; params: Record<string, unknown> };
   /** Entwurfsherkunft: Bildquelle, konstruktive Annahmen, Abweichungen (vorbereitet für Bild-zu-Modell). */
   design?: DesignProvenance;
+  /** Funktionale Anforderungen (05B.2): freizuhaltende Räume, abnehmbare Baugruppen, Anschlussstellen. */
+  functional?: FunctionalSpec;
 }
 
 /**
@@ -97,6 +99,21 @@ export interface CanonicalModel {
  * Bildanalyse → räumliche Interpretation → Bausteinkonstruktion → Validierung → visueller Abgleich → Bauanleitung.
  * Die Angaben sind Dokumentation, keine Prüfaussage: Gültigkeit entscheidet weiterhin allein der Validator.
  */
+/**
+ * Funktionsmodell einer Baugruppe (05B.2), unabhängig davon, ob ein Bild den Innenraum zeigt. Koordinaten im
+ * Modellsystem (LDU). Geprüft von der Prüfschicht „Funktion“ (validation/checkFunction.ts).
+ */
+export interface FunctionalSpec {
+  schema: 'baustein-sim/functional@1';
+  /** Volumen, in das kein Teil (Körper oder Noppe) ragen darf, z. B. Cockpit-Innenraum. */
+  keepouts: { id: string; label: string; min: Vec3; max: Vec3; source: string }[];
+  /** Baugruppen, die sich als Ganzes gerade abnehmen lassen sollen (Richtung der Entnahme, LDraw: −Y = nach oben). */
+  removable: { assemblyId: string; label: string; direction: Vec3 }[];
+  /** Anschlussstellen für spätere Baugruppen: Noppen, die frei bleiben müssen. */
+  interfaces: { id: string; label: string; studs: { instanceId: string; connectorId: string }[] }[];
+  notes: string[];
+}
+
 export interface DesignProvenance {
   schema: 'baustein-sim/design-provenance@1';
   /** Bestätigter Entwurfsauftrag, aus dem das Modell konstruiert wurde (src/core/design/brief.ts). */

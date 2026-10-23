@@ -17,12 +17,15 @@ import { comparisonReferenceId, GENERATED_COMPARISON_NOTE } from './comparison';
 import { buildInstructionPlan, InstructionPlanError, type InstructionPlan } from '../core/instructions/plan';
 import { InstructionView } from './instructions/InstructionView';
 import { DesignLab } from './design/DesignLab';
-import { buildBow, type BowPlan } from '../core/construct/bowTechnique';
-import { ConstructionLab, DEFAULT_CONSTRUCT, useConstructionTarget, type ConstructParams } from './construct/ConstructionLab';
+import { buildVariant, type AnyPlan } from '../core/construct/variants';
+import { ConstructionLab, DEFAULT_CONSTRUCT, useConstructionTarget, useEvidence, type ConstructParams } from './construct/ConstructionLab';
 import { SixViews } from './construct/SixViews';
+import { VariantCompare } from './construct/VariantCompare';
 
 type Tab = 'report' | 'steps' | 'bom' | 'source';
-type CenterView = 'labor' | 'anleitung' | 'ansichten';
+type CenterView = 'labor' | 'anleitung' | 'ansichten' | 'varianten';
+/** Modell aus einer Bautechnik des Konstruktionsnachweises (A/B: bow-technique, C: cockpit-technique). */
+const isConstructModel = (m: CanonicalModel | null) => m?.generator?.name === 'bow-technique' || m?.generator?.name === 'cockpit-technique';
 
 interface Validated {
   result: ValidationResult;
@@ -57,7 +60,10 @@ export function App() {
   const [view, setView] = useState<CenterView>('labor');
   const [cParams, setCParams] = useState<ConstructParams>(DEFAULT_CONSTRUCT);
   const construct = useConstructionTarget(cParams, mode === 'konstrukt');
-  const [bowPlan, setBowPlan] = useState<BowPlan | null>(null);
+  const [bowPlan, setBowPlan] = useState<AnyPlan | null>(null);
+  const { evidence, error: evidenceError } = useEvidence();
+  // Darstellung im Konstruktionsnachweis: Längsschnitt, abgehobene Kanzel, Hilfsvolumen (Innenraum)
+  const [viewOpts, setViewOpts] = useState({ section: false, lifted: false, helpers: false });
   const [bowError, setBowError] = useState<string | null>(null);
   const [instr, setInstr] = useState<{ plan: InstructionPlan; model: CanonicalModel } | null>(null);
   const [instrError, setInstrError] = useState<string | null>(null);
@@ -111,7 +117,7 @@ export function App() {
   useEffect(() => {
     if (!bundle || mode !== 'konstrukt' || !construct.target) return;
     try {
-      const { model: m, plan } = buildBow(construct.target, { variant: cParams.variant, widthStuds: cParams.width });
+      const { model: m, plan } = buildVariant(construct.target, { variant: cParams.variant, widthStuds: cParams.width, req: { hollow: cParams.hollow, openingRows: cParams.openingRows } });
       runValidation(m);
       setModel(m);
       setBowPlan(plan);
@@ -121,9 +127,9 @@ export function App() {
       setBowError(e instanceof Error ? e.message : String(e));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle, mode, construct.target, cParams.variant, cParams.width]);
+  }, [bundle, mode, construct.target, cParams.variant, cParams.width, cParams.hollow, cParams.openingRows]);
   useEffect(() => {
-    if (mode !== 'konstrukt' && view === 'ansichten') setView('labor');
+    if (mode !== 'konstrukt' && (view === 'ansichten' || view === 'varianten')) setView('labor');
   }, [mode, view]);
 
   // Modell laden und prüfen; beim Fall „veralteter Bericht“ anschließend die Änderung anwenden
@@ -169,7 +175,7 @@ export function App() {
   // Raumschiff-Labor: Eingaben nicht erfüllbar → angezeigter Stand gehört nicht zu den aktuellen Eingaben
   const shipStale = mode === 'schiff' && !!shipError;
   // Konstruktionsnachweis: ohne gültige Formvorgabe bzw. bei nicht baubarer Vorgabe gehört der Stand nicht zu den Eingaben
-  const constructStale = mode === 'konstrukt' && (!construct.target || !!bowError || model?.generator?.name !== 'bow-technique');
+  const constructStale = mode === 'konstrukt' && (!construct.target || !!bowError || !isConstructModel(model));
   const blockedExport = shipStale || constructStale;
 
   const steps = model?.steps ?? [];
@@ -209,7 +215,7 @@ export function App() {
           <button role="tab" aria-selected={mode === 'konstrukt'} className={mode === 'konstrukt' ? 'tab active' : 'tab'} onClick={() => setMode('konstrukt')}>Konstruktionsnachweis</button>
         </div>
         {mode === 'konstrukt' && (
-          <ConstructionLab params={cParams} onChange={setCParams} template={construct.template} target={construct.target} plan={constructStale ? null : bowPlan} error={bowError} parts={constructStale ? null : model.instances.length} dims={constructStale ? null : dims} bom={constructStale ? null : validated.bom} catalogLoaded={bundle.catalog.available} />
+          <ConstructionLab params={cParams} onChange={setCParams} template={construct.template} target={construct.target} plan={constructStale ? null : bowPlan} model={constructStale ? null : model} error={bowError} parts={constructStale ? null : model.instances.length} dims={constructStale ? null : dims} bom={constructStale ? null : validated.bom} catalogLoaded={bundle.catalog.available} evidence={evidence} evidenceError={evidenceError} />
         )}
         {mode === 'schiff' && (
           <ShipLab params={shipParams} onChange={setShipParams} plan={shipPlan} error={shipError} actualParts={model.origin.kind === 'generated' ? model.instances.length : null} dims={dims} shownParams={shownShipParams} />
@@ -267,6 +273,15 @@ export function App() {
       {mode === 'bild' ? (
         <main className="center instrwrap">
           <DesignLab />
+        </main>
+      ) : view === 'varianten' && mode === 'konstrukt' ? (
+        <main className="center instrwrap">
+          <ViewSwitch view={view} onChange={setView} withViews />
+          {construct.target ? (
+            <VariantCompare target={construct.target} width={cParams.width} library={bundle.library} catalog={bundle.catalog} views={cParams.source === 'vorlage' ? construct.template.measurement?.views ?? null : null} imageUrls={construct.template.imageUrls} evidence={evidence} />
+          ) : (
+            <p className="stalebar" role="alert"><span>Keine Formvorgabe{construct.template.error ? `: ${construct.template.error}` : cParams.source === 'vorlage' && !cParams.canopyGroupId ? ' – zuerst die Kanzel-Baugruppe wählen.' : '.'}</span></p>
+          )}
         </main>
       ) : view === 'ansichten' && mode === 'konstrukt' ? (
         <main className="center instrwrap">
@@ -329,14 +344,24 @@ export function App() {
         )}
         {constructStale && (
           <div className="stalebar" role="alert">
-            <span>{mode === 'konstrukt' && model.generator?.name !== 'bow-technique' ? 'Noch kein Teilemodell zu den aktuellen Eingaben' : 'Die aktuellen Eingaben ergeben kein Teilemodell'}{bowError ? `: ${bowError}` : construct.template.error ? `: ${construct.template.error}` : cParams.source === 'vorlage' && !cParams.canopyGroupId ? ' – zuerst die Kanzel-Baugruppe wählen.' : '.'} Angezeigt wird ein anderer Stand ({ref.modelId}); Exporte sind gesperrt.</span>
+            <span>{mode === 'konstrukt' && !isConstructModel(model) ? 'Noch kein Teilemodell zu den aktuellen Eingaben' : 'Die aktuellen Eingaben ergeben kein Teilemodell'}{bowError ? `: ${bowError}` : construct.template.error ? `: ${construct.template.error}` : cParams.source === 'vorlage' && !cParams.canopyGroupId ? ' – zuerst die Kanzel-Baugruppe wählen.' : '.'} Angezeigt wird ein anderer Stand ({ref.modelId}); Exporte sind gesperrt.</span>
+          </div>
+        )}
+        {mode === 'konstrukt' && !constructStale && model.functional && (
+          <div className="viewtools" role="group" aria-label="Darstellung">
+            <label><input type="checkbox" checked={viewOpts.section} onChange={(e) => setViewOpts({ ...viewOpts, section: e.target.checked })} /> Längsschnitt (rechte Hälfte ausgeblendet)</label>
+            <label><input type="checkbox" checked={viewOpts.lifted} onChange={(e) => setViewOpts({ ...viewOpts, lifted: e.target.checked })} /> Kanzel abgenommen (angehoben dargestellt)</label>
+            <label><input type="checkbox" checked={viewOpts.helpers} onChange={(e) => setViewOpts({ ...viewOpts, helpers: e.target.checked })} /> Hilfsvolumen: freizuhaltender Innenraum (gestrichelt, keine Teile)</label>
           </div>
         )}
         <div className="viewwrap">
-          {mode === 'konstrukt' && model.generator?.name !== 'bow-technique' ? (
+          {mode === 'konstrukt' && !isConstructModel(model) ? (
             <div className="viewer placeholder muted">Noch kein Teilemodell aus dem Konstruktionsnachweis.</div>
           ) : (
-            <Viewer model={model} library={bundle.library} catalog={bundle.catalog} visible={visible} current={current} highlighted={new Set(highlight)} selected={selected} onSelect={setSelected} />
+            <Viewer model={model} library={bundle.library} catalog={bundle.catalog} visible={visible} current={current} highlighted={new Set(highlight)} selected={selected} onSelect={setSelected}
+              section={mode === 'konstrukt' && viewOpts.section}
+              lift={mode === 'konstrukt' && viewOpts.lifted ? { ids: new Set(model.instances.filter((i) => i.assemblyId === 'kanzel').map((i) => i.instanceId)), ldu: 96 } : null}
+              helpers={mode === 'konstrukt' && viewOpts.helpers ? model.functional?.keepouts.map((k) => ({ id: k.id, min: k.min, max: k.max })) : undefined} />
           )}
           <div className="provenance">Gerendert aus Modell {ref.modelId}, Version {ref.version}, Hash {ref.contentHash}</div>
           {selectedInst && (
@@ -405,6 +430,7 @@ function ViewSwitch({ view, onChange, withViews = false }: { view: CenterView; o
     <div className="viewswitch" role="tablist" aria-label="Ansicht">
       <button role="tab" aria-selected={view === 'labor'} className={view === 'labor' ? 'tab active' : 'tab'} onClick={() => onChange('labor')}>Modell &amp; Prüfung</button>
       {withViews && <button role="tab" aria-selected={view === 'ansichten'} className={view === 'ansichten' ? 'tab active' : 'tab'} onClick={() => onChange('ansichten')}>Sechs Ansichten &amp; Vorlage</button>}
+      {withViews && <button role="tab" aria-selected={view === 'varianten'} className={view === 'varianten' ? 'tab active' : 'tab'} onClick={() => onChange('varianten')}>Varianten A · B · C</button>}
       <button role="tab" aria-selected={view === 'anleitung'} className={view === 'anleitung' ? 'tab active' : 'tab'} onClick={() => onChange('anleitung')}>Bauanleitung</button>
     </div>
   );

@@ -6,7 +6,7 @@
 // abgeleitete Sollwerte.
 import { describe, expect, it } from 'vitest';
 import { definedPartIds, partMeta } from '../src/core/connectivity/partMeta';
-import { prismContains, prismVertices } from '../src/core/validation/solids';
+import { hullContains, prismContains, prismVertices } from '../src/core/validation/solids';
 import { bundle } from './helpers';
 
 const key = (x: number, z: number) => `${Math.round(x)},${Math.round(z)}`;
@@ -22,9 +22,15 @@ const ANTISTUDS: Record<string, string[]> = {
   '41770a': ['-10,-10', '-10,-30', '-10,10', '-10,30', '10,30'],
   '43722a': ['-10,20', '10,-20', '10,0', '10,20'],
   '43723a': ['-10,-20', '-10,0', '-10,20', '10,20'],
+  // 05B.2: Keilsteine – gleicher Grundriss wie die Keilplatten 4×2, also dieselben Aufnahmen
+  '41767': ['-10,30', '10,-10', '10,-30', '10,10', '10,30'],
+  '41768': ['-10,-10', '-10,-30', '-10,10', '-10,30', '10,30'],
+  // 05B.2: inverser Schrägstein trägt nur auf der hinteren, flachen Reihe; Scheibe nur auf der vorderen Leiste
+  '3747b': ['-10,0', '10,0'],
+  '2437': ['-10,-20', '-30,-20', '10,-20', '30,-20'],
 };
 
-const shapedIds = definedPartIds().filter((i) => partMeta(i)!.bodyPrisms);
+const shapedIds = definedPartIds().filter((i) => partMeta(i)!.bodyPrisms || partMeta(i)!.bodyHulls);
 
 describe('Prismenkörper ↔ LDraw-Geometrie', () => {
   it('die Liste der geprüften Formteile ist vollständig', () => {
@@ -38,15 +44,16 @@ describe('Prismenkörper ↔ LDraw-Geometrie', () => {
       expect(flat.missing).toEqual([]);
       // Körperpunkte: alle Dreiecksecken unterhalb der Noppenoberseite (y ≥ 0); Noppen ragen nach −y
       const pts = flat.triangles.flatMap((t) => t.points).filter((p) => p[1] >= -1e-6);
-      const prisms = meta.bodyPrisms!;
-      const outside = pts.filter((p) => !prisms.some((pr) => prismContains(pr, p, 0.6)));
+      const prisms = meta.bodyPrisms ?? [];
+      const hulls = meta.bodyHulls ?? [];
+      const outside = pts.filter((p) => !prisms.some((pr) => prismContains(pr, p, 0.6)) && !hulls.some((h) => hullContains(h, p, 0.6)));
       expect(outside.slice(0, 3), 'LDraw-Körperpunkte außerhalb des Prismas').toEqual([]);
-      const corners = prisms.flatMap(prismVertices);
+      const corners = [...prisms.flatMap(prismVertices), ...hulls.flat()];
       const far = corners.filter((c) => !pts.some((p) => Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]) < 0.6));
       expect(far, 'Prismenecken ohne LDraw-Punkt (Prisma zu groß)').toEqual([]);
       const prim = (names: string[]) => flat.primitives.filter((p) => names.includes(p.file)).map((p) => key(p.transform.position[0], p.transform.position[2])).sort();
       const conn = (kind: string) => meta.connectors.filter((c) => c.kind === kind).map((c) => key(c.position[0], c.position[2])).sort();
-      expect(conn('stud'), 'Noppen ↔ stud.dat').toEqual(prim(['stud.dat', 'stud2.dat']));
+      expect(conn('stud'), 'Noppen ↔ stud.dat').toEqual(prim(['stud.dat', 'stud2.dat', 'stud2a.dat']));
       expect(conn('underside_pin'), 'Unterseitenstifte ↔ stud3/stud3a').toEqual(prim(['stud3.dat', 'stud3a.dat']));
       expect(conn('antistud'), 'Unterseiten-Aufnahmen (Sollwerte)').toEqual(ANTISTUDS[id].sort());
       expect(conn('tube'), 'keine Röhren gewertet (verkürzte/teilweise Röhren)').toEqual([]);

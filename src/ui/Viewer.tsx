@@ -17,12 +17,22 @@ interface Props {
   highlighted: Set<string>;
   selected: string | null;
   onSelect: (id: string | null) => void;
+  /** Längsschnitt (05B.2): Hälfte x > 0 weggeschnitten (Schnittebene in der Modellmitte). */
+  section?: boolean;
+  /** Baugruppe angehoben darstellen (z. B. abgenommene Kanzel), Verschiebung in LDU nach oben. */
+  lift?: { ids: Set<string>; ldu: number } | null;
+  /** Hilfsvolumen (z. B. freizuhaltender Innenraum): nur Kanten, ausdrücklich keine Teile. */
+  helpers?: { id: string; min: [number, number, number]; max: [number, number, number] }[];
 }
 
 interface Built {
   mesh: THREE.Object3D;
   material: THREE.MeshStandardMaterial | null;
+  lines: THREE.LineBasicMaterial | null;
+  base: THREE.Matrix4;
 }
+
+const SECTION_PLANE = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
 
 const geoCache = new Map<string, { tris: THREE.BufferGeometry; edges: THREE.BufferGeometry } | null>();
 
@@ -82,6 +92,7 @@ export function Viewer(props: Props) {
     const el = host.current!;
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.localClippingEnabled = true;
     el.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#dfe5eb');
@@ -148,11 +159,13 @@ export function Viewer(props: Props) {
       const g = partGeometry(props.library, props.catalog, inst.part, inst.color);
       const obj = new THREE.Group();
       let material: THREE.MeshStandardMaterial | null = null;
+      let lines: THREE.LineBasicMaterial | null = null;
       if (g) {
         material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.55, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+        lines = new THREE.LineBasicMaterial({ color: '#1d2733', transparent: true, opacity: 0.35 });
         const mesh = new THREE.Mesh(g.tris, material);
         mesh.userData.instanceId = inst.instanceId;
-        obj.add(mesh, new THREE.LineSegments(g.edges, new THREE.LineBasicMaterial({ color: '#1d2733', transparent: true, opacity: 0.35 })));
+        obj.add(mesh, new THREE.LineSegments(g.edges, lines));
       } else {
         // Keine Geometrie: deutlich als Platzhalter erkennbar (Drahtgitter)
         const box = new THREE.Mesh(new THREE.BoxGeometry(40, 24, 20), new THREE.MeshBasicMaterial({ color: '#7a8796', wireframe: true }));
@@ -166,7 +179,17 @@ export function Viewer(props: Props) {
       obj.matrixAutoUpdate = false;
       obj.matrix.copy(m);
       c.root.add(obj);
-      c.built.set(inst.instanceId, { mesh: obj, material });
+      c.built.set(inst.instanceId, { mesh: obj, material, lines, base: m.clone() });
+    }
+    // Hilfsvolumen: nur Kanten, gestrichelt – keine Teile, nicht anwählbar
+    for (const h of props.helpers ?? []) {
+      const size = [0, 1, 2].map((i) => h.max[i] - h.min[i]);
+      const geo = new THREE.EdgesGeometry(new THREE.BoxGeometry(size[0], size[1], size[2]));
+      const box = new THREE.LineSegments(geo, new THREE.LineDashedMaterial({ color: '#0f6b8f', dashSize: 6, gapSize: 4 }));
+      box.computeLineDistances();
+      box.position.set((h.min[0] + h.max[0]) / 2, (h.min[1] + h.max[1]) / 2, (h.min[2] + h.max[2]) / 2);
+      box.userData.helper = h.id;
+      c.root.add(box);
     }
     // Kamera nur beim Modellwechsel (nicht bei jeder Version) einpassen
     if (c.framedFor !== props.model.modelId) {
@@ -180,14 +203,20 @@ export function Viewer(props: Props) {
       const grid = c.scene.getObjectByName('grid')!;
       grid.position.y = box.min.y - 0.5;
     }
-  }, [props.model, props.library, props.catalog]);
+  }, [props.model, props.library, props.catalog, props.helpers]);
 
   // Sichtbarkeit/Hervorhebung
   useEffect(() => {
     const c = ctx.current!;
+    const clip = props.section ? [SECTION_PLANE] : [];
     for (const [id, b] of c.built) {
       b.mesh.visible = props.visible.has(id);
+      const up = props.lift?.ids.has(id) ? props.lift.ldu : 0;
+      b.mesh.matrix.copy(b.base);
+      if (up) b.mesh.matrix.premultiply(new THREE.Matrix4().makeTranslation(0, -up, 0)); // LDraw −Y = oben
+      if (b.lines) b.lines.clippingPlanes = clip;
       if (!b.material) continue;
+      b.material.clippingPlanes = clip;
       const sel = props.selected === id;
       const hi = props.highlighted.has(id);
       const cur = props.current.has(id);
@@ -196,7 +225,7 @@ export function Viewer(props: Props) {
       b.material.transparent = props.highlighted.size > 0 && !hi && !sel;
       b.material.opacity = b.material.transparent ? 0.35 : 1;
     }
-  }, [props.visible, props.current, props.highlighted, props.selected, props.model]);
+  }, [props.visible, props.current, props.highlighted, props.selected, props.model, props.section, props.lift]);
 
   return <div className="viewer" ref={host} aria-label="3D-Ansicht des Modells (ziehen zum Drehen, scrollen zum Zoomen)" />;
 }

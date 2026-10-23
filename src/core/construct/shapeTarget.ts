@@ -28,8 +28,16 @@ export interface BowTarget {
   rows: number;
   width: number[];
   top: number[];
-  /** Kanzel: Reihen (hinten → vorn), Breite (Noppen), Höhe über der Rumpfoberkante (Plattenhöhen). */
-  canopy: { fromRow: number; toRow: number; width: number; height: number } | null;
+  /**
+   * Unterkante je Reihe (Plattenhöhen über der tiefsten Rumpfunterkante); fehlt = flache Unterseite. Seit 05B.2:
+   * z. B. angehobene Bugnase.
+   */
+  bottom?: number[];
+  /**
+   * Kanzel: Reihen (hinten → vorn), Breite (Noppen), Höhe über der Rumpfoberkante (Plattenhöhen); profile =
+   * gemessene Oberkante (Plattenhöhen) je Kanzelreihe von fromRow bis toRow (Neigung, Dachverlauf).
+   */
+  canopy: { fromRow: number; toRow: number; width: number; height: number; profile?: number[] } | null;
   sources: TargetSource[];
   /** Widersprüche und bewusste Entscheidungen bei der Ableitung (z. B. „rechte Seite weicht um … ab“). */
   notes: string[];
@@ -44,6 +52,7 @@ export function checkBowTarget(t: BowTarget): string[] {
   if (t.width.length !== t.rows || t.top.length !== t.rows) e.push('Breiten- und Höhenprofil müssen je Reihe einen Wert haben');
   if (t.width.some((w) => !(w > 0) || w > 40)) e.push('Breiten müssen zwischen 0 und 40 Noppen liegen');
   if (t.top.some((h) => !(h > 0) || h > 120)) e.push('Höhen müssen zwischen 0 und 120 Plattenhöhen liegen');
+  if (t.bottom && (t.bottom.length !== t.rows || t.bottom.some((b, j) => !(b >= 0) || b >= t.top[j]))) e.push('Unterkante je Reihe muss zwischen 0 und der Oberkante liegen');
   if (t.canopy) {
     const c = t.canopy;
     if (!(c.fromRow >= 0 && c.toRow < t.rows && c.toRow - c.fromRow >= 1)) e.push('Kanzel muss mindestens zwei Reihen innerhalb des Bugs umfassen');

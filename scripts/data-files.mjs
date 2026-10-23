@@ -16,8 +16,11 @@ export const FIXED_PUBLIC_FILES = [
   'expectations/edge-cases.json',
 ];
 
-/** Private, optionale Dateien: nur vom lokalen Entwicklungsserver ausgeliefert, nie gebaut. */
-export const PRIVATE_DEV_FILES = ['catalog/rebrickable-extract.json'];
+/**
+ * Nur vom lokalen Entwicklungsserver ausgeliefert, nie gebaut: private Katalogauszüge sowie die im Repository
+ * dokumentierten, zeitgebundenen Angebotsbelege Dritter (05B.2; nicht für den öffentlichen Build bestimmt).
+ */
+export const PRIVATE_DEV_FILES = ['catalog/rebrickable-extract.json', 'procurement/evidence-05b2.json'];
 
 /** Muster, die in einem öffentlichen Build nie vorkommen dürfen. */
 export const FORBIDDEN_PATTERNS = [/(^|\/)data-raw\//, /rebrickable-extract/i, /\.csv(\.gz)?$/i, /(^|\/)\.env/];
