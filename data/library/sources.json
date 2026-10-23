@@ -10,7 +10,95 @@
       "licence": "CC BY 4.0 (siehe CAreadme.txt/CAlicense4.txt im Paket)",
       "role": "Katalogidentität (Dateiname, Titel, Kategorie, Schlüsselwörter, Umbenennungen) und Geometrie",
       "sha256": "F3E496D0EDE69CA7942FA4AA198E661EE2D22723906101E2E339D8917A4DD5F2",
-      "bytes": 146075744
+      "bytes": 146075744,
+      "tree": {
+        "prefix": "ldraw/",
+        "scope": [
+          "parts/",
+          "p/"
+        ],
+        "lower": true,
+        "sha256": "1B62B2EC66E59468387B193B313F9F91C52F2BF98F48743841A74F1D0ACCB9EA",
+        "files": 37104
+      },
+      "reconstruct": {
+        "note": "Grundstand (Webarchiv) + versionierte LDraw-Monats-Updates; Löschungen und außerhalb der Updates geänderte Dateien sind ausdrücklich aufgeführt. Ergebnis wird gegen tree.sha256 geprüft.",
+        "base": {
+          "url": "https://web.archive.org/web/20251204125900id_/https://library.ldraw.org/library/updates/complete.zip",
+          "sha256": "29B1F30801902C7B748DD7F3D56BB795BEDD1AAB3769319B3B1EEB9FD3AA7290",
+          "bytes": 138026463
+        },
+        "updates": [
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2512.zip",
+            "sha256": "ACE7A930ECE2A5B9B85C9BCA2421F85386FC61B4FE28A4790A2AB7DD0F1F3FA3",
+            "bytes": 417080,
+            "id": "2512"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2601.zip",
+            "sha256": "6B64E4DB84C622C9263529CD87ADC5B8F662264DC3DC4FDD86C130B0DD9FE0F7",
+            "bytes": 827369,
+            "id": "2601"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2602.zip",
+            "sha256": "B9BC157E59E40EE0A195040A64CA3527723D2504C8CA61674FC82168A86AA4F4",
+            "bytes": 1356521,
+            "id": "2602"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2603.zip",
+            "sha256": "710CF06B54CCE9DECA4F6DE9D8D16027E409454F2B528B4C528D0679DA6EB9E0",
+            "bytes": 624797,
+            "id": "2603"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2604.zip",
+            "sha256": "5CF5CD0099B4C804C225E6810A7813BCC41860AB34E659A57B05CBE90FFF0C01",
+            "bytes": 976048,
+            "id": "2604"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2605.zip",
+            "sha256": "57B6959F20F30A6044BFB696CE8E8BB7E93ED897FF4D589F3E975272BEC4BBD5",
+            "bytes": 723888,
+            "id": "2605"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2606.zip",
+            "sha256": "F103EB8F383C0DAD6C245C9A7C862489C2BA81DD3734478C10CF33F0A9D9BC0E",
+            "bytes": 745514,
+            "id": "2606"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2607.zip",
+            "sha256": "6A371AB46E9557FF45FEF720A071560F76342FD89A0E075CAE758BCCCD175F36",
+            "bytes": 2431911,
+            "id": "2607"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2608.zip",
+            "sha256": "D537D6A1E609F4152744D1E899FDAF632D446796873201C61467CF6A5E2060A0",
+            "bytes": 800809,
+            "id": "2608"
+          },
+          {
+            "url": "https://library.ldraw.org/library/updates/lcad2609.zip",
+            "sha256": "6A73F38E8EFA93B3268CA7DB2CD5D6783C3DFEFEE45E91E81C342F7100383053",
+            "bytes": 884425,
+            "id": "2609"
+          }
+        ],
+        "remove": [
+          "parts/s/41770s01.dat"
+        ],
+        "override": {
+          "parts/24201d00.dat": "data/library/ldraw-overrides/parts/24201d00.dat",
+          "parts/24201d01.dat": "data/library/ldraw-overrides/parts/24201d01.dat"
+        },
+        "root": "ldraw"
+      }
     },
     {
       "id": "ldcad-shadow",
@@ -23,7 +111,14 @@
       "role": "Anschlussdaten (SNAP-Metadaten je Teil und Primitiv)",
       "sha256": "EB62298A8F6AAFF1D2CA143807D588F3477B3E83F886C8581AFE960995BE663A",
       "bytes": 2176497,
-      "pinnedAt": "2026-10-23T04:45:39Z"
+      "pinnedAt": "2026-10-23T04:45:39Z",
+      "tree": {
+        "prefix": "auto",
+        "scope": [],
+        "lower": false,
+        "sha256": "326B59E6D3BFC7731B39D0DE3F70F129D9BB8AFA3BE95ED45A776853CA8C8BDE",
+        "files": 4291
+      }
     },
     {
       "id": "bricknet",
@@ -36,7 +131,14 @@
       "role": "Anschlussdaten (labels.json.xz) und Gleich-Geometrie-Zuordnungen (part_aliases.json.xz); Code wird nicht ausgeführt",
       "sha256": "7CE20B38036C8807C49D1975BDBC0920B7CD9516317A3132A0419C7227845365",
       "bytes": 586832,
-      "pinnedAt": "2026-10-23T04:45:43Z"
+      "pinnedAt": "2026-10-23T04:45:43Z",
+      "tree": {
+        "prefix": "auto",
+        "scope": [],
+        "lower": false,
+        "sha256": "EE80B944E369E548DAC20AA3B0A374E4CA4727ACAC3128B9C798CA5CAD9CD9E6",
+        "files": 28
+      }
     }
   ]
 }

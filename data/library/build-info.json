@@ -1,6 +1,6 @@
 {
  "schema": "baustein-sim/library-build@1",
- "builder": "library-import@1.0.0",
+ "builder": "library-import@1.1.0",
  "sources": {
   "ldraw": {
    "url": "https://library.ldraw.org/library/updates/complete.zip",
@@ -42,16 +42,16 @@
  },
  "outputs": {
   "connectors-bricknet.json": {
-   "sha256": "2027CDBD88B6EC3B5902975651F80C08F14D7544E7C15F207C56060250AF3073",
+   "sha256": "9776B85F7A3E4AC9C784FA2B455DAA0F9174EDAFD8DF92657C416863AF9411BD",
    "bytes": 4545241
   },
   "connectors-ldcad.json": {
-   "sha256": "D71C40D4E80D872CA3C245F51E9393E2596021DD36D598D6CE31BD805C08489F",
+   "sha256": "60F7A6103238BD7FCD4C85EE6EA5758B4E9BDFE7880C3AF4A57F67A095BBF06B",
    "bytes": 4353844
   },
   "parts.json": {
-   "sha256": "EA2A4D33041D8D4CE76D73256DFDD1F22FAB460054C96513EEECBACE129C6F35",
-   "bytes": 5763417
+   "sha256": "9266A04B1DE89C2EF9473173C9FCF24191948FB53441F6EE275A10DE3E435641",
+   "bytes": 5777803
   }
  }
 }

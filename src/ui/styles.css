@@ -475,3 +475,10 @@ button.danger { color: var(--block); }
 .libmini:hover { border-color: var(--rule); }
 .linkish { background: none; border: 0; padding: 0; color: var(--select); cursor: pointer; text-decoration: underline; }
 @media (max-width: 1100px) { .libgrid { grid-template-columns: 1fr; } .libsearch, .libdetail { border: 0; } }
+/* Teilebibliothek: Zustand der Datendateien (05C.1.1) */
+.libfilesbox summary { cursor: pointer; color: var(--ink-2); }
+.libfiles { list-style: none; margin: var(--s1) 0 var(--s2); padding: 0; font-size: 13px; display: grid; gap: 2px; }
+.libfilestate { display: inline-block; min-width: 9.5em; font-weight: 700; }
+.libfile.ok .libfilestate { color: var(--ok); }
+.libfile.missing .libfilestate { color: var(--open); }
+.libfile.corrupt .libfilestate { color: var(--block); }

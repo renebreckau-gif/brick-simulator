@@ -56,6 +56,7 @@ describe('Prüfung öffentlicher Builds (scripts/check-public-build.mjs)', () =>
     // Auftrag 05C.1: private Farbbelege der Teilebibliothek – unter ihrem Pfad und unter anderem Namen
     ['private Farbbelege der Teilebibliothek', (d) => put(d, 'data/library/private/rebrickable-colors.json', '{}'), /library\/private/],
     ['Farbbelege unter anderem Namen', (d) => put(d, 'assets/farben.json', JSON.stringify({ schema: 'baustein-sim/library-rebrickable-private@1' })), /library-rebrickable-private/],
+    ['Farbbelege (Schema @2) unter anderem Namen', (d) => put(d, 'assets/farben2.json', JSON.stringify({ schema: 'baustein-sim/library-rebrickable-private@2' })), /library-rebrickable-private@2/],
     ['Quellpaket-Zwischenspeicher', (d) => put(d, 'data-cache/ldraw/parts/3001.dat', '0'), /data-cache/],
     ['nicht freigegebene Datei unter data/',(d) => put(d, 'data/catalog/notizen.json', '{}'), /nicht freigegebene Datei/],
     ['Auszug unter anderem Namen', (d) => put(d, 'assets/katalog.json', FAKE_EXTRACT), /Katalogauszug \(Schema/],

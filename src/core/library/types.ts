@@ -40,6 +40,8 @@ export interface LibraryEntry {
   gm?: string[];
   /** Laut BrickNet geometriegleich mit (reine Umbenennung). */
   same?: string;
+  /** 1 = reine Umbenennung: Datei verweist nur auf `to`, Einheitsmatrix am Ursprung (Geometrie identisch). */
+  pure?: 1;
 }
 
 export interface PartsFile {
@@ -75,17 +77,31 @@ export interface LibraryConnector {
   axis: Vec3;
 }
 
-/** Private, nur lokal erzeugte Farbbelege (Rebrickable-Set-Inventare); nie im öffentlichen Build. */
+/** Zuordnungsgründe, die eine Identität Rebrickable ↔ LDraw belegen (Alternativen gehören nicht dazu). */
+export type IdentityReason = 'gleiche Nummer' | 'LDraw-Schlüsselwort' | 'LDraw-Umbenennung';
+
+/**
+ * Private, nur lokal erzeugte Farbbelege (Rebrickable-Set-Inventare); nie im öffentlichen Build.
+ * Regeln: scripts/library/rebrickable.py (05C.1.1).
+ */
 export interface RebrickableColorsFile {
-  schema: 'baustein-sim/library-rebrickable-private@1';
-  definition: { recentFrom: number; excludedCategories: number[]; refset: string };
+  schema: 'baustein-sim/library-rebrickable-private@2';
+  definition: { recentFrom: number; excludedCategories: number[]; identityReasons: IdentityReason[]; inventoryRule: string; weight: string; refset: string };
+  counts: { sets: number; setsRecent: number; mapped: number; ambiguous: number };
   /** Rebrickable-Farb-ID → [Name, RGB, transparent] */
   colors: Record<string, [string, string, boolean]>;
-  /** LDraw-ID → Zuordnung und Farbbelege [Farbe, Sets, Sets ab recentFrom, erstes Jahr, letztes Jahr, Element-ID vorhanden] */
-  parts: Record<string, { rb: string[]; map: string[]; colors: [number, number, number, number, number, boolean][] }>;
-  /** Referenzmenge: LDraw-ID → Anzahl Sets ab recentFrom */
+  /**
+   * LDraw-ID → belegte Identität und Farbbelege.
+   * rb: Rebrickable-Teil → Zuordnungsgründe; alternatives: nur Hinweis, keine Farbbelege.
+   * colors: [Farbe, eindeutige Sets, davon ab recentFrom, erstes Jahr, letztes Jahr, Element-ID vorhanden, Herkunft (Rebrickable-Teile)]
+   */
+  parts: Record<string, { rb: Record<string, IdentityReason[]>; alternatives: string[]; colors: [number, number, number, number, number, boolean, string[]][] }>;
+  /** Rebrickable-Teile, deren Belege auf mehrere LDraw-Teile zeigen – ohne Farbbelege. */
+  ambiguous: Record<string, string[]>;
+  /** Referenzmenge: LDraw-ID → eindeutige Sets ab recentFrom (Gewicht) */
   refset: Record<string, number>;
-  refsetUnmapped: string[];
+  /** Grundteile der Referenzmenge ohne eindeutige LDraw-Zuordnung → Gewicht */
+  refsetUnmapped: Record<string, number>;
 }
 
 export interface BuildInfo {

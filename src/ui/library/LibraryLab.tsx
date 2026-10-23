@@ -1,54 +1,64 @@
 // Bereich „Teilebibliothek“ (Auftrag 05C.1): Suche über die gesamte importierte LDraw-Bibliothek.
 // Je Teil getrennt: Katalogidentität · Geometrie · Farbbelege · Anschlüsse je Quelle · Unterstützungsgrad · Beschaffung.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { dimensions, families, FAMILY_LABEL, GEO_PROP_LABEL, geoProp, presumedUses, SEARCH_FAMILIES, type Family, type GeoProp } from '../../core/library/classify';
 import { CAT_LABEL, coverage, crosscheckWithPartMeta, ldrawSystemRefSet, rebrickableRefSet, type CoverageRow, type LayerCount } from '../../core/library/coverage';
 import { devServerFetch, loadPartGeometry } from '../../core/library/geometry';
 import { PartLibraryIndex, SUPPORT_LABEL, type Tri } from '../../core/library/library';
+import { browserLoadFetch, loadLibraryData, type FileStatus, type LoadState } from '../../core/library/load';
+import type { Catalog } from '../../core/catalog/catalog';
 import { SEARCH_TASKS, searchParts, type SearchQuery } from '../../core/library/search';
-import type { BuildInfo, ConnectorSource, ConnectorsFile, PartsFile, RebrickableColorsFile } from '../../core/library/types';
-import { EvidenceFileSchema, type EvidenceFile } from '../../core/procurement/evidence';
+import type { ConnectorSource } from '../../core/library/types';
 import { renderPartImage } from './preview';
 
 const BASE = `${import.meta.env.BASE_URL}data/`;
 
-async function getJson<T>(path: string): Promise<T | null> {
-  const r = await fetch(BASE + path);
-  if (r.status === 404 || (r.headers.get('content-type') ?? '').includes('text/html')) return null;
-  if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
-  return (await r.json()) as T;
-}
-
 interface Loaded {
   lib: PartLibraryIndex;
-  info: BuildInfo | null;
-  privateColors: boolean;
-  evidence: boolean;
+  files: FileStatus[];
 }
 
-function useLibrary(): { data: Loaded | null; error: string | null } {
+/** Lädt alle Dateien unabhängig; nur ein fehlender oder beschädigter Teile-Index verhindert die Bibliothek. */
+function useLibrary(catalog: Catalog | null): { data: Loaded | null; error: { reason: string; files: FileStatus[] } | null } {
   const [data, setData] = useState<Loaded | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ reason: string; files: FileStatus[] } | null>(null);
   useEffect(() => {
     let alive = true;
-    (async () => {
-      const [parts, ldcad, bricknet, info, colors, ev] = await Promise.all([
-        getJson<PartsFile>('library/parts.json'),
-        getJson<ConnectorsFile>('library/connectors-ldcad.json'),
-        getJson<ConnectorsFile>('library/connectors-bricknet.json'),
-        getJson<BuildInfo>('library/build-info.json'),
-        getJson<RebrickableColorsFile>('library/private/rebrickable-colors.json').catch(() => null),
-        getJson<unknown>('procurement/evidence-05b2.json').catch(() => null),
-      ]);
-      if (!parts) throw new Error('data/library/parts.json fehlt');
-      let evidence: EvidenceFile | null = null;
-      const parsed = ev ? EvidenceFileSchema.safeParse(ev) : null;
-      if (parsed?.success) evidence = parsed.data;
-      if (alive) setData({ lib: new PartLibraryIndex(parts, { ldcad, bricknet }, colors, evidence), info, privateColors: !!colors, evidence: !!evidence });
-    })().catch((e) => alive && setError(String(e instanceof Error ? e.message : e)));
+    loadLibraryData(browserLoadFetch(BASE)).then((d) => {
+      if (!alive) return;
+      const parts = d.files.find((f) => f.file === 'library/parts.json')!;
+      if (!d.parts) {
+        setError({ reason: `${parts.file}: ${parts.state} – ${parts.reason ?? ''}`, files: d.files });
+        return;
+      }
+      const colorsStatus = d.files.find((f) => f.file.endsWith('rebrickable-colors.json'))!;
+      const lib = new PartLibraryIndex(d.parts, { ldcad: d.ldcad, bricknet: d.bricknet }, {
+        colors: d.colors,
+        colorsUnavailable: colorsStatus.state === 'geladen' ? undefined : `${colorsStatus.state}${colorsStatus.reason ? ` – ${colorsStatus.reason}` : ''}`,
+        evidence: d.evidence,
+        // Prüfbarkeit kommt aus dem Prüfkern selbst (gleiche Identitätsauflösung wie bei der Modellprüfung)
+        validator: catalog ? (id) => catalog.part(id).simulation : null,
+      });
+      setData({ lib, files: d.files });
+    }).catch((e) => alive && setError({ reason: String(e instanceof Error ? e.message : e), files: [] }));
     return () => { alive = false; };
-  }, []);
+  }, [catalog]);
   return { data, error };
+}
+
+const STATE_CLASS: Record<LoadState, string> = { 'geladen': 'ok', 'fehlt': 'missing', 'beschädigt': 'corrupt', 'nicht erreichbar': 'corrupt' };
+
+function FileStates({ files }: { files: FileStatus[] }) {
+  return (
+    <ul className="libfiles">
+      {files.map((f) => (
+        <li key={f.file} className={`libfile ${STATE_CLASS[f.state]}`} title={f.reason ?? ''}>
+          <span className="libfilestate">{f.state}</span> {f.label}{f.required ? '' : ' (optional)'}
+          {f.state !== 'geladen' && <span className="muted small"> – <span className="code">data/{f.file}</span>: {f.reason}</span>}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 // ---------------------------------------------------------------- Geometrie bei Bedarf
@@ -92,14 +102,18 @@ function PartImage({ id, size, azimuth, label }: { id: string; size: number; azi
 // ---------------------------------------------------------------- Kleine Bausteine
 const TRI_LABEL: Record<Tri, string> = { ja: 'ja', nein: 'nein', unbekannt: 'unbekannt', widerspruch: 'widersprüchlich' };
 const TriBadge = ({ v }: { v: Tri }) => <span className={`tri tri-${v}`}>{TRI_LABEL[v]}</span>;
-const pct = (c: LayerCount) => `${c.n} / ${c.of} (${((100 * c.n) / Math.max(c.of, 1)).toFixed(1)} %)${c.weighted != null ? ` · gewichtet ${(100 * c.weighted).toFixed(1)} %` : ''}`;
+const share = (n: number, of: number) => `${((100 * n) / Math.max(of, 1)).toFixed(1).replace('.', ',')} %`;
+const wshare = (v?: number) => (v == null ? '' : ` · gew. ${(100 * v).toFixed(1).replace('.', ',')} %`);
+/** Gesamtbestand (einschließlich ohne Zuordnung) und zugeordneter Bestand getrennt. */
+const pctTotal = (c: LayerCount) => `${c.n} / ${c.total} (${share(c.n, c.total)})${wshare(c.weightedTotal)}`;
+const pctMapped = (c: LayerCount) => `${c.n} / ${c.mapped} (${share(c.n, c.mapped)})${wshare(c.weightedMapped)}`;
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, ''));
 const PROPS: GeoProp[] = ['geneigt', 'eckneigung', 'gekruemmt', 'runde_wand', 'schraege_kante', 'glatte_oberseite', 'noppen_seitlich', 'aufnahme_seitlich', 'transparent_belegt'];
 const SOURCES: { id: ConnectorSource; label: string }[] = [{ id: 'ldcad', label: 'LDCad Shadow Library' }, { id: 'bricknet', label: 'BrickNet v1' }];
 
 // ---------------------------------------------------------------- Hauptkomponente
-export function LibraryLab() {
-  const { data, error } = useLibrary();
+export function LibraryLab({ catalog }: { catalog: Catalog | null }) {
+  const { data, error } = useLibrary(catalog);
   const [view, setView] = useState<'suche' | 'abdeckung'>('suche');
   const [text, setText] = useState('');
   const [fams, setFams] = useState<Family[]>([]);
@@ -111,7 +125,7 @@ export function LibraryLab() {
   const query: SearchQuery = useMemo(() => ({ text, families: fams, props, maxStuds: maxStuds ? Number(maxStuds) : undefined, limit: 120 }), [text, fams, props, maxStuds]);
   const result = useMemo(() => (data ? searchParts(data.lib, query) : null), [data, query]);
 
-  if (error) return <div className="fatal">Teilebibliothek konnte nicht geladen werden: {error}</div>;
+  if (error) return <div className="fatal">Teilebibliothek konnte nicht geladen werden: {error.reason}<FileStates files={error.files} /></div>;
   if (!data || !result) return <div className="loading">Lade Teilebibliothek (Katalogindex und Anschlussdaten, ca. 16 MB) …</div>;
   const lib = data.lib;
 
@@ -132,8 +146,14 @@ export function LibraryLab() {
           <h2>Teilebibliothek</h2>
           <p className="muted small">
             LDraw {lib.partsFile.source.release ?? '?'} · {Object.keys(lib.parts).length.toLocaleString('de-DE')} Dateien · Anschlüsse: LDCad {lib.sourceInfo('ldcad')?.commit.slice(0, 7) ?? 'fehlt'}, BrickNet {lib.sourceInfo('bricknet')?.commit.slice(0, 7) ?? 'fehlt'} ·
-            Farbbelege {data.privateColors ? 'lokal geladen (privat)' : 'nicht geladen'} · Beschaffungsbelege {data.evidence ? 'geladen (05B.2)' : 'nicht geladen'}
+            Prüfkern {lib.validatorAvailable ? 'angebunden' : 'nicht angebunden – keine Aussage „prüfbar“'}
           </p>
+          <details className="libfilesbox" open={data.files.some((f) => f.state === 'beschädigt' || f.state === 'nicht erreichbar')}>
+            <summary className="small">
+              Daten: {(['geladen', 'fehlt', 'beschädigt', 'nicht erreichbar'] as LoadState[]).map((s) => [s, data.files.filter((f) => f.state === s).length] as const).filter(([, n]) => n).map(([s, n]) => `${n} ${s}`).join(' · ')}
+            </summary>
+            <FileStates files={data.files} />
+          </details>
         </div>
         <div className="libviews" role="tablist">
           <button role="tab" aria-selected={view === 'suche'} className={view === 'suche' ? 'tab active' : 'tab'} onClick={() => setView('suche')}>Suche</button>
@@ -164,7 +184,7 @@ export function LibraryLab() {
               <legend>Eigenschaften <span className="muted">(gemessen bzw. aus Anschlussdaten; nur „ja“ erfüllt)</span></legend>
               {PROPS.map((p) => (
                 <label key={p} className="libcheck" title={GEO_PROP_LABEL[p].basis}>
-                  <input type="checkbox" checked={props.includes(p)} onChange={() => { setProps(toggle(props, p)); setTask(null); }} disabled={p === 'transparent_belegt' && !data.privateColors} />
+                  <input type="checkbox" checked={props.includes(p)} onChange={() => { setProps(toggle(props, p)); setTask(null); }} disabled={p === 'transparent_belegt' && !lib.colors} />
                   {GEO_PROP_LABEL[p].label}
                 </label>
               ))}
@@ -240,7 +260,10 @@ function PartDetail({ lib, id }: { lib: PartLibraryIndex; id: string }) {
         {pointing.length ? <><dt>Alte Nummern / Aliase</dt><dd>{pointing.join(', ')}</dd></> : null}
         {same.length ? <><dt>Geometriegleich (BrickNet)</dt><dd>{same.join(', ')}</dd></> : null}
         <dt>Druckvarianten</dt><dd>{prints ? `${prints} eigene LDraw-Dateien (eigene Geometrie, nicht zusammengelegt)` : 'keine'}</dd>
-        <dt>Rebrickable</dt><dd>{colors.state === 'belegt' ? `${colors.rebrickable.join(', ')} – ${colors.mapping.join('; ')}` : colors.state === 'nicht-geladen' ? 'nicht geladen (private Daten fehlen)' : 'keine Zuordnung gefunden'}</dd>
+        <dt>Rebrickable</dt><dd>{colors.state === 'belegt'
+          ? Object.entries(colors.rebrickable).map(([rb, why]) => `${rb} (${why.join(', ')})`).join('; ')
+          : colors.state === 'nicht-geladen' ? `Farbbelege ${colors.reason}` : colors.ambiguous.length ? `mehrdeutig: ${colors.ambiguous.join(', ')} – keine Farbbelege` : 'keine eindeutige Zuordnung'}</dd>
+        {colors.state === 'belegt' && colors.alternatives.length > 0 && <><dt>Alternativen</dt><dd>{colors.alternatives.join(', ')} <span className="muted small">(Rebrickable-Beziehung; deren Farben sind kein Beleg für dieses Teil)</span></dd></>}
       </dl>
 
       <h4>Geometrie</h4>
@@ -275,18 +298,19 @@ function PartDetail({ lib, id }: { lib: PartLibraryIndex; id: string }) {
       <h4>Farbbelege</h4>
       {colors.state === 'belegt' ? (
         <table className="libtable">
-          <thead><tr><th>Farbe (Rebrickable)</th><th>Sets</th><th>ab {lib.colors?.definition.recentFrom}</th><th>Jahre</th><th>Element-ID</th></tr></thead>
+          <thead><tr><th>Farbe (Rebrickable)</th><th>Sets</th><th>ab {lib.colors?.definition.recentFrom}</th><th>Jahre</th><th>Element-ID</th><th>Herkunft</th></tr></thead>
           <tbody>
             {colors.colors.sort((a, b) => b.setsRecent - a.setsRecent || b.sets - a.sets).map((c) => (
               <tr key={c.rebrickableColor}>
                 <td><span className="swatch" style={{ background: `#${c.rgb}` }} /> {c.name}{c.transparent ? ' (transparent)' : ''} <span className="muted">#{c.rebrickableColor}</span></td>
                 <td>{c.sets}</td><td>{c.setsRecent}</td><td>{c.years[0]}–{c.years[1]}</td><td>{c.elementId ? 'ja' : 'unbekannt'}</td>
+                <td className="small">{c.sources.map((rb) => `${rb}: ${colors.rebrickable[rb]?.join(', ') ?? '?'}`).join('; ')}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      ) : <p className="muted">{colors.state === 'nicht-geladen' ? 'Nicht geladen: Farbbelege stammen aus lokalen Rebrickable-Daten (npm run library:import mit data-raw/rebrickable/). Ohne Beleg gilt keine Farbe als belegt.' : 'Keine Zuordnung zu Rebrickable – keine Farbe belegt.'}</p>}
-      <p className="hint">Ein Farbbeleg zeigt, dass die Kombination in einem Set-Inventar vorkam – nicht, dass sie heute erhältlich ist.</p>
+      ) : <p className="muted">{colors.state === 'nicht-geladen' ? `Farbbelege ${colors.reason}. Sie stammen aus lokalen Rebrickable-Daten (npm run library:import mit data-raw/rebrickable/). Ohne Beleg gilt keine Farbe als belegt.` : 'Keine eindeutige Zuordnung zu Rebrickable – keine Farbe belegt.'}</p>}
+      <p className="hint">Ein Farbbeleg zeigt, dass die Kombination in einem Set-Inventar vorkam (je Set die neueste Inventarversion) – nicht, dass sie heute erhältlich ist. Kaufverfügbarkeit steht ausschließlich unter „Beschaffung“.</p>
 
       <h4>Anschlüsse</h4>
       {SOURCES.map((s) => {
@@ -334,16 +358,25 @@ function CoverageView({ lib, onPick }: { lib: PartLibraryIndex; onPick: (id: str
   }, [lib]);
   const cross = useMemo(() => crosscheckWithPartMeta(lib), [lib]);
   const tasks = useMemo(() => SEARCH_TASKS.map((t) => ({ t, r: searchParts(lib, { ...t.query, limit: 8 }) })), [lib]);
-  const layers: [keyof CoverageRow, string][] = [
+  const layers: [Exclude<keyof CoverageRow, 'refset'>, string][] = [
     ['catalog', 'Katalog (LDraw-Datei zugeordnet)'], ['geometry', 'Geometrie vollständig'], ['ldcad', 'Anschlüsse LDCad'], ['bricknet', 'Anschlüsse BrickNet'],
     ['anyConnectors', 'Anschlüsse aus mindestens einer Quelle'], ['bothConnectors', 'Anschlüsse aus beiden Quellen'], ['bothAgree', 'beide Quellen einig (Noppen oben, Aufnahmen unten)'], ['checkable', 'Verbindungen bereits prüfbar (Prüfkern)'],
   ];
   return (
     <div className="libcov">
-      <p className="small">Zählbasis ist je Zeile eine definierte Referenzmenge; Unterteile, Primitive, Drucke, Umbenennungen und Aliase zählen nicht mit. „Gewichtet“ = nach Anzahl der Sets.</p>
+      <p className="small">Zählbasis ist je Spalte eine definierte Referenzmenge; Unterteile, Primitive, Drucke, Umbenennungen und Aliase zählen nicht mit. „Gesamtbestand“ schließt Teile ohne eindeutige LDraw-Zuordnung ein (sie gelten dort als nicht abgedeckt); „zugeordnet“ bezieht sich nur auf zugeordnete Teile. „gew.“ = gewichtet nach Anzahl eindeutiger Sets.</p>
       <table className="libtable">
-        <thead><tr><th>Ebene</th>{rows.map((r) => <th key={r.refset.id} title={r.refset.definition}>{r.refset.label} ({r.refset.size}{r.refset.unmapped ? ` + ${r.refset.unmapped} ohne LDraw` : ''})</th>)}</tr></thead>
-        <tbody>{layers.map(([k, label]) => <tr key={k}><th>{label}</th>{rows.map((r) => <td key={r.refset.id}>{pct(r[k] as LayerCount)}</td>)}</tr>)}</tbody>
+        <thead>
+          <tr><th rowSpan={2}>Ebene</th>{rows.map((r) => <th key={r.refset.id} colSpan={2} title={r.refset.definition}>{r.refset.label}: {r.refset.size} zugeordnet{r.refset.unmapped ? ` + ${r.refset.unmapped} ohne eindeutige Zuordnung` : ''}</th>)}</tr>
+          <tr>{rows.map((r) => <Fragment key={r.refset.id}><th>am Gesamtbestand</th><th>innerhalb zugeordnet</th></Fragment>)}</tr>
+        </thead>
+        <tbody>{layers.map(([k, label]) => (
+          <tr key={k}><th>{label}</th>{rows.map((r) => {
+            const c = r[k];
+            if (!c) return <td key={r.refset.id} colSpan={2} className="muted">Prüfkern nicht angebunden – keine Aussage</td>;
+            return <Fragment key={r.refset.id}><td>{pctTotal(c)}</td><td>{k === 'catalog' ? '–' : pctMapped(c)}</td></Fragment>;
+          })}</tr>
+        ))}</tbody>
       </table>
       {rows.length < 2 && <p className="hint">Die Referenzmenge „in aktuellen Sets verwendete Teile“ braucht die lokalen Rebrickable-Daten und fehlt daher hier.</p>}
 

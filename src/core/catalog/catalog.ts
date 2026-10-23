@@ -8,7 +8,8 @@
 // es werden keine Ersatzdaten erzeugt. Geometrie und eigene Anschlussregeln wirken unabhängig davon.
 import { normalizeColorName, type LdColor } from '../ldraw/colors';
 import type { PartLibrary } from '../ldraw/library';
-import { partMeta, unsupportedMetaFromBBox, PART_META_VERSION, type PartMeta, type SupportLevel } from '../connectivity/partMeta';
+import { unsupportedMetaFromBBox, PART_META_VERSION, type PartMeta, type SupportLevel } from '../connectivity/partMeta';
+import { pureRenameTarget, resolvePartMeta } from '../connectivity/identity';
 
 export interface IdMapEntry {
   ldraw: string;
@@ -161,7 +162,8 @@ export class Catalog {
     const map = this.idMap.parts.find((p) => p.ldraw.toLowerCase() === ldrawId);
     const rb = map && this.available ? this.extract!.parts[map.rebrickable] : undefined;
     const header = this.library.header(`${ldrawId}.dat`);
-    let meta = partMeta(ldrawId) ?? null;
+    // Gemeinsame, belegte Identitätsauflösung (05C.1.1): z. B. 3023b über die reine Umbenennung 3023.dat → 3023b.dat
+    let meta = resolvePartMeta(ldrawId, (k) => pureRenameTarget(this.library.header(`${k}.dat`)))?.meta ?? null;
     if (!meta && header) {
       const flat = this.library.flatten(`${ldrawId}.dat`);
       const family = ldrawId === '59900' ? 'cone' : ldrawId === '30374' ? 'bar' : 'brick';

@@ -24,12 +24,28 @@ import re
 import sys
 from collections import Counter, defaultdict
 
+import importlib.util
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load(name):  # Geschwistermodule laden (python -I nimmt den Skriptordner nicht in sys.path auf)
+    spec = importlib.util.spec_from_file_location('library_' + name, os.path.join(HERE, name + '.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+common = _load('common')
+rebrickable_mod = _load('rebrickable')
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-CACHE = os.path.join(ROOT, 'data-cache')
+# Quellpakete: data-cache/ oder ein eigener Ort (z. B. außerhalb eines synchronisierten Ordners) per LIBRARY_CACHE
+CACHE = os.environ.get('LIBRARY_CACHE') or os.path.join(ROOT, 'data-cache')
 OUT = os.path.join(ROOT, 'data', 'library')
 PRIVATE = os.path.join(OUT, 'private')
 RAW_RB = os.path.join(ROOT, 'data-raw', 'rebrickable')
-BUILDER = 'library-import@1.0.0'
+BUILDER = 'library-import@1.1.0'
 
 
 def load_registry():
@@ -38,14 +54,19 @@ def load_registry():
 
 
 def source_root(src):
+    """Wurzel des entpackten Quellstands – erst nach Prüfung des Inhalts-Prüfwerts (nicht nur der Markierung)."""
     marker = os.path.join(CACHE, src['id'], '.fetched.json')
     if not os.path.exists(marker):
         raise SystemExit(f"Quelle {src['id']} fehlt in data-cache/. Zuerst: npm run library:fetch")
     with open(marker, encoding='utf8') as fh:
         m = json.load(fh)
-    if m.get('sha256') != src.get('sha256'):
-        raise SystemExit(f"Quelle {src['id']} in data-cache/ passt nicht zum Quellenregister. Zuerst: npm run library:fetch")
-    return os.path.join(CACHE, src['id'], m['root'])
+    root = os.path.join(CACHE, src['id'], m['root'])
+    t = src['tree']
+    digest = common.tree_digest(common.tree_of_dir(root, t.get('scope', []), t.get('lower', False)))
+    if digest != t['sha256']:
+        raise SystemExit(f"Quelle {src['id']} in data-cache/ weicht vom festgelegten Stand ab ({digest[:12]}… statt "
+                         f"{t['sha256'][:12]}…). Zuerst: npm run library:fetch")
+    return root
 
 
 def read_lines(path):
@@ -87,8 +108,11 @@ SHADOW_DIRS = ['parts', 'parts/s', 'p', 'p/48', 'p/8']
 
 
 # ---------------------------------------------------------------- Matrizen (3x3 + Translation)
+# Plattformunabhängig (05C.1.1): nur IEEE-Grundrechenarten und sqrt (beide überall korrekt gerundet), feste
+# Reihenfolge. Kein sum() über Gleitkommazahlen (seit Python 3.12 kompensierte Summation, also versionsabhängig) und
+# keine Winkel-/Kreisfunktionen (atan2, sin, cos sind nicht korrekt gerundet und hängen von der C-Bibliothek ab).
 def mat_mul(a, b):
-    return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+    return [[a[i][0] * b[0][j] + a[i][1] * b[1][j] + a[i][2] * b[2][j] for j in range(3)] for i in range(3)]
 
 
 def mat_vec(a, v):
@@ -330,11 +354,25 @@ class GeometryStats:
         return res
 
 
+SIN_3_DEG = 0.052335956242943835   # sin(3°), als Literal festgelegt
+TAN_22_5_DEG = 0.41421356237309503  # tan(22,5°) = √2 − 1
+
+
+def octant(x, z):
+    """Himmelsrichtung von (x, z) in 45°-Stufen (0 = +z, 2 = +x, 4 = −z, 6 = −x) ohne Winkelfunktionen."""
+    ax, az = abs(x), abs(z)
+    if ax <= TAN_22_5_DEG * az:
+        return 0 if z > 0 else 4
+    if az <= TAN_22_5_DEG * ax:
+        return 2 if x > 0 else 6
+    return {(True, True): 1, (True, False): 3, (False, False): 5, (False, True): 7}[(x > 0, z > 0)]
+
+
 def shape_features(areas, bmin, bmax):
     """Kennwerte aus dem Flächenrichtungs-Histogramm (Anteile an der Körperoberfläche, Anschlüsse ausgenommen).
     h: waagrecht · va: senkrecht achsparallel · ov: senkrecht schräg (eben) · i: geneigt eben · cv: gekrümmt (viele kleine Richtungen)
     sd: Richtungen (Azimut in 45°-Stufen) großer geneigter Flächen – zwei verschiedene = Eck-Neigung."""
-    total = sum(v[0] for v in areas.values())
+    total = math.fsum(v[0] for v in areas.values())  # exakt gerundet, unabhängig von Reihenfolge und Version
     if total <= 0:
         return None
     buckets = {}
@@ -360,8 +398,12 @@ def shape_features(areas, bmin, bmax):
             else:
                 f['in'] += share  # schräg/gekrümmt, aber innenliegend (Röhren, Rippen, Hohlräume)
 
-    def az180(b):
-        return math.degrees(math.atan2(b[0], b[2])) % 180.0
+    def same_azimuth(a, b):
+        # Himmelsrichtungen (Projektion auf x/z) bis auf 180° gleich, Abweichung < 3°: |sin| < sin 3°
+        cross = a[0] * b[2] - a[2] * b[0]
+        na = math.sqrt(a[0] * a[0] + a[2] * a[2])
+        nb = math.sqrt(b[0] * b[0] + b[2] * b[2])
+        return na > 0 and nb > 0 and abs(cross) < SIN_3_DEG * na * nb
 
     for b in oblique:
         x, y, z, share = b
@@ -369,7 +411,7 @@ def shape_features(areas, bmin, bmax):
         # Himmelsrichtung mit wechselnder Neigung (Bögen, gewölbte Schrägen). Ebene Schrägen bilden keinen Fächer.
         same_level = sum(1 for o in oblique if o is not b and abs(abs(o[1]) - abs(y)) < 0.03)
         same_az = sum(1 for o in oblique if o is not b and abs(abs(o[1]) - abs(y)) >= 0.03
-                      and min(abs(az180(o) - az180(b)), 180 - abs(az180(o) - az180(b))) < 3)
+                      and same_azimuth(o, b))
         if same_level >= 4 or same_az >= 3:
             f['cv'] += share
             if abs(y) < 0.03:
@@ -379,7 +421,7 @@ def shape_features(areas, bmin, bmax):
         else:
             f['i'] += share
             if share >= 0.04:
-                sd.add(int(round(math.degrees(math.atan2(x, z)) / 45.0)) % 8)
+                sd.add(octant(x, z))
     out = {k: r2(v, 3) for k, v in sorted(f.items()) if v >= 0.0005}
     if sd:
         out['sd'] = sorted(sd)
@@ -421,7 +463,7 @@ def cyl_class(gender, secs):
     if not shapes:
         return 'other'
     radii = {s[1] for s in shapes}
-    length = sum(s[2] for s in shapes)
+    length = math.fsum(s[2] for s in shapes)
     if any(s[0] == 'A' for s in shapes):
         return 'axle' if gender == 'M' else 'axlehole'
     if gender == 'M':
@@ -524,7 +566,7 @@ class Shadow:
         R, t = M
         p = mat_vec(R, c[3])
         a = mat_vec(R, c[4])
-        n = math.sqrt(sum(x * x for x in a)) or 1.0
+        n = math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) or 1.0
         return (c[0], c[1], c[2], [p[k] + t[k] for k in range(3)], [x / n for x in a])
 
 
@@ -546,10 +588,19 @@ BN_CLASS = {('stud', 'stud'): 'stud', ('stud', 'open'): 'stud', ('hole', 'hole')
             ('axle', 'pin'): 'pin', ('axle', 'cross'): 'axlehole', ('axle', 'axle'): 'axle'}
 
 
+def sincos(deg):
+    """Vielfache von 90° exakt (unabhängig von der C-Bibliothek), sonst math.sin/cos (Ergebnis wird auf 0,01 gerundet)."""
+    q, r = divmod(float(deg), 90.0)
+    if r == 0:
+        return [(0.0, 1.0), (1.0, 0.0), (0.0, -1.0), (-1.0, 0.0)][int(q) % 4]
+    rad = math.radians(deg)
+    return math.sin(rad), math.cos(rad)
+
+
 def bn_axis(pitch, roll, yaw=0.0):
-    sx, cx = math.sin(math.radians(pitch)), math.cos(math.radians(pitch))
-    sz, cz = math.sin(math.radians(roll)), math.cos(math.radians(roll))
-    sy, cy = math.sin(math.radians(yaw)), math.cos(math.radians(yaw))
+    sx, cx = sincos(pitch)
+    sz, cz = sincos(roll)
+    sy, cy = sincos(yaw)
     col1 = [-cy * sz + sy * sx * cz, cx * cz, sy * sz + cy * sx * cz]  # Rahmen-y (data.py von BrickNet)
     return [-col1[0], -col1[1], -col1[2]]  # Steckachse = −y des Rahmens
 
@@ -569,111 +620,11 @@ def bricknet_rows(kinds):
 
 
 # ---------------------------------------------------------------- Rebrickable (privat, optional)
-# Ausgeschlossen: Duplo/Technic-Mechanik/Minifiguren/Figuren und Tiere/Sticker/Fremdsysteme sowie biegsame Teile (Schläuche, Schnüre)
-SYSTEM_EXCLUDED_CATS = {4, 12, 13, 17, 22, 25, 26, 27, 28, 30, 31, 40, 41, 42, 43, 45, 46, 48, 50, 51, 52, 53, 54, 55, 56,
-                        57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 70, 71, 72, 73, 75, 77, 78}
-RB_PRINT_RE = re.compile(r'^(.+?)(?:pat\d+)?(?:pr\d+)?$')
-RECENT_FROM = 2016
-
-
 def rebrickable(index):
+    """Farbbelege und Referenzmenge (Regeln in rebrickable.py); None, wenn keine lokalen Dumps vorliegen."""
     if not os.path.isdir(RAW_RB):
         return None
-    def rows(name):
-        with open(os.path.join(RAW_RB, name), encoding='utf8', newline='') as fh:
-            yield from csv.DictReader(fh)
-    colors = {int(r['id']): [r['name'], r['rgb'], r['is_trans'] in ('t', 'True', 'true')] for r in rows('colors.csv')}
-    parts = {r['part_num']: (r['name'], int(r['part_cat_id'])) for r in rows('parts.csv')}
-    print_parent = {}
-    alt = defaultdict(set)
-    for r in rows('part_relationships.csv'):
-        if r['rel_type'] == 'P':
-            print_parent[r['child_part_num']] = r['parent_part_num']
-        elif r['rel_type'] in ('A', 'M'):
-            alt[r['child_part_num']].add(r['parent_part_num'])
-            alt[r['parent_part_num']].add(r['child_part_num'])
-    set_year = {r['set_num']: int(r['year']) for r in rows('sets.csv')}
-    inv_year = {r['id']: set_year.get(r['set_num']) for r in rows('inventories.csv')}
-    elements = set()
-    for r in rows('elements.csv'):
-        elements.add((r['part_num'], int(r['color_id'])))
-
-    def to_ldraw(pn):
-        if pn in index:
-            e = index[pn]
-            if e['ty'] == 'moved' and e.get('to') in index:
-                return e['to'], 'LDraw-Umbenennung'
-            return pn, 'gleiche Nummer'
-        for a in sorted(alt.get(pn, ())):
-            if a in index and index[a]['ty'] in ('part', 'shortcut'):
-                return a, 'Rebrickable-Beziehung (alternative Form/Nummer)'
-        return None, None
-
-    use = defaultdict(lambda: defaultdict(lambda: [0, 0, 9999, 0]))  # rb-part -> color -> [Sets, Sets ab 2016, erstes, letztes Jahr]
-    seen = set()
-    for r in rows('inventory_parts.csv'):
-        if r['is_spare'] in ('True', 't', 'true'):
-            continue
-        y = inv_year.get(r['inventory_id'])
-        if y is None:
-            continue
-        key = (r['inventory_id'], r['part_num'], r['color_id'])
-        if key in seen:
-            continue
-        seen.add(key)
-        u = use[r['part_num']][int(r['color_id'])]
-        u[0] += 1
-        u[1] += 1 if y >= RECENT_FROM else 0
-        u[2] = min(u[2], y)
-        u[3] = max(u[3], y)
-
-    by_ldraw = {}
-    unmapped_ref = []
-    refset = defaultdict(int)  # LDraw-ID -> Sets ab 2016 (Drucke auf das Grundteil gefaltet)
-    def base_of(pn):
-        if pn in print_parent:
-            return print_parent[pn]
-        m = RB_PRINT_RE.match(pn)  # Rebrickable-Druck-/Musternummern ohne P-Beziehung (…pr0001, …pat0002)
-        return m.group(1) if m and m.group(1) != pn and m.group(1) in parts else pn
-
-    for pn, cols in use.items():
-        base_pn = base_of(pn)
-        cat = parts.get(base_pn, ('', 0))[1]
-        recent = sum(c[1] for c in cols.values())
-        ld, how = to_ldraw(pn)
-        if ld:
-            e = by_ldraw.setdefault(ld, {'rb': set(), 'm': set(), 'c': {}})
-            e['rb'].add(pn)
-            e['m'].add(how)
-            for col, (n, nr, y0, y1) in cols.items():
-                c = e['c'].setdefault(col, [0, 0, 9999, 0, False])
-                c[0] += n
-                c[1] += nr
-                c[2] = min(c[2], y0)
-                c[3] = max(c[3], y1)
-                c[4] = c[4] or (pn, col) in elements
-        if recent and cat not in SYSTEM_EXCLUDED_CATS:
-            ld_base, _ = to_ldraw(base_pn)
-            if ld_base:
-                refset[ld_base] += recent
-            else:
-                unmapped_ref.append(base_pn)
-    out = {
-        'schema': 'baustein-sim/library-rebrickable-private@1',
-        'note': 'NUR LOKAL. Abgeleitet aus Rebrickable-CSV-Dumps (Weitergabe ungeklärt). Nicht versionieren, nicht veröffentlichen.',
-        'definition': {
-            'recentFrom': RECENT_FROM,
-            'excludedCategories': sorted(SYSTEM_EXCLUDED_CATS),
-            'refset': 'Teile aus Set-Inventaren (ohne Ersatzteile) von Sets ab %d, Drucke auf das Grundteil gefaltet, ohne Minifiguren-, Duplo-, Technic-Mechanik-, Sticker- und Fremdsystem-Kategorien' % RECENT_FROM,
-        },
-        'colors': {str(k): v for k, v in sorted(colors.items())},
-        'parts': {ld: {'rb': sorted(e['rb']), 'map': sorted(e['m']),
-                       'colors': [[col] + v[:4] + [v[4]] for col, v in sorted(e['c'].items())]}
-                  for ld, e in sorted(by_ldraw.items())},
-        'refset': {k: v for k, v in sorted(refset.items())},
-        'refsetUnmapped': sorted(set(unmapped_ref)),
-    }
-    return out
+    return rebrickable_mod.build(RAW_RB, index)
 
 
 def with_type_table(parts_rows):
@@ -775,6 +726,15 @@ def main():
                 if len(tok) >= 15 and tok[0] == '1':
                     e['to'] = ' '.join(tok[14:]).lower().replace('.dat', '')
                     break
+    # Reine Umbenennung (05C.1.1): Die Datei besteht nur aus genau einem Verweis auf das Ziel, Einheitsmatrix am
+    # Ursprung – dann ist die Geometrie identisch. Gleiche Regel wie src/core/connectivity/identity.ts.
+    for stem, e in index.items():
+        if e['ty'] in ('moved', 'alias') and e.get('to'):
+            refs = [l.split() for l in read_lines(os.path.join(parts_dir, stem + '.dat')) if l.split()[:1] in (['1'], ['2'], ['3'], ['4'], ['5'])]
+            if len(refs) == 1 and len(refs[0]) >= 15 and refs[0][0] == '1' \
+                    and [float(x) for x in refs[0][2:14]] == [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] \
+                    and ' '.join(refs[0][14:]).lower() == e['to'] + '.dat':
+                e['pure'] = 1
     print('LDraw:', len(index), 'Dateien in parts/,', Counter(e['ty'] for e in index.values()).most_common())
 
     # LDCad-Anschlüsse: Teile und Kurzformen ohne Druck
@@ -814,7 +774,7 @@ def main():
         'fields': {'t': 'Titel', 'ty': 'part|shortcut|print|alias|moved|hidden|other', 'to': 'Ziel bei Umbenennung/Alias', 'pr': 'Grundteil eines Druck-/Aufkleberteils',
                    'c': 'LDraw-Kategorie', 'k': 'LDraw-Schlüsselwörter', 'lic': 'Lizenz', 'u': 'LDraw-Update', 'bb': 'Körper-Hüllquader [min xyz, max xyz] in LDU ohne Anschluss-Primitive',
                    'bbx': '0 = Hüllquader genähert (schief gedrehte Unterdateien, höchstens leicht zu klein)', 'f': 'Flächenanteile h/va/ov/i/cv(cvv) und Neigungsrichtungen sd', 'gm': 'fehlende Unterdateien (Geometrie unvollständig)',
-                   'same': 'laut BrickNet geometriegleich mit'},
+                   'same': 'laut BrickNet geometriegleich mit', 'pure': '1 = reine Umbenennung (genau ein Verweis auf to, Einheitsmatrix)'},
         'parts': index}, compact_rows=True)
     row_doc = ['Typ-Index', 'x', 'y', 'z', 'Achse x', 'Achse y', 'Achse z']
     types, rows = with_type_table(ldcad)
@@ -831,7 +791,7 @@ def main():
     rb = rebrickable(index)
     if rb:
         h = dump(os.path.join(PRIVATE, 'rebrickable-colors.json'), rb)
-        print('Rebrickable (privat): Farbbelege für', len(rb['parts']), 'LDraw-Teile; Referenzmenge', len(rb['refset']), '(+', len(rb['refsetUnmapped']), 'ohne LDraw-Zuordnung)')
+        print('Rebrickable (privat): Farbbelege für', len(rb['parts']), 'LDraw-Teile; Referenzmenge', len(rb['refset']), '(+', len(rb['refsetUnmapped']), 'ohne LDraw-Zuordnung);', rb['counts']['ambiguous'], 'mehrdeutig')
     else:
         print('Rebrickable: data-raw/rebrickable/ fehlt – keine Farbbelege (öffentlicher Stand).')
 
@@ -852,5 +812,8 @@ def main():
 
 
 if __name__ == '__main__':
+    # Ausgabe immer UTF-8 (Windows-Konsole/Umleitung nutzt sonst cp1252 und bricht bei Umlauten/Pfeilen ab)
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
     sys.setrecursionlimit(10000)
     main()

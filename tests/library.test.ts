@@ -1,11 +1,11 @@
 // Teilebibliothek (05C.1): Herkunft, Trennung der Angaben, dreiwertige Eigenschaften, Suche, Abdeckung, Abgleich.
-// Läuft ausschließlich auf versionierten Daten (frischer Checkout); private Farbbelege nur, wenn lokal vorhanden.
+// Läuft ausschließlich auf versionierten Daten (frischer Checkout). Echte private Farbbelege: tests-rebrickable/library.test.ts.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { families, geoProp } from '../src/core/library/classify';
-import { coverage, crosscheckWithPartMeta, ldrawSystemRefSet, rebrickableRefSet, sourcesAgree } from '../src/core/library/coverage';
+import { coverage, crosscheckWithPartMeta, ldrawSystemRefSet, sourcesAgree } from '../src/core/library/coverage';
 import { loadPartGeometry } from '../src/core/library/geometry';
 import { PartLibraryIndex } from '../src/core/library/library';
 import { SEARCH_TASKS, searchParts } from '../src/core/library/search';
@@ -13,7 +13,7 @@ import type { BuildInfo, PartsFile } from '../src/core/library/types';
 import { definedPartIds } from '../src/core/connectivity/partMeta';
 import { LIB_DIR, loadLibrary } from './library-helpers';
 
-const { pub, priv } = loadLibrary();
+const { pub } = await loadLibrary();
 const sha = (f: string) => createHash('sha256').update(readFileSync(join(LIB_DIR, f))).digest('hex').toUpperCase();
 
 describe('Herkunft und Reproduzierbarkeit', () => {
@@ -61,17 +61,11 @@ describe('Katalogidentität', () => {
 
 describe('Geometrie, Farbe und Verfügbarkeit bleiben getrennt', () => {
   it('ohne private Farbbelege ist keine Farbe belegt und „transparent“ unbekannt', () => {
-    expect(pub.colorEvidence('3001')).toEqual({ state: 'nicht-geladen' });
+    expect(pub.colorEvidence('3001')).toEqual({ state: 'nicht-geladen', reason: 'nicht geladen' });
     expect(geoProp(pub, '3001', 'transparent_belegt')).toBe('unbekannt');
   });
   it('ohne Beschaffungsbeleg gibt es kein Angebot', () => {
     expect(pub.procurement('3001')).toEqual([]);
-  });
-  it.runIf(!!priv)('mit lokalen Farbbelegen: 3001 in Rot belegt, Glas 60601 transparent', () => {
-    const c = priv!.colorEvidence('3001');
-    expect(c.state).toBe('belegt');
-    if (c.state === 'belegt') expect(c.colors.some((x) => x.name === 'Red' && x.sets > 0)).toBe(true);
-    expect(geoProp(priv!, '60601', 'transparent_belegt')).toBe('ja');
   });
 });
 
@@ -141,14 +135,10 @@ describe('Abdeckung und Abgleich', () => {
     const ref = ldrawSystemRefSet(pub);
     expect(ref.ids.every((id) => pub.entry(id)!.ty === 'part')).toBe(true);
     const row = coverage(pub, ref);
-    expect(row.geometry.n).toBeLessThanOrEqual(row.geometry.of);
-    expect(row.checkable.n).toBeLessThanOrEqual(definedPartIds().length);
-    expect(row.anyConnectors.n / row.anyConnectors.of).toBeGreaterThan(0.85);
-  });
-  it.runIf(!!priv)('Rebrickable-Referenzmenge: Anschlussdaten für über 90 % der aktuell verwendeten Teile', () => {
-    const row = coverage(priv!, rebrickableRefSet(priv!)!);
-    expect(row.anyConnectors.n / row.anyConnectors.of).toBeGreaterThan(0.9);
-    expect(row.refset.unmapped).toBeGreaterThan(0); // Katalog-Lücke wird ausgewiesen, nicht verschwiegen
+    expect(row.geometry.n).toBeLessThanOrEqual(row.geometry.mapped);
+    expect(row.refset.unmapped).toBe(0);
+    expect(row.checkable!.n).toBeLessThanOrEqual(definedPartIds().length);
+    expect(row.anyConnectors.n / row.anyConnectors.mapped).toBeGreaterThan(0.85);
   });
   it('Noppen oben stimmen für alle Prüfkern-Teile mit Daten in beiden Quellen überein', () => {
     const rows = crosscheckWithPartMeta(pub).filter((r) => r.cat === 'studs_up');

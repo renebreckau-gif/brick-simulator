@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FORBIDDEN_PATTERNS, listPublicDataFiles, PRIVATE_SCHEMAS } from './data-files.mjs';
+import { FORBIDDEN_PATTERNS, isPrivateSchema, listPublicDataFiles } from './data-files.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = join(ROOT, 'data');
@@ -45,7 +45,7 @@ for (const f of files) {
   if (f.endsWith('.json')) {
     try {
       const schema = JSON.parse(readFileSync(join(DIST, f), 'utf8'))?.schema;
-      if (PRIVATE_SCHEMAS.includes(schema)) errors.push(`Katalogauszug (Schema ${schema}) im Build: ${f}`);
+      if (isPrivateSchema(schema)) errors.push(`Katalogauszug (Schema ${schema}) im Build: ${f}`);
     } catch {
       errors.push(`ungültiges JSON im Build: ${f}`);
     }

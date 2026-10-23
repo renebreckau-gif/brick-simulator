@@ -37,7 +37,7 @@ export interface SearchResult {
 }
 
 const EXCLUDED_FAMILIES: Family[] = ['technic', 'minifig', 'sticker'];
-const SUPPORT_RANK: Record<SupportLevel, number> = { 'pruefbar': 3, 'anschluesse-importiert': 2, 'nur-geometrie': 1, 'ohne-geometrie': 0, 'nicht-einzeln': 0 };
+const SUPPORT_RANK: Record<SupportLevel, number> = { 'pruefbar': 3, 'teilweise-pruefbar': 3, 'anschluesse-importiert': 2, 'nur-geometrie': 1, 'ohne-geometrie': 0, 'nicht-einzeln': 0 };
 
 export function searchParts(lib: PartLibraryIndex, q: SearchQuery): SearchResult {
   const tokens = (q.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);

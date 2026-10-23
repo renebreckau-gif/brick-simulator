@@ -55,10 +55,11 @@ function dataFiles(): Plugin {
  */
 function libraryGeometry(): Plugin {
   const root = (() => {
-    const marker = resolve(__dirname, 'data-cache', 'ldraw', '.fetched.json');
+    const cache = process.env.LIBRARY_CACHE || resolve(__dirname, 'data-cache');
+    const marker = resolve(cache, 'ldraw', '.fetched.json');
     if (!existsSync(marker)) return null;
     const top = JSON.parse(readFileSync(marker, 'utf8')).root as string;
-    const base = resolve(__dirname, 'data-cache', 'ldraw', top);
+    const base = resolve(cache, 'ldraw', top);
     return existsSync(join(base, 'parts')) ? base : join(base, 'ldraw');
   })();
   return {

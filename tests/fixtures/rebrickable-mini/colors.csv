@@ -1,0 +1,8 @@
+id,name,rgb,is_trans
+0,Black,05131D,False
+1,Blue,0055BF,False
+2,Green,237841,False
+4,Red,C91A09,False
+14,Yellow,F2CD37,False
+15,White,FFFFFF,False
+47,Trans-Clear,FCFCFC,True

@@ -278,7 +278,7 @@ export function App() {
         </main>
       ) : mode === 'teile' ? (
         <main className="center instrwrap">
-          <LibraryLab />
+          <LibraryLab catalog={bundle.catalog} />
         </main>
       ) :view === 'varianten' && mode === 'konstrukt' ? (
         <main className="center instrwrap">

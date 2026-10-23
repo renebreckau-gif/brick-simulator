@@ -1,6 +1,9 @@
-// Abdeckungsbericht der Teilebibliothek (05C.1), getrennt nach Ebenen:
+// Abdeckungsbericht der Teilebibliothek (05C.1, korrigiert 05C.1.1), getrennt nach Ebenen:
 //   Katalog → Geometrie → Anschlussdaten (je Quelle) → bereits prüfbare Verbindungen (Prüfkern).
 // Zählbasis ist eine definierte Referenzmenge; Dateien, Unterteile und Drucke zählen nicht mit.
+// Jede Ebene wird zweifach ausgewiesen: am Gesamtbestand (einschließlich Teilen ohne eindeutige LDraw-Zuordnung –
+// sie zählen dort als nicht abgedeckt) und innerhalb des zugeordneten Bestands. Gewichte bleiben auch für nicht
+// zugeordnete Teile erhalten.
 import { partMeta, definedPartIds } from '../connectivity/partMeta';
 import type { Vec3 } from '../math';
 import { families } from './classify';
@@ -14,22 +17,29 @@ export interface RefSet {
   id: string;
   label: string;
   definition: string;
+  /** eindeutig zugeordnete LDraw-Nummern */
   ids: string[];
-  /** Gewicht je Teil (z. B. Anzahl Sets); fehlt bei ungewichteten Mengen. */
+  /** Gewicht je zugeordnetem Teil (z. B. eindeutige Sets); fehlt bei ungewichteten Mengen. */
   weight?: Record<string, number>;
-  /** Teile der Referenz, die keiner LDraw-Datei zugeordnet werden konnten (Katalog-Lücke). */
-  unmapped?: string[];
+  /** Teile ohne eindeutige LDraw-Zuordnung → Gewicht (bei ungewichteten Mengen 1). */
+  unmapped?: Record<string, number>;
 }
 
 export interface LayerCount {
+  /** abgedeckte Teile */
   n: number;
-  of: number;
-  /** gewichteter Anteil (nur bei gewichteten Referenzmengen) */
-  weighted?: number;
+  /** zugeordneter Bestand */
+  mapped: number;
+  /** Gesamtbestand (zugeordnet + ohne Zuordnung) */
+  total: number;
+  /** gewichtete Anteile (nur bei gewichteten Referenzmengen) */
+  weightedMapped?: number;
+  weightedTotal?: number;
 }
 
 export interface CoverageRow {
-  refset: Omit<RefSet, 'ids' | 'weight' | 'unmapped'> & { size: number; unmapped: number };
+  refset: Omit<RefSet, 'ids' | 'weight' | 'unmapped'> & { size: number; unmapped: number; weightMapped?: number; weightUnmapped?: number };
+  /** eindeutig einer LDraw-Datei zugeordnet (Anteil am Gesamtbestand) */
   catalog: LayerCount;
   geometry: LayerCount;
   ldcad: LayerCount;
@@ -38,7 +48,8 @@ export interface CoverageRow {
   bothConnectors: LayerCount;
   /** beide Quellen vorhanden und Noppen oben + Aufnahmen unten stimmen überein */
   bothAgree: LayerCount;
-  checkable: LayerCount;
+  /** null = Prüfkern nicht angebunden, keine Aussage */
+  checkable: LayerCount | null;
 }
 
 export function ldrawSystemRefSet(lib: PartLibraryIndex): RefSet {
@@ -64,9 +75,9 @@ export function rebrickableRefSet(lib: PartLibraryIndex): RefSet | null {
     id: 'rebrickable-aktuell',
     label: `In Sets ab ${c.definition.recentFrom} verwendete Teile`,
     definition: c.definition.refset,
-    ids: Object.keys(c.refset).map((id) => lib.canonical(id)),
-    weight: Object.fromEntries(Object.entries(c.refset).map(([id, w]) => [lib.canonical(id), w])),
-    unmapped: c.refsetUnmapped,
+    ids: Object.keys(c.refset),
+    weight: { ...c.refset },
+    unmapped: { ...c.refsetUnmapped },
   };
 }
 
@@ -166,25 +177,31 @@ export function sourcesAgree(lib: PartLibraryIndex, id: string): boolean | null 
 
 export function coverage(lib: PartLibraryIndex, ref: RefSet): CoverageRow {
   const ids = [...new Set(ref.ids)];
-  const unmapped = ref.unmapped?.length ?? 0;
+  const unmappedIds = Object.keys(ref.unmapped ?? {});
   const w = ref.weight;
-  const totalW = w ? ids.reduce((s, id) => s + (w[id] ?? 0), 0) : 0;
-  const count = (pred: (id: string) => boolean, of = ids.length): LayerCount => {
+  const weightMapped = w ? ids.reduce((s, id) => s + (w[id] ?? 0), 0) : undefined;
+  const weightUnmapped = w ? Object.values(ref.unmapped ?? {}).reduce((s, v) => s + v, 0) : undefined;
+  const total = ids.length + unmappedIds.length;
+  const count = (pred: (id: string) => boolean): LayerCount => {
     const hit = ids.filter(pred);
-    const out: LayerCount = { n: hit.length, of };
-    if (w && totalW > 0) out.weighted = hit.reduce((s, id) => s + (w[id] ?? 0), 0) / totalW;
+    const out: LayerCount = { n: hit.length, mapped: ids.length, total };
+    if (w && weightMapped !== undefined && weightUnmapped !== undefined) {
+      const hw = hit.reduce((s, id) => s + (w[id] ?? 0), 0);
+      if (weightMapped > 0) out.weightedMapped = hw / weightMapped;
+      if (weightMapped + weightUnmapped > 0) out.weightedTotal = hw / (weightMapped + weightUnmapped);
+    }
     return out;
   };
-  const inCatalog = (id: string) => { const e = lib.entry(id); return !!e && (e.ty === 'part' || e.ty === 'shortcut'); };
+  const inCatalog = (id: string) => { const e = lib.entry(id); return !!e && (e.ty === 'part' || e.ty === 'shortcut' || e.ty === 'print'); };
   return {
-    refset: { id: ref.id, label: ref.label, definition: ref.definition, size: ids.length, unmapped },
-    catalog: { n: ids.filter(inCatalog).length, of: ids.length + unmapped },
+    refset: { id: ref.id, label: ref.label, definition: ref.definition, size: ids.length, unmapped: unmappedIds.length, weightMapped, weightUnmapped },
+    catalog: count(inCatalog),
     geometry: count((id) => { const e = lib.entry(id); return !!e?.bb && !e.gm; }),
     ldcad: count((id) => !!lib.connectors(id, 'ldcad')),
     bricknet: count((id) => !!lib.connectors(id, 'bricknet')),
     anyConnectors: count((id) => !!(lib.connectors(id, 'ldcad') || lib.connectors(id, 'bricknet'))),
     bothConnectors: count((id) => !!(lib.connectors(id, 'ldcad') && lib.connectors(id, 'bricknet'))),
     bothAgree: count((id) => sourcesAgree(lib, id) === true),
-    checkable: count((id) => lib.validatorKnows(id)),
+    checkable: lib.validatorAvailable ? count((id) => lib.validatorKnows(id)) : null,
   };
 }

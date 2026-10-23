@@ -1,0 +1,13 @@
+{
+  "schema": "baustein-sim/library-parts@1",
+  "parts": {
+    "3001": { "t": "Brick  2 x  4", "ty": "part" },
+    "3001p01": { "t": "Brick  2 x  4 with Pattern", "ty": "print", "pr": "3001" },
+    "3023": { "t": "~Moved to 3023b", "ty": "moved", "to": "3023b", "pure": 1 },
+    "3023b": { "t": "Plate  1 x  2", "ty": "part", "k": ["Rebrickable 3023"] },
+    "3794a": { "t": "Plate  1 x  2 with 1 Stud without Groove", "ty": "part" },
+    "3794b": { "t": "Plate  1 x  2 with 1 Stud with Groove", "ty": "part" },
+    "amb": { "t": "Ambiguous A", "ty": "part" },
+    "amb2": { "t": "Ambiguous B", "ty": "part", "k": ["Rebrickable amb"] }
+  }
+}

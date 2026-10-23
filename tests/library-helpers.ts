@@ -1,27 +1,39 @@
-// Lädt die versionierten Bibliotheksdateien (und – nur falls lokal vorhanden – die privaten Farbbelege).
-import { existsSync, readFileSync } from 'node:fs';
+// Lädt die versionierten Bibliotheksdateien wie ein frischer Checkout – ohne private Daten.
+// Der Prüfkern wird wie in der Oberfläche über den Katalog angebunden (gleiche Identitätsauflösung wie die Modellprüfung).
+// Private Integrationsprüfungen (echte Farbbelege) liegen in tests-rebrickable/ (npm run test:rebrickable).
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PartLibraryIndex } from '../src/core/library/library';
-import type { ConnectorsFile, PartsFile, RebrickableColorsFile } from '../src/core/library/types';
-import { EvidenceFileSchema } from '../src/core/procurement/evidence';
-import { DATA } from './helpers';
+import type { ConnectorsFile, PartsFile } from '../src/core/library/types';
+import { bundle, DATA } from './helpers';
 
 export const LIB_DIR = join(DATA, 'library');
-export const PRIVATE_COLORS = join(LIB_DIR, 'private', 'rebrickable-colors.json');
 const read = <T>(f: string): T => JSON.parse(readFileSync(join(LIB_DIR, f), 'utf8')) as T;
 
-let cached: { pub: PartLibraryIndex; priv: PartLibraryIndex | null } | null = null;
+let cached: Promise<{ pub: PartLibraryIndex; noValidator: PartLibraryIndex }> | null = null;
 
-/** pub: nur versionierte Daten (wie frischer Checkout); priv: zusätzlich lokale Farbbelege, falls vorhanden. */
+/** pub: versionierte Daten + Prüfkern (Katalog ohne private Daten); noValidator: ohne Prüfkern-Anbindung. */
 export function loadLibrary() {
-  if (cached) return cached;
-  const parts = read<PartsFile>('parts.json');
-  const conn = { ldcad: read<ConnectorsFile>('connectors-ldcad.json'), bricknet: read<ConnectorsFile>('connectors-bricknet.json') };
-  const evidence = EvidenceFileSchema.parse(JSON.parse(readFileSync(join(DATA, 'procurement', 'evidence-05b2.json'), 'utf8')));
-  const pub = new PartLibraryIndex(parts, conn);
-  const priv = existsSync(PRIVATE_COLORS)
-    ? new PartLibraryIndex(parts, conn, JSON.parse(readFileSync(PRIVATE_COLORS, 'utf8')) as RebrickableColorsFile, evidence)
-    : null;
-  cached = { pub, priv };
+  cached ??= (async () => {
+    const parts = read<PartsFile>('parts.json');
+    const conn = { ldcad: read<ConnectorsFile>('connectors-ldcad.json'), bricknet: read<ConnectorsFile>('connectors-bricknet.json') };
+    const b = await bundle('none');
+    return {
+      pub: new PartLibraryIndex(parts, conn, { validator: (id) => b.catalog.part(id).simulation }),
+      noValidator: new PartLibraryIndex(parts, conn),
+    };
+  })();
   return cached;
+}
+
+/** Python-Aufruf für die Import-Skripte (Windows: python, sonst python3). */
+export function python(args: string[], cwd?: string) {
+  const candidates = process.platform === 'win32' ? ['python', 'py'] : ['python3', 'python'];
+  for (const cmd of candidates) {
+    const r = spawnSync(cmd, ['-I', ...args], { encoding: 'utf8', cwd });
+    if (r.error && (r.error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+    return r;
+  }
+  throw new Error('Kein Python gefunden (benötigt für scripts/library/)');
 }

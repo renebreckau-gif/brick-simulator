@@ -1,0 +1,54 @@
+# Teilebibliothek (Auftrag 05C.1.1): Beschaffung und Import müssen unter Linux und Windows sowie mit
+# verschiedenen Python-Versionen byte-identische Indizes ergeben – identisch mit den versionierten Dateien.
+# Abweichungen werden nicht durch Anpassen der Prüfsummen „behoben“, sondern schlagen hier fehl.
+name: Teilebibliothek reproduzierbar
+
+on:
+  push:
+    branches: [main, 'fix/library-**', 'feature/general-parts-library']
+    paths: ['scripts/library/**', 'data/library/**', '.github/workflows/library-reproducibility.yml']
+  pull_request:
+    paths: ['scripts/library/**', 'data/library/**', '.github/workflows/library-reproducibility.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, python: '3.11' }
+          - { os: ubuntu-latest, python: '3.13' }
+          - { os: windows-latest, python: '3.13' }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Quellstände beschaffen (bei geänderter complete.zip über das Wiederherstellungsrezept)
+        run: python -I scripts/library/fetch.py
+
+      - name: Import
+        run: python -I scripts/library/build.py
+
+      - name: Ergebnis byte-identisch mit den versionierten Dateien
+        run: |
+          echo "::notice title=${{ matrix.os }} / Python ${{ matrix.python }}::parts.json $(sha256sum data/library/parts.json | cut -c1-16) · connectors-ldcad $(sha256sum data/library/connectors-ldcad.json | cut -c1-16) · connectors-bricknet $(sha256sum data/library/connectors-bricknet.json | cut -c1-16)"
+          if ! git diff --quiet -- data/library; then
+            git diff --stat -- data/library
+            for f in $(git diff --name-only -- data/library); do
+              echo "::error file=$f::weicht vom versionierten Stand ab"
+              git diff -U0 -- "$f" | grep '^[-+]"' | head -5 | while read -r l; do echo "::error file=$f::${l:0:300}"; done
+            done
+            exit 1
+          fi

@@ -3,11 +3,22 @@
 // Eine Geometrie belegt weder eine reale Teil-Farb-Kombination noch Verfügbarkeit. Unbekanntes bleibt „unbekannt“,
 // fehlende Anschlussdaten heißen nie „verbindbar“ oder „unverbindbar“.
 import type { Vec3 } from '../math';
-import { definedPartIds } from '../connectivity/partMeta';
 import type { EvidenceFile, EvidenceLine } from '../procurement/evidence';
-import type { ConnectorSource, ConnectorsFile, LibraryConnector, LibraryEntry, PartsFile, RebrickableColorsFile } from './types';
+import type { ConnectorSource, ConnectorsFile, IdentityReason, LibraryConnector, LibraryEntry, PartsFile, RebrickableColorsFile } from './types';
 
-export const LIBRARY_LOGIC_VERSION = 'library-logic@1.0.0';
+export const LIBRARY_LOGIC_VERSION = 'library-logic@1.1.0';
+
+/** Aussage des Prüfkerns zu einem Teil (Catalog.part(id).simulation) – dieselbe Quelle, die die Modellprüfung nutzt. */
+export type ValidatorSupport = (ldrawId: string) => 'supported' | 'partial' | 'unsupported' | 'none';
+
+export interface LibraryOptions {
+  colors?: RebrickableColorsFile | null;
+  /** Grund, warum keine Farbbelege vorliegen (z. B. „fehlt“, „beschädigt: …“) – wird angezeigt statt „nicht geladen“. */
+  colorsUnavailable?: string;
+  evidence?: EvidenceFile | null;
+  /** Ohne Prüfkern-Anbindung wird nie „prüfbar“ angezeigt. */
+  validator?: ValidatorSupport | null;
+}
 
 /** Dreiwertige Aussage plus Widerspruch zwischen Quellen. */
 export type Tri = 'ja' | 'nein' | 'unbekannt' | 'widerspruch';
@@ -27,10 +38,11 @@ export interface ConnectorSummary {
   total: number;
 }
 
-export type SupportLevel = 'pruefbar' | 'anschluesse-importiert' | 'nur-geometrie' | 'ohne-geometrie' | 'nicht-einzeln';
+export type SupportLevel = 'pruefbar' | 'teilweise-pruefbar' | 'anschluesse-importiert' | 'nur-geometrie' | 'ohne-geometrie' | 'nicht-einzeln';
 
 export const SUPPORT_LABEL: Record<SupportLevel, string> = {
   'pruefbar': 'prüfbar (Prüfkern kennt Körper und Anschlüsse)',
+  'teilweise-pruefbar': 'teilweise prüfbar (Prüfkern kennt einzelne Merkmale nicht)',
   'anschluesse-importiert': 'Anschlussdaten importiert – vom Prüfkern noch nicht genutzt',
   'nur-geometrie': 'nur Geometrie – keine Anschlussdaten',
   'ohne-geometrie': 'Geometrie unvollständig',
@@ -42,16 +54,19 @@ export interface ColorEvidence {
   name: string;
   rgb: string;
   transparent: boolean;
+  /** eindeutige Sets (neueste Inventarversion je Set) */
   sets: number;
   setsRecent: number;
   years: [number, number];
   elementId: boolean;
+  /** Rebrickable-Teile, aus deren Inventaren der Beleg stammt (Herkunft). */
+  sources: string[];
 }
 
 export type ColorState =
-  | { state: 'nicht-geladen' }
-  | { state: 'keine-zuordnung' }
-  | { state: 'belegt'; rebrickable: string[]; mapping: string[]; colors: ColorEvidence[] };
+  | { state: 'nicht-geladen'; reason: string }
+  | { state: 'keine-zuordnung'; ambiguous: string[] }
+  | { state: 'belegt'; rebrickable: Record<string, IdentityReason[]>; alternatives: string[]; colors: ColorEvidence[] };
 
 const near = (a: number, b: number, tol = 0.15) => Math.abs(a - b) <= tol;
 
@@ -78,24 +93,32 @@ export class PartLibraryIndex {
   readonly parts: Record<string, LibraryEntry>;
   private conn: Partial<Record<ConnectorSource, ConnectorsFile>>;
   private connCache = new Map<string, LibraryConnector[] | null>();
-  /** Prüfkern-Teile, auch unter ihrer aktuellen LDraw-Nummer (z. B. 3023 → „~Moved to 3023b“). */
-  private validatorIds: Set<string>;
+  readonly colors: RebrickableColorsFile | null;
+  readonly evidence: EvidenceFile | null;
+  private validator: ValidatorSupport | null;
+  private colorsUnavailable: string;
+  private ambiguousByLdraw = new Map<string, string[]>();
 
-  constructor(
-    readonly partsFile: PartsFile,
-    connectors: Partial<Record<ConnectorSource, ConnectorsFile | null>>,
-    readonly colors: RebrickableColorsFile | null = null,
-    readonly evidence: EvidenceFile | null = null,
-  ) {
+  constructor(readonly partsFile: PartsFile, connectors: Partial<Record<ConnectorSource, ConnectorsFile | null>>, opts: LibraryOptions = {}) {
     this.parts = partsFile.parts;
     this.conn = {};
     for (const [k, v] of Object.entries(connectors)) if (v) this.conn[k as ConnectorSource] = v;
-    this.validatorIds = new Set(definedPartIds().flatMap((id) => [id, this.canonical(id)]));
+    this.colors = opts.colors ?? null;
+    this.evidence = opts.evidence ?? null;
+    this.validator = opts.validator ?? null;
+    this.colorsUnavailable = opts.colorsUnavailable ?? 'nicht geladen';
+    for (const [rb, lds] of Object.entries(this.colors?.ambiguous ?? {})) for (const ld of lds) this.ambiguousByLdraw.set(ld, [...(this.ambiguousByLdraw.get(ld) ?? []), rb]);
   }
 
-  /** true, wenn der Prüfkern das Teil (unter dieser oder seiner früheren Nummer) mit geprüften Metadaten kennt. */
+  /** Ist der Prüfkern angebunden? Ohne ihn gibt es keine Aussage „prüfbar“. */
+  get validatorAvailable(): boolean {
+    return !!this.validator;
+  }
+
+  /** true nur, wenn der Prüfkern selbst das Teil als unterstützt oder teilweise unterstützt führt. */
   validatorKnows(id: string): boolean {
-    return this.validatorIds.has(id.toLowerCase());
+    const s = this.validator?.(id.toLowerCase());
+    return s === 'supported' || s === 'partial';
   }
 
   ids(): string[] {
@@ -161,8 +184,10 @@ export class PartLibraryIndex {
 
   support(id: string): SupportLevel {
     const e = this.entry(id);
-    // Der Prüfkern führt einzelne Druckteile ausdrücklich (z. B. 4162p0b) – dann gilt seine Aussage
-    if (this.validatorKnows(id) && e && e.ty !== 'moved' && e.ty !== 'alias') return 'pruefbar';
+    // Aussage des Prüfkerns selbst (dieselbe Auflösung wie bei der Modellprüfung), nicht eine eigene Liste
+    const v = this.validator?.(id.toLowerCase());
+    if (v === 'supported' && e && e.ty !== 'moved' && e.ty !== 'alias') return 'pruefbar';
+    if (v === 'partial' && e && e.ty !== 'moved' && e.ty !== 'alias') return 'teilweise-pruefbar';
     if (!e || !(e.ty === 'part' || e.ty === 'shortcut')) return 'nicht-einzeln';
     if (!e.bb || e.gm) return 'ohne-geometrie';
     if (this.connectors(id, 'ldcad') || this.connectors(id, 'bricknet')) return 'anschluesse-importiert';
@@ -170,16 +195,16 @@ export class PartLibraryIndex {
   }
 
   colorEvidence(id: string): ColorState {
-    if (!this.colors) return { state: 'nicht-geladen' };
+    if (!this.colors) return { state: 'nicht-geladen', reason: this.colorsUnavailable };
     const p = this.colors.parts[id.toLowerCase()];
-    if (!p) return { state: 'keine-zuordnung' };
+    if (!p) return { state: 'keine-zuordnung', ambiguous: this.ambiguousByLdraw.get(id.toLowerCase()) ?? [] };
     return {
       state: 'belegt',
       rebrickable: p.rb,
-      mapping: p.map,
-      colors: p.colors.map(([col, sets, setsRecent, y0, y1, el]) => {
+      alternatives: p.alternatives,
+      colors: p.colors.map(([col, sets, setsRecent, y0, y1, el, sources]) => {
         const c = this.colors!.colors[String(col)] ?? ['unbekannt', '', false];
-        return { rebrickableColor: col, name: c[0], rgb: c[1], transparent: c[2], sets, setsRecent, years: [y0, y1] as [number, number], elementId: el };
+        return { rebrickableColor: col, name: c[0], rgb: c[1], transparent: c[2], sets, setsRecent, years: [y0, y1] as [number, number], elementId: el, sources };
       }),
     };
   }

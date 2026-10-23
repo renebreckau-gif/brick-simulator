@@ -37,7 +37,10 @@ export const FORBIDDEN_PATTERNS = [/(^|\/)data-raw\//, /rebrickable-extract/i, /
 export const EXTRACT_SCHEMA = 'baustein-sim/rebrickable-extract@1';
 
 /** Schemata privater, aus Rebrickable abgeleiteter Dateien – dürfen unter keinem Namen in einen Build. */
-export const PRIVATE_SCHEMAS = [EXTRACT_SCHEMA, 'baustein-sim/library-rebrickable-private@1'];
+export const PRIVATE_SCHEMAS = [EXTRACT_SCHEMA, 'baustein-sim/library-rebrickable-private@1', 'baustein-sim/library-rebrickable-private@2'];
+
+/** Jede Version privater Teilebibliotheks-Belege, auch künftige. */
+export const isPrivateSchema = (schema) => typeof schema === 'string' && (PRIVATE_SCHEMAS.includes(schema) || schema.startsWith('baustein-sim/library-rebrickable-private@'));
 
 /**
  * Liefert die vollständige Positivliste (relativ zu data/), abgeleitet aus festen Einträgen,

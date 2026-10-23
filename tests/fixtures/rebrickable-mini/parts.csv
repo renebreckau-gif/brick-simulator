@@ -1,0 +1,10 @@
+part_num,name,part_cat_id,part_material
+3001,Brick 2 x 4,11,Plastic
+3001pr0001,Brick 2 x 4 with Print,11,Plastic
+3023,Plate 1 x 2,14,Plastic
+3794a,Plate 1 x 2 with 1 Stud (Jumper) without Groove,14,Plastic
+3794b,Plate 1 x 2 with 1 Stud (Jumper) with Groove,14,Plastic
+x999,Part without LDraw file,11,Plastic
+amb,Part with ambiguous identity,11,Plastic
+fig1,Minifig Part,13,Plastic
+alt9,Jumper alternative mould without LDraw file,14,Plastic
