@@ -253,6 +253,10 @@ Jeder Fehler wurde zuerst reproduziert und dann behoben; die Tests laufen ohne p
   - `.github/workflows/library-reproducibility.yml` vergleicht Linux (Python 3.11 und 3.13) und Windows (Python 3.13) byte-genau mit den versionierten Dateien;
   - bei Abweichung nennt `scripts/library/compare.py` die betroffenen Teile.
 - Die Prüfsummen wurden nicht angepasst, sondern sind das Ergebnis des korrigierten Imports.
+- *Ergebnis am 2026-10-23* (GitHub-Actions-Lauf 39944464062, Commit `1a825c1`):
+  - Linux mit Python 3.11 und 3.13 sowie Windows mit Python 3.13 laden die Quellen frisch, importieren und erzeugen byte-identische Dateien, identisch mit dem Repository: `parts.json` `f005261941dcf50d…`, `connectors-ldcad.json` `60f7a6103238bd7f…`, `connectors-bricknet.json` `9776b85f7a3e4ac9…`.
+  - Der vorherige Lauf (Commit `25d6180`, noch mit `**`) war unter Linux abgewichen.
+- Lokal: Ein frischer Klon importiert ohne private Daten byte-identisch (`git status` leer).
 
 **`--update` bei vorhandenem Zwischenspeicher:**
 - Zuvor wurde nicht neu geladen, wenn ein Archiv mit der festgelegten Prüfsumme im Zwischenspeicher lag. Ein neuer Stand wurde so nie übernommen.
